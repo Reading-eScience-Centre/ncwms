@@ -34,7 +34,7 @@ import java.util.Arrays;
 import org.geotoolkit.referencing.CRS;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
-import uk.ac.rdg.resc.edal.cdm.Utils;
+import uk.ac.rdg.resc.edal.cdm.util.GISUtils;
 import uk.ac.rdg.resc.ncwms.wms.Layer;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 
@@ -217,13 +217,13 @@ public class TileCacheKey implements Serializable
             boundingBox.getMaxX(),
             boundingBox.getMaxY()
         };
-        if (Utils.isWgs84LonLat(grid.getCoordinateReferenceSystem()))
+        if (GISUtils.isWgs84LonLat(grid.getCoordinateReferenceSystem()))
         {
             // Make sure we always use the same code for lat-lon projections
             this.crsCode = "CRS:841";
             // Constrain longitudes to range [-180,180] to canonicalise them
-            this.bbox[0] = Utils.constrainLongitude180(this.bbox[0]);
-            this.bbox[2] = Utils.constrainLongitude180(this.bbox[2]);
+            this.bbox[0] = GISUtils.constrainLongitude180(this.bbox[0]);
+            this.bbox[2] = GISUtils.constrainLongitude180(this.bbox[2]);
         }
         else
         {

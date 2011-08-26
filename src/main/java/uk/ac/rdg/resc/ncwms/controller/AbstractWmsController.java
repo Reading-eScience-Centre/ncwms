@@ -62,16 +62,12 @@ import org.springframework.web.servlet.mvc.AbstractController;
 
 import uk.ac.rdg.resc.edal.Domain;
 import uk.ac.rdg.resc.edal.Extent;
-import uk.ac.rdg.resc.edal.cdm.Utils;
-import uk.ac.rdg.resc.edal.coverage.domain.DiscreteDomain;
+import uk.ac.rdg.resc.edal.cdm.util.GISUtils;
 import uk.ac.rdg.resc.edal.coverage.domain.impl.HorizontalDomain;
 import uk.ac.rdg.resc.edal.coverage.grid.GridCell2D;
-import uk.ac.rdg.resc.edal.coverage.grid.GridCoordinates;
 import uk.ac.rdg.resc.edal.coverage.grid.HorizontalGrid;
-import uk.ac.rdg.resc.edal.coverage.grid.ReferenceableAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinatesImpl;
-import uk.ac.rdg.resc.edal.coverage.grid.impl.ReferenceableAxisImpl;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.LonLatPosition;
@@ -597,7 +593,7 @@ public abstract class AbstractWmsController extends AbstractController {
         HorizontalPosition pos = grid.transformCoordinates(new GridCoordinatesImpl(dr.getPixelColumn(), j));
         
         // Transform these coordinates into lon-lat
-        LonLatPosition lonLat = Utils.transformToWgs84LonLat(pos);
+        LonLatPosition lonLat = GISUtils.transformToWgs84LonLat(pos);
 
         // Find out the i,j coordinates of this point in the source grid (could be null)
         HorizontalGrid horizGrid = layer.getHorizontalGrid();
@@ -607,7 +603,7 @@ public abstract class AbstractWmsController extends AbstractController {
         if (gridCoords != null) {
             // Get the location of the centre of the grid cell
             HorizontalPosition gridCellCentrePos = gridCoords.getCentre();
-            gridCellCentre = Utils.transformToWgs84LonLat(gridCellCentrePos);
+            gridCellCentre = GISUtils.transformToWgs84LonLat(gridCellCentrePos);
         }
 
         // Get the elevation value requested
@@ -776,10 +772,6 @@ public abstract class AbstractWmsController extends AbstractController {
         usageLogEntry.setLayer(layer);
         usageLogEntry.setOutputFormat(outputFormat);
         usageLogEntry.setWmsOperation("GetTransect");
-
-        // Get the required coordinate reference system, forcing longitude-first
-        // axis order.
-        final CoordinateReferenceSystem crs = WmsUtils.getCrs(crsCode);
 
         // Parse the line string, which is in the form "x1 y1, x2 y2, x3 y3"
         final LineString transect = new LineString(lineString, WmsUtils.getCrs(crsCode), params.getWmsVersion());
