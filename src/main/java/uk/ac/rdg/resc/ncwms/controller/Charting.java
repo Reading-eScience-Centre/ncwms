@@ -73,7 +73,7 @@ import org.joda.time.DateTime;
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.LonLatPosition;
-import uk.ac.rdg.resc.edal.cdm.Utils;
+import uk.ac.rdg.resc.edal.cdm.util.GISUtils;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
 import uk.ac.rdg.resc.ncwms.graphics.ColorPalette;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
@@ -148,7 +148,7 @@ final class Charting {
         plot.setOrientation(PlotOrientation.HORIZONTAL);
 
         // Find the position of the profile in lon-lat coordinates for the label
-        HorizontalPosition lonLatPos = Utils.transformPosition(pos, DefaultGeographicCRS.WGS84);
+        HorizontalPosition lonLatPos = GISUtils.transformPosition(pos, DefaultGeographicCRS.WGS84);
         double lon = lonLatPos.getX();
         String lonStr = Double.toString(Math.abs(lon)) + ((lon >= 0.0) ? "E" : "W");
         double lat = lonLatPos.getY();
