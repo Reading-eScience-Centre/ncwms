@@ -71,11 +71,11 @@ import org.jfree.ui.TextAnchor;
 import org.joda.time.DateTime;
 
 import uk.ac.rdg.resc.edal.Extent;
-import uk.ac.rdg.resc.edal.position.HorizontalPosition;
-import uk.ac.rdg.resc.edal.position.LonLatPosition;
 import uk.ac.rdg.resc.edal.cdm.util.GISUtils;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
-import uk.ac.rdg.resc.ncwms.graphics.ColorPalette;
+import uk.ac.rdg.resc.edal.graphics.ColorPalette;
+import uk.ac.rdg.resc.edal.position.HorizontalPosition;
+import uk.ac.rdg.resc.edal.position.LonLatPosition;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 import uk.ac.rdg.resc.ncwms.wms.Layer;
 

@@ -40,9 +40,9 @@ import org.joda.time.DateTime;
 import uk.ac.rdg.resc.edal.Domain;
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.domain.impl.HorizontalDomain;
+import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidDimensionValueException;
-import uk.ac.rdg.resc.ncwms.graphics.ColorPalette;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 
 /**

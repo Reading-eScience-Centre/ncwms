@@ -33,8 +33,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Duration;
@@ -45,11 +47,11 @@ import org.springframework.web.servlet.ModelAndView;
 
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
+import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.LayerFactory;
 import uk.ac.rdg.resc.ncwms.exceptions.LayerNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
-import uk.ac.rdg.resc.ncwms.graphics.ColorPalette;
 import uk.ac.rdg.resc.ncwms.usagelog.UsageLogEntry;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 import uk.ac.rdg.resc.ncwms.wms.Layer;
