@@ -34,8 +34,9 @@ import org.simpleframework.xml.load.PersistenceException;
 import org.simpleframework.xml.load.Validate;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
-import uk.ac.rdg.resc.ncwms.graphics.ColorPalette;
+import uk.ac.rdg.resc.ncwms.wms.Layer;
 
 /**
  * Contains fields that can be filled in to override values that are
