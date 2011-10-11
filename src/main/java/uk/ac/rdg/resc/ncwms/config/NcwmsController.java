@@ -32,23 +32,26 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.joda.time.DateTime;
+
 import org.springframework.web.servlet.ModelAndView;
+
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
+import uk.ac.rdg.resc.edal.feature.Feature;
+import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
+import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.ncwms.cache.TileCache;
 import uk.ac.rdg.resc.ncwms.cache.TileCacheKey;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController;
 import uk.ac.rdg.resc.ncwms.controller.RequestParams;
+import uk.ac.rdg.resc.ncwms.exceptions.FeatureNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidDimensionValueException;
-import uk.ac.rdg.resc.ncwms.exceptions.LayerNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.OperationNotSupportedException;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
 import uk.ac.rdg.resc.ncwms.usagelog.UsageLogEntry;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
-import uk.ac.rdg.resc.ncwms.wms.Layer;
-import uk.ac.rdg.resc.ncwms.wms.ScalarLayer;
 
 /**
  * <p>WmsController for ncWMS</p>
@@ -64,30 +67,27 @@ public final class NcwmsController extends AbstractWmsController
     private TileCache tileCache;
 
     // Object that extracts layers from the config object, given a layer name
-    private final LayerFactory LAYER_FACTORY = new LayerFactory()
-    {
+    private final FeatureFactory FEATURE_FACTORY = new FeatureFactory() {
         @Override
-        public Layer getLayer(String layerName) throws LayerNotDefinedException
-        {
+        public GridSeriesFeature<Float> getFeature(String layerName) throws FeatureNotDefinedException {
             // Split the layer name on the slash character
             int slashIndex = layerName.lastIndexOf("/");
-            if (slashIndex > 0)
-            {
+            if (slashIndex > 0) {
                 String datasetId = layerName.substring(0, slashIndex);
                 Dataset ds = NcwmsController.this.getConfig().getDatasetById(datasetId);
-                if (ds == null) throw new LayerNotDefinedException(layerName);
+                if (ds == null)
+                    throw new FeatureNotDefinedException(layerName);
 
-                String layerId = layerName.substring(slashIndex + 1);
-                Layer layer = ds.getLayerById(layerId);
-                if (layer == null) throw new LayerNotDefinedException(layerName);
+                String featureId = layerName.substring(slashIndex + 1);
+                GridSeriesFeature<Float> feature = ds.getFeatureById(featureId);
+                if (feature == null)
+                    throw new FeatureNotDefinedException(layerName);
 
-                return layer;
-            }
-            else
-            {
-                // We don't bother looking for the position in the string where the
-                // parse error occurs
-                throw new LayerNotDefinedException(layerName);
+                return feature;
+            } else {
+                // We don't bother looking for the position in the string where
+                // the parse error occurs
+                throw new FeatureNotDefinedException(layerName);
             }
         }
     };
@@ -100,7 +100,7 @@ public final class NcwmsController extends AbstractWmsController
     public void init() throws Exception
     {
         // Create a NcwmsMetadataController for handling non-standard metadata request
-        this.metadataController = new NcwmsMetadataController(this.getConfig(), LAYER_FACTORY);
+        this.metadataController = new NcwmsMetadataController(this.getConfig(), FEATURE_FACTORY);
         super.init();
     }
 
@@ -118,7 +118,7 @@ public final class NcwmsController extends AbstractWmsController
         }
         else if (request.equals("GetMap"))
         {
-            return getMap(params, LAYER_FACTORY, httpServletResponse, usageLogEntry);
+            return getMap(params, FEATURE_FACTORY, httpServletResponse, usageLogEntry);
         }
         else if (request.equals("GetFeatureInfo"))
         {
@@ -130,7 +130,7 @@ public final class NcwmsController extends AbstractWmsController
                 NcwmsMetadataController.proxyRequest(url, httpServletRequest, httpServletResponse);
                 return null;
             }
-            return getFeatureInfo(params, LAYER_FACTORY, httpServletRequest,
+            return getFeatureInfo(params, FEATURE_FACTORY, httpServletRequest,
                     httpServletResponse, usageLogEntry);
         }
         // The REQUESTs below are non-standard and could be refactored into
@@ -147,7 +147,7 @@ public final class NcwmsController extends AbstractWmsController
         {
             // This is a request for an image that contains the colour scale
             // and range for a given layer
-            return getLegendGraphic(params, LAYER_FACTORY, httpServletResponse);
+            return getLegendGraphic(params, FEATURE_FACTORY, httpServletResponse);
         /*} else if (request.equals("GetKML")) {
             // This is a request for a KML document that allows the selected
             // layer(s) to be displayed in Google Earth in a manner that
@@ -164,15 +164,15 @@ public final class NcwmsController extends AbstractWmsController
         }
         else if (request.equals("GetTransect"))
         {
-            return getTransect(params, LAYER_FACTORY, httpServletResponse, usageLogEntry);
+            return getTransect(params, FEATURE_FACTORY, httpServletResponse, usageLogEntry);
         }
         else if (request.equals("GetVerticalProfile"))
         {
-            return getVerticalProfile(params, LAYER_FACTORY, httpServletResponse, usageLogEntry);
+            return getVerticalProfile(params, FEATURE_FACTORY, httpServletResponse, usageLogEntry);
         }
         else if (request.equals("GetVerticalSection"))
         {
-            return getVerticalSection(params, LAYER_FACTORY, httpServletResponse, usageLogEntry);
+            return getVerticalSection(params, FEATURE_FACTORY, httpServletResponse, usageLogEntry);
         }
         else
         {
@@ -187,7 +187,7 @@ public final class NcwmsController extends AbstractWmsController
             HttpServletRequest httpServletRequest, UsageLogEntry usageLogEntry)
             throws WmsException, IOException
     {
-        DateTime lastUpdate;
+        TimePosition lastUpdate;
         Collection<? extends Dataset> datasets;
 
         // The DATASET parameter is an optional parameter that allows a

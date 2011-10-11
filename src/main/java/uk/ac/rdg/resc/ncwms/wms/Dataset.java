@@ -28,8 +28,13 @@
 
 package uk.ac.rdg.resc.ncwms.wms;
 
-import java.util.Collection;
-import org.joda.time.DateTime;
+import java.util.Map;
+
+import uk.ac.rdg.resc.edal.feature.Feature;
+import uk.ac.rdg.resc.edal.feature.FeatureCollection;
+import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
+import uk.ac.rdg.resc.edal.position.TimePosition;
+import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
 
 /**
  * Represents a Dataset, {@literal i.e.} a collection of {@link Layer}s.  Datasets are
@@ -69,21 +74,20 @@ public interface Dataset
      * @return the date/time at which this dataset was last updated, or null if
      * the dataset has never been loaded.
      */
-    public DateTime getLastUpdateTime();
+    public TimePosition getLastUpdateTime();
 
     /**
-     * Gets the {@link Layer} with the given {@link Layer#getId() id}.  The id
+     * Gets the {@link GridSeriesFeature} with the given {@link Feature#getId() id}.  The id
      * is unique within the dataset, not necessarily on the whole server.
      * @return The layer with the given id, or null if there is no layer with
      * the given id.
      */
-    public Layer getLayerById(String layerId);
+    public GridSeriesFeature<Float> getFeatureById(String featureId);
 
     /**
-     * Gets the {@link Layer}s that comprise this dataset
-     * to Layer objects.
+     * Gets the {@link FeatureCollection} that comprises this dataset
      */
-    public Collection<Layer> getLayers();
+    public FeatureCollection<GridSeriesFeature<Float>> getFeatureCollection();
 
     /**
      * Returns true if the dataset is ready for use.  If the dataset is ready,
@@ -126,4 +130,17 @@ public interface Dataset
      * disabled
      */
     public boolean isDisabled();
+    
+    /**
+     * Gets the configuration information for all the
+     * {@link FeaturePlottingMetadata}s in this dataset. This information allows
+     * the system administrator to manually set certain properties that would
+     * otherwise be auto-detected.
+     * 
+     * @return A {@link Map} of variable IDs to {@link FeaturePlottingMetadata}
+     *         objects. The variable ID is unique within a dataset and
+     *         corresponds with the {@link Feature#getId()}.
+     * @see FeaturePlottingMetadata
+     */
+    public Map<String, FeaturePlottingMetadata> getPlottingMetadataMap();
 }

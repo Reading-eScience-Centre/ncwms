@@ -35,6 +35,7 @@ import java.awt.image.IndexColorModel;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -65,19 +66,22 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.data.xy.XYZDataset;
 import org.jfree.ui.HorizontalAlignment;
+import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleAnchor;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.TextAnchor;
-import org.joda.time.DateTime;
 
 import uk.ac.rdg.resc.edal.Extent;
-import uk.ac.rdg.resc.edal.cdm.util.GISUtils;
+import uk.ac.rdg.resc.edal.feature.Feature;
+import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.LonLatPosition;
+import uk.ac.rdg.resc.edal.position.TimePosition;
+import uk.ac.rdg.resc.edal.util.GISUtils;
+import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
-import uk.ac.rdg.resc.ncwms.wms.Layer;
 
 /**
  * Code to produce various types of chart. Used by the
@@ -90,17 +94,18 @@ final class Charting {
     private static final Locale US_LOCALE = new Locale("us", "US");
     private static final Color TRANSPARENT = new Color(0, 0, 0, 0);
 
-    public static JFreeChart createTimeseriesPlot(Layer layer, LonLatPosition lonLat, Map<DateTime, Float> tsData) {
+    public static JFreeChart createTimeseriesPlot(Feature feature, LonLatPosition lonLat,
+            Map<TimePosition, Float> tsData) {
         TimeSeries ts = new TimeSeries("Data", Millisecond.class);
-        for (Entry<DateTime, Float> entry : tsData.entrySet()) {
-            ts.add(new Millisecond(entry.getKey().toDate()), entry.getValue());
+        for (Entry<TimePosition, Float> entry : tsData.entrySet()) {
+            ts.add(new Millisecond(new Date(entry.getKey().getValue())), entry.getValue());
         }
         TimeSeriesCollection xydataset = new TimeSeriesCollection();
         xydataset.addSeries(ts);
 
         // Create a chart with no legend, tooltips or URLs
         String title = "Lon: " + lonLat.getLongitude() + ", Lat: " + lonLat.getLatitude();
-        String yLabel = layer.getTitle() + " (" + layer.getUnits() + ")";
+        String yLabel = feature.getName() + " (" + feature.getCoverage().getRangeMetadata(null).getUnits() + ")";
         JFreeChart chart = ChartFactory.createTimeSeriesChart(title, "Date / time", yLabel, xydataset, false, false,
                 false);
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
@@ -113,23 +118,23 @@ final class Charting {
         return chart;
     }
 
-    public static JFreeChart createVerticalProfilePlot(Layer layer, HorizontalPosition pos,
-            List<Double> elevationValues, List<Float> dataValues, DateTime dateTime) {
+    public static JFreeChart createVerticalProfilePlot(GridSeriesFeature<Float> feature, HorizontalPosition pos,
+            List<Double> elevationValues, List<Float> dataValues, TimePosition dateTime) {
         if (elevationValues.size() != dataValues.size()) {
             throw new IllegalArgumentException("Z values and data values not of same length");
         }
 
-        ZAxisAndValues zAxisAndValues = getZAxisAndValues(layer, elevationValues);
+        ZAxisAndValues zAxisAndValues = getZAxisAndValues(feature, elevationValues);
         // The elevation values might have been reversed
         elevationValues = zAxisAndValues.zValues;
         NumberAxis elevationAxis = zAxisAndValues.zAxis;
         elevationAxis.setAutoRangeIncludesZero(false);
 
-        NumberAxis valueAxis = new NumberAxis(getAxisLabel(layer));
+        NumberAxis valueAxis = new NumberAxis(getAxisLabel(feature));
         valueAxis.setAutoRangeIncludesZero(false);
 
         XYSeries series = new XYSeries("data", true); // TODO: more meaningful
-                                                      // title
+        // title
         for (int i = 0; i < elevationValues.size(); i++) {
             series.add(elevationValues.get(i), dataValues.get(i));
         }
@@ -153,24 +158,25 @@ final class Charting {
         String lonStr = Double.toString(Math.abs(lon)) + ((lon >= 0.0) ? "E" : "W");
         double lat = lonLatPos.getY();
         String latStr = Double.toString(Math.abs(lat)) + ((lat >= 0.0) ? "N" : "S");
-        String title = String.format("Profile of %s at %s, %s", layer.getTitle(), lonStr, latStr);
+        String title = String.format("Profile of %s at %s, %s", feature.getName(), lonStr, latStr);
         if (dateTime != null) {
-            title += " at " + WmsUtils.dateTimeToISO8601(dateTime);
+            title += " at " + TimeUtils.dateTimeToISO8601(dateTime);
         }
 
         // Use default font and don't create a legend
         return new JFreeChart(title, null, plot, false);
     }
 
-    private static String getAxisLabel(Layer layer) {
-        return WmsUtils.removeDuplicatedWhiteSpace(layer.getTitle()) + " (" + layer.getUnits() + ")";
+    private static String getAxisLabel(GridSeriesFeature<Float> feature) {
+        return WmsUtils.removeDuplicatedWhiteSpace(feature.getName()) + " ("
+                + feature.getCoverage().getRangeMetadata(null).getUnits() + ")";
     }
 
     public static JFreeChart createTransectPlot(Layer layer, LineString transectDomain, List<Float> transectData) {
         JFreeChart chart;
         XYPlot plot;
         XYSeries series = new XYSeries("data", true); // TODO: more meaningful
-                                                      // title
+        // title
         for (int i = 0; i < transectData.size(); i++) {
             series.add(i, transectData.get(i));
         }
@@ -193,14 +199,14 @@ final class Charting {
             plot.setOrientation(PlotOrientation.VERTICAL);
             chart = new JFreeChart(plot);
         } else // If we have a layer which only has one elevation value, we
-               // simply create XY Line chart
+        // simply create XY Line chart
         {
             chart = ChartFactory.createXYLineChart("Transect for " + layer.getTitle(), // title
                     "distance along transect (arbitrary units)", // TODO more
-                                                                 // meaningful x
-                                                                 // axis label
+                    // meaningful x
+                    // axis label
                     layer.getTitle() + " (" + layer.getUnits() + ")", xySeriesColl, PlotOrientation.VERTICAL, false, // show
-                                                                                                                     // legend
+                    // legend
                     false, // show tooltips (?)
                     false // urls (?)
                     );
@@ -553,7 +559,7 @@ final class Charting {
                     return numColourBands; // represents a background pixel
                 } else if (value < this.getLowerBound() || value > this.getUpperBound()) {
                     return numColourBands + 1; // represents an out-of-range
-                                               // pixel
+                    // pixel
                 } else {
                     double min = logarithmic ? Math.log(this.getLowerBound()) : this.getLowerBound();
                     double max = logarithmic ? Math.log(this.getUpperBound()) : this.getUpperBound();

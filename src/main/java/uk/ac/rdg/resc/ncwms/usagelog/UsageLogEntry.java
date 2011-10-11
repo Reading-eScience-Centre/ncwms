@@ -29,14 +29,17 @@
 package uk.ac.rdg.resc.ncwms.usagelog;
 
 import java.awt.Color;
+
 import javax.servlet.http.HttpServletRequest;
-import org.joda.time.DateTime;
+
+import uk.ac.rdg.resc.edal.feature.Feature;
+import uk.ac.rdg.resc.edal.position.TimePosition;
+import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
 import uk.ac.rdg.resc.ncwms.controller.GetFeatureInfoDataRequest;
 import uk.ac.rdg.resc.ncwms.controller.GetFeatureInfoRequest;
 import uk.ac.rdg.resc.ncwms.controller.GetMapDataRequest;
 import uk.ac.rdg.resc.ncwms.controller.GetMapRequest;
 import uk.ac.rdg.resc.ncwms.controller.GetMapStyleRequest;
-import uk.ac.rdg.resc.ncwms.wms.Layer;
 
 /**
  * Object that is passed to a UsageLogger to log usage of the ncWMS system.
@@ -51,7 +54,7 @@ import uk.ac.rdg.resc.ncwms.wms.Layer;
 public class UsageLogEntry
 {
     // These fields appear in every log entry
-    private DateTime requestTime = new DateTime(); // The time at which the request was received
+    private TimePosition requestTime = new TimePositionImpl(); // The time at which the request was received
     private String clientIpAddress = null;
     private String clientHost = null;
     private String clientReferrer = null;
@@ -71,8 +74,8 @@ public class UsageLogEntry
     private Integer width = null;
     private Integer height = null;
     private String layer = null; // The layer as requested by the client
-    private String datasetId = null; // The id of the dataset from which the layer comes
-    private String variableId = null;
+    private String featureCollectionId = null; // The id of the dataset from which the layer comes
+    private String featureId = null;
     private Long timeToExtractDataMs = null;
     private Boolean usedCache = false;
     
@@ -160,10 +163,10 @@ public class UsageLogEntry
         this.wmsOperation = op;
     }
     
-    public void setLayer(Layer layer)
+    public void setFeature(Feature feature)
     {
-        this.datasetId = layer.getDataset().getId();
-        this.variableId = layer.getId();
+        featureCollectionId = feature.getFeatureCollection().getId();;
+        featureId = feature.getId();
     }
 
     public void setTimeToExtractDataMs(long timeToExtractDataMs)
@@ -197,7 +200,7 @@ public class UsageLogEntry
         this.menu = menu;
     }
 
-    public DateTime getRequestTime()
+    public TimePosition getRequestTime()
     {
         return requestTime;
     }
@@ -292,12 +295,12 @@ public class UsageLogEntry
 
     public String getDatasetId()
     {
-        return datasetId;
+        return featureCollectionId;
     }
 
     public String getVariableId()
     {
-        return variableId;
+        return featureId;
     }
 
     public Long getTimeToExtractDataMs()

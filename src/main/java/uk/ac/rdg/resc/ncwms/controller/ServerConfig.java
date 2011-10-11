@@ -30,8 +30,10 @@ package uk.ac.rdg.resc.ncwms.controller;
 
 import java.io.File;
 import java.util.Set;
+
 import javax.servlet.ServletContext;
-import org.joda.time.DateTime;
+
+import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
 
 /**
@@ -73,7 +75,7 @@ public interface ServerConfig
      * clients should never cache the Capabilities document.</p>
      * @return the date/time at which the data on this server were last updated.
      */
-    public DateTime getLastUpdateTime();
+    public TimePosition getLastUpdateTime();
 
     /**
      * Returns the web address of the organization that is providing this service.
