@@ -33,6 +33,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -43,10 +44,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletContext;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.simpleframework.xml.Element;
 import org.simpleframework.xml.ElementList;
 import org.simpleframework.xml.Root;
@@ -54,14 +54,19 @@ import org.simpleframework.xml.load.Commit;
 import org.simpleframework.xml.load.PersistenceException;
 import org.simpleframework.xml.load.Persister;
 import org.simpleframework.xml.load.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.unidata.io.RandomAccessFile;
+import uk.ac.rdg.resc.edal.position.TimePosition;
+import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
+import uk.ac.rdg.resc.ncwms.controller.ServerConfig;
 import uk.ac.rdg.resc.ncwms.security.Users;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
-import uk.ac.rdg.resc.ncwms.controller.ServerConfig;
 
 /**
  * <p>Configuration of the ncWMS server.  We use Simple XML Serialization
@@ -101,7 +106,7 @@ public class Config implements ServerConfig, ApplicationContextAware
 
     // Time of the last update to this configuration or any of the contained
     // metadata
-    private DateTime lastUpdateTime;
+    private TimePosition lastUpdateTime;
 
     private File configFile; // Location of the file from which this information has been read
 
@@ -149,7 +154,7 @@ public class Config implements ServerConfig, ApplicationContextAware
                 configFile.getPath());
         }
 
-        config.lastUpdateTime = new DateTime();
+        config.lastUpdateTime = new TimePositionImpl(new Date().getTime());
 
         // Initialize the cache of NetcdfDatasets.  Hold between 50 and 500
         // datasets, clearing out the cache every 5 minutes.  If the number of
@@ -232,9 +237,9 @@ public class Config implements ServerConfig, ApplicationContextAware
         }
     }
 
-    void setLastUpdateTime(DateTime date)
+    void setLastUpdateTime(TimePosition date)
     {
-        if (date.isAfter(this.lastUpdateTime))
+        if (date.compareTo(lastUpdateTime) > 0)
         {
             this.lastUpdateTime = date;
         }
@@ -271,7 +276,7 @@ public class Config implements ServerConfig, ApplicationContextAware
      * @return the time at which this configuration was last updated
      */
     @Override
-    public DateTime getLastUpdateTime()
+    public TimePosition getLastUpdateTime()
     {
         return this.lastUpdateTime;
     }

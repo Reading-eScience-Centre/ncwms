@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008 The University of Reading
+ * Copyright (c) 2007 The University of Reading
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,39 +26,25 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package uk.ac.rdg.resc.ncwms.controller;
-
-import java.util.List;
-import uk.ac.rdg.resc.ncwms.wms.Layer;
+package uk.ac.rdg.resc.ncwms.exceptions;
 
 /**
- * Simple class that stores a Layer object and associated top-level tiles,
- * created by the WmsController and passed to topLevelKML.jsp.
- * @see WmsController#getKML
- * 
+ * Exception that is thrown when a client attempts to request a map layer that
+ * is not available from this server.
+ *
  * @author Jon Blower
  * $Revision$
  * $Date$
  * $Log$
  */
-public class TiledLayer
+public class FeatureNotDefinedException extends WmsException
 {
-    private Layer layer;
-    private List<double[]> tiles;  // bounding boxes of tiles
     
-    public TiledLayer(Layer layer, List<double[]> tiles)
+    /** Creates a new instance of LayerNotDefinedException */
+    public FeatureNotDefinedException(String layerName)
     {
-        this.layer = layer;
-        this.tiles = tiles;
+        super("The layer \"" + layerName + "\" is not provided by this server",
+            "LayerNotDefined");
     }
     
-    public Layer getLayer()
-    {
-        return layer;
-    }
-    
-    public List<double[]> getTiles()
-    {
-        return tiles;
-    }
 }

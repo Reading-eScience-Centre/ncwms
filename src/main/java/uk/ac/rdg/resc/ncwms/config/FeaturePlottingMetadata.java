@@ -36,7 +36,6 @@ import org.simpleframework.xml.load.Validate;
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
-import uk.ac.rdg.resc.ncwms.wms.Layer;
 
 /**
  * Contains fields that can be filled in to override values that are
@@ -44,7 +43,7 @@ import uk.ac.rdg.resc.ncwms.wms.Layer;
  * @author Jon
  */
 @Root(name="variable")
-public class Variable
+public class FeaturePlottingMetadata
 {
     @Attribute(name="id")
     private String id;

@@ -41,6 +41,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Date;
+
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,7 +148,7 @@ public class H2UsageLogger implements UsageLogger
         {
             // Use of setObject allows entries to be null
             PreparedStatement ps = this.conn.prepareStatement(INSERT_COMMAND);
-            ps.setObject(1, logEntry.getRequestTime().toDate());
+            ps.setObject(1, new Date(logEntry.getRequestTime().getValue()));
             ps.setObject(2, logEntry.getClientIpAddress());
             ps.setObject(3, logEntry.getClientHost());
             ps.setObject(4, logEntry.getClientReferrer());

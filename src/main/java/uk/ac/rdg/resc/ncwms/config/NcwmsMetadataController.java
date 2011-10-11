@@ -38,7 +38,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.ModelAndView;
 import uk.ac.rdg.resc.ncwms.controller.AbstractMetadataController;
-import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.LayerFactory;
+import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.FeatureFactory;
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
 import uk.ac.rdg.resc.ncwms.usagelog.UsageLogEntry;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
@@ -54,7 +54,7 @@ class NcwmsMetadataController extends AbstractMetadataController
 {
     private final Config serverConfig;
 
-    public NcwmsMetadataController(Config serverConfig, LayerFactory layerFactory)
+    public NcwmsMetadataController(Config serverConfig, FeatureFactory layerFactory)
     {
         super(layerFactory);
         this.serverConfig = serverConfig;
