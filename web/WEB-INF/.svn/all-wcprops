@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svnroot/ncwms/!svn/ver/928/trunk/web/WEB-INF
+END
+WMS-servlet.xml
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svnroot/ncwms/!svn/ver/916/trunk/web/WEB-INF/WMS-servlet.xml
+END
+web.xml
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svnroot/ncwms/!svn/ver/758/trunk/web/WEB-INF/web.xml
+END
