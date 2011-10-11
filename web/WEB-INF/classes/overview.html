@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+  <head>
+    <title></title>
+  </head>
+  <body>
+      <p>These Javadoc pages will serve as a Developers' Guide for those wishing to
+      understand how ncWMS works and for those wishing to make contributions to the code:
+      scroll down to get started.</p>
+      
+      <h2>Overview of ncWMS</h2>
+      
+      <p>ncWMS is an implementation of the OGC Web Map Service specification.  It is designed
+          specifically for generating imagery of four-dimensional data that are stored
+          in NetCDF files or OPeNDAP servers, conforming to the Climate and Forecast metadata convention.
+          All the necessary metadata should be contained in the headers of the source
+          NetCDF files, therefore an ncWMS server requires minimal setup.
+          It is also possible to use ncWMS to display data from other file formats (TODO: link
+      to more info about this).</p>
+      
+      <h3>Architecture</h3>
+      
+      <p>ncWMS is a standard Java web application, which should run in any standard
+          web app container that supports version 2.4 of the Servlet specification and 
+          version 2.0 of the JSP specification.  It has been tested successfully in Tomcat
+      versions 5.5 and 6.0.</p>
+      
+      <p>ncWMS uses the <a href="http://www.springframework.org">Spring framework</a>,
+      for two main reasons:</p>
+      <ul>
+          <li>to allow components to be loosely coupled.  Spring's 
+          <a href="http://static.springframework.org/spring/docs/2.5.0/reference/beans.html">Inversion of Control</a>
+          framework is used to handle the internal wiring of components, which can
+          be developed in isolation.</li>
+          <li>to make a clean separation between internal logic and presentation code (i.e. the
+              "model-view-controller" or "MVC" paradigm: see the <a href="http://static.springframework.org/spring/docs/2.5.0/reference/mvc.html">
+          Spring documentation</a> on the subject).  This is used mainly to help
+          in the generation of large XML documents such as the Capabilities document.</li>
+      </ul>
+      <p>A major advantage of Spring is that it does not pollute the code base, therefore
+          most of the classes in ncWMS have no knowledge of Spring.  The web application is set
+          up using the configuration file <tt>web/WEB-INF/WMS-servlet.xml</tt>.  See the 
+          <a href="http://static.springframework.org/spring/docs/2.5.0/reference/">Spring
+      reference documentation</a> for more details.</p>
+      
+      <h3>System components</h3>
+      <p>ncWMS is comprised of the following main components:</p>
+      <ul>
+          <li><a href="uk/ac/rdg/resc/ncwms/controller/package-summary.html">Controllers</a>,
+              which handle requests from clients.  These
+              are the main entry points to the ncWMS system from the point of view of
+              the user and are a good place to start learning about ncWMS.</li>
+          <li><a href="uk/ac/rdg/resc/ncwms/datareader/package-summary.html">Data readers</a>,
+              which handle the tasks of reading data and metadata from source files.</li>
+          <li>Imaging code, including <a href="uk/ac/rdg/resc/ncwms/styles/package-summary.html">image renderers</a>,
+              which turn arrays of data into java.awt.BufferedImages, and
+              <a href="uk/ac/rdg/resc/ncwms/graphics/package-summary.html">code</a> to render
+              BufferedImages into various common image formats (e.g. PNG and GIF).</li>
+          <li><a href="uk/ac/rdg/resc/ncwms/coordsys/package-summary.html">Coordinate system handling classes</a>,
+              which provide routines for converting between real-world coordinates
+              and indices in data arrays.  (Doing these conversions efficiently
+              is important for the fast generation of map images.)</li>
+          <li><a href="uk/ac/rdg/resc/ncwms/metadata/package-summary.html">Metadata classes</a>,
+              which define data structures for the handling of metadata, stores for holding
+              metadata (in memory or in a database) and classes that ensure that ncWMS's
+              metadata remains synchronized with the source data.</li>
+          <li>An Administration application (TODO: add link), which allows the server administrator to add and
+              remove datasets from the server and enter other configuration information.</li>
+          <li><a href="uk/ac/rdg/resc/ncwms/config/package-summary.html">Configuration classes</a>,
+              which define the datasets that are exposed by this server and other information
+              such as the contact details of the server administrator.</li>
+          <li><a href="uk/ac/rdg/resc/ncwms/exceptions/package-summary.html">Exception classes</a>,
+              which define the exceptions that can be raised during operation; these include
+              representations of the standard WMS Exception types.</li>
+          <li><a href="uk/ac/rdg/resc/ncwms/usagelog/package-summary.html">Usage logging system</a>,
+              which records all "hits" on the ncWMS server.</li>
+          <li><a href="uk/ac/rdg/resc/ncwms/cache/package-summary.html">Caching system</a>,
+              which increases performance and reduces the load on the server by
+              caching recently-extracted arrays of data.</li>
+      </ul>
+      
+      <h3>Development Environment</h3>
+      <p>Developers can of course use any tools they like to develop for ncWMS, but
+          the majority of the current code was developed in <a href="http://www.netbeans.org">NetBeans</a>
+          The source code release includes an <tt>nbproject</tt> folder, which allows
+          the code to be imported directly into NetBeans 6.5 or later.</p>
+      <p>ncWMS requires at least Java 1.5 ("Java 5") as it uses generics and other constructs
+      that were not present in earlier versions of Java.</p>
+      
+      <h3>Third-party libraries</h3>
+      <p>ncWMS makes use of many third-party libraries, but the main ones are:</p>
+      <ul>
+          <li>Unidata Java NetCDF libraries</li>
+          <li>GeoTools</li>
+          <li>Spring core and MVC libraries</li>
+          <li>H2 database (for usage logging and possible future metadata holdings)</li>
+          <li>EHCache for the cache of extracted data arrays</li>
+          <li>Simple XML for serializing and deserializing XML config files</li>
+      </ul>
+      
+  </body>
+</html>
