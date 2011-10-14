@@ -35,7 +35,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.io.Resource;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
-import org.apache.log4j.PropertyConfigurator;
+//import org.apache.log4j.PropertyConfigurator;
 
 /**
  * Sets up the working directory for ncWMS and the logging environment.
@@ -79,7 +79,7 @@ public class NcwmsContext implements ApplicationContextAware
         logProps.load(logConfig.getInputStream());
         // Set the location of the log file: see /WEB-INF/conf/log4j.properties
         logProps.put("log4j.appender.R.File", logFile.getPath());
-        PropertyConfigurator.configure(logProps);
+//        PropertyConfigurator.configure(logProps);
     }
     
     /**

@@ -30,7 +30,6 @@ package uk.ac.rdg.resc.ncwms.config;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -38,16 +37,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.servlet.ModelAndView;
 
-import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
-import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.ncwms.cache.TileCache;
-import uk.ac.rdg.resc.ncwms.cache.TileCacheKey;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController;
 import uk.ac.rdg.resc.ncwms.controller.RequestParams;
 import uk.ac.rdg.resc.ncwms.exceptions.FeatureNotDefinedException;
-import uk.ac.rdg.resc.ncwms.exceptions.InvalidDimensionValueException;
 import uk.ac.rdg.resc.ncwms.exceptions.OperationNotSupportedException;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
 import uk.ac.rdg.resc.ncwms.usagelog.UsageLogEntry;
@@ -69,7 +64,7 @@ public final class NcwmsController extends AbstractWmsController
     // Object that extracts layers from the config object, given a layer name
     private final FeatureFactory FEATURE_FACTORY = new FeatureFactory() {
         @Override
-        public GridSeriesFeature<Float> getFeature(String layerName) throws FeatureNotDefinedException {
+        public GridSeriesFeature<?> getFeature(String layerName) throws FeatureNotDefinedException {
             // Split the layer name on the slash character
             int slashIndex = layerName.lastIndexOf("/");
             if (slashIndex > 0) {
@@ -79,7 +74,7 @@ public final class NcwmsController extends AbstractWmsController
                     throw new FeatureNotDefinedException(layerName);
 
                 String featureId = layerName.substring(slashIndex + 1);
-                GridSeriesFeature<Float> feature = ds.getFeatureById(featureId);
+                GridSeriesFeature<?> feature = ds.getFeatureById(featureId);
                 if (feature == null)
                     throw new FeatureNotDefinedException(layerName);
 
@@ -242,48 +237,51 @@ public final class NcwmsController extends AbstractWmsController
      * <p>This implementation uses a {@link TileCache} to store data arrays,
      * speeding up repeat requests.</p>
      */
-    @Override
-    protected List<Float> readDataGrid(ScalarLayer layer, DateTime dateTime,
-        double elevation, RegularGrid grid, UsageLogEntry usageLogEntry)
-        throws InvalidDimensionValueException, IOException
-    {
-        // We know that this Config object only returns LayerImpl objects
-        LayerImpl layerImpl = (LayerImpl)layer;
-        // Find which file contains this time, and which index it is within the file
-        LayerImpl.FilenameAndTimeIndex fti = layerImpl.findAndCheckFilenameAndTimeIndex(dateTime);
-        // Find the z index within the file
-        int zIndex = layerImpl.findAndCheckElevationIndex(elevation);
-
-        // Create a key for searching the cache
-        TileCacheKey key = new TileCacheKey(
-            fti.filename,
-            layer,
-            grid,
-            fti.tIndexInFile,
-            zIndex
-        );
-
-        List<Float> data = null;
-        // Search the cache.  Returns null if key is not found
-        boolean cacheEnabled = this.getConfig().getCache().isEnabled();
-        if (cacheEnabled) data = this.tileCache.get(key);
-
-        // Record whether or not we got a hit in the cache
-        usageLogEntry.setUsedCache(data != null);
-
-        if (data == null)
-        {
-            // We didn't get any data from the cache, so we have to read from
-            // the source data.
-            // We call layerImpl.readHorizDomain() directly to save repeating
-            // the call to findAndCheckFilenameAndTimeIndex().
-            data = layerImpl.readHorizontalDomain(fti, zIndex, grid);
-            // Put the data in the tile cache
-            if (cacheEnabled) this.tileCache.put(key, data);
-        }
-
-        return data;
-    }
+    /*
+     * TODO Remove completely - see superclass comment
+     */
+//    @Override
+//    protected List<Float> readDataGrid(ScalarLayer layer, DateTime dateTime,
+//        double elevation, RegularGrid grid, UsageLogEntry usageLogEntry)
+//        throws InvalidDimensionValueException, IOException
+//    {
+//        // We know that this Config object only returns LayerImpl objects
+//        LayerImpl layerImpl = (LayerImpl)layer;
+//        // Find which file contains this time, and which index it is within the file
+//        LayerImpl.FilenameAndTimeIndex fti = layerImpl.findAndCheckFilenameAndTimeIndex(dateTime);
+//        // Find the z index within the file
+//        int zIndex = layerImpl.findAndCheckElevationIndex(elevation);
+//
+//        // Create a key for searching the cache
+//        TileCacheKey key = new TileCacheKey(
+//            fti.filename,
+//            layer,
+//            grid,
+//            fti.tIndexInFile,
+//            zIndex
+//        );
+//
+//        List<Float> data = null;
+//        // Search the cache.  Returns null if key is not found
+//        boolean cacheEnabled = this.getConfig().getCache().isEnabled();
+//        if (cacheEnabled) data = this.tileCache.get(key);
+//
+//        // Record whether or not we got a hit in the cache
+//        usageLogEntry.setUsedCache(data != null);
+//
+//        if (data == null)
+//        {
+//            // We didn't get any data from the cache, so we have to read from
+//            // the source data.
+//            // We call layerImpl.readHorizDomain() directly to save repeating
+//            // the call to findAndCheckFilenameAndTimeIndex().
+//            data = layerImpl.readHorizontalDomain(fti, zIndex, grid);
+//            // Put the data in the tile cache
+//            if (cacheEnabled) this.tileCache.put(key, data);
+//        }
+//
+//        return data;
+//    }
 
     /**
      * Called by Spring to shut down the controller.  This shuts down the tile

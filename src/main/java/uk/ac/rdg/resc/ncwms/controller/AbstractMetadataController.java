@@ -1,5 +1,6 @@
 package uk.ac.rdg.resc.ncwms.controller;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -16,12 +17,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.coverage.GridCoverage2D;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.position.TimePeriod;
 import uk.ac.rdg.resc.edal.position.TimePosition;
+import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.impl.TimePeriodImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
 import uk.ac.rdg.resc.edal.util.Extents;
@@ -87,7 +90,7 @@ public abstract class AbstractMetadataController {
      * (units, zvalues, tvalues etc). See showLayerDetails.jsp.
      */
     private ModelAndView showLayerDetails(HttpServletRequest request, UsageLogEntry usageLogEntry) throws Exception {
-        GridSeriesFeature<Float> feature = this.getFeature(request);
+        GridSeriesFeature<?> feature = getFeature(request);
         usageLogEntry.setFeature(feature);
         TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
 
@@ -168,7 +171,7 @@ public abstract class AbstractMetadataController {
      *         it doesn't exist or if there was a problem reading from the data
      *         store.
      */
-    private GridSeriesFeature<Float> getFeature(HttpServletRequest request) throws FeatureNotDefinedException {
+    private GridSeriesFeature<?> getFeature(HttpServletRequest request) throws FeatureNotDefinedException {
         String layerName = request.getParameter("layerName");
         if (layerName == null) {
             throw new FeatureNotDefinedException("null");
@@ -181,7 +184,7 @@ public abstract class AbstractMetadataController {
      * provided in the form "2007-10-18".
      */
     private ModelAndView showTimesteps(HttpServletRequest request) throws Exception {
-        GridSeriesFeature<Float> feature = getFeature(request);
+        GridSeriesFeature<?> feature = getFeature(request);
         TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
         if (tAxis.getCoordinateValues().isEmpty())
             return null; // return no data if no time axis present
@@ -225,6 +228,7 @@ public abstract class AbstractMetadataController {
      * Shows an XML document containing the minimum and maximum values for the
      * tile given in the parameters.
      */
+    @SuppressWarnings("unchecked")
     private ModelAndView showMinMax(HttpServletRequest request, UsageLogEntry usageLogEntry) throws Exception {
         RequestParams params = new RequestParams(request.getParameterMap());
         // We only need the bit of the GetMap request that pertains to data
@@ -234,7 +238,7 @@ public abstract class AbstractMetadataController {
         GetMapDataRequest dr = new GetMapDataRequest(params, "1.3.0");
 
         // Get the variable we're interested in
-        GridSeriesFeature<Float> feature = featureFactory.getFeature(dr.getLayers()[0]);
+        GridSeriesFeature<?> feature = featureFactory.getFeature(dr.getLayers()[0]);
         usageLogEntry.setFeature(feature);
 
         // Get the grid onto which the data is being projected
@@ -250,17 +254,26 @@ public abstract class AbstractMetadataController {
 
         // Now read the data and calculate the minimum and maximum values
         List<Float> magnitudes;
-        if (feature instanceof ScalarLayer) {
-            magnitudes = ((ScalarLayer) feature).readHorizontalPoints(tValue, zValue, grid);
-        } else if (feature instanceof VectorLayer) {
-            VectorLayer vecLayer = (VectorLayer) feature;
-            List<Float> east = vecLayer.getEastwardComponent().readHorizontalPoints(tValue, zValue, grid);
-            List<Float> north = vecLayer.getNorthwardComponent().readHorizontalPoints(tValue, zValue, grid);
-            magnitudes = WmsUtils.getMagnitudes(east, north);
+        final GridCoverage2D<?> hGridCoverage = feature.extractHorizontalGrid(tValue, zValue, grid);
+        Class<?> clazz = hGridCoverage.getRangeMetadata(null).getValueType();
+        if(clazz == Float.class){
+            magnitudes = (List<Float>) hGridCoverage.getValues();
+        } else if (clazz == Vector2D.class) {
+            magnitudes =  new AbstractList<Float>() {
+                @Override
+                public Float get(int index) {
+                    return ((Vector2D<Float>)hGridCoverage.getValues().get(index)).getMagnitude();
+                }
+
+                @Override
+                public int size() {
+                    return hGridCoverage.getValues().size();
+                }
+            };
         } else {
             throw new IllegalStateException("Invalid Layer type");
         }
-
+        
         Extent<Float> valueRange = Extents.findMinMax(magnitudes);
         return new ModelAndView("showMinMax", "valueRange", valueRange);
     }

@@ -7,8 +7,8 @@
   <function>
     <description>Converts a joda-time DateTime object to an ISO8601-formatted String</description>
     <name>dateTimeToISO8601</name>
-    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
-    <function-signature>java.lang.String dateTimeToISO8601(org.joda.time.DateTime)</function-signature>
+    <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
+    <function-signature>java.lang.String dateTimeToISO8601(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
   </function>
   <function>
     <description>Calculates the absolute value of a number</description>

@@ -288,9 +288,9 @@ public class AdminController extends MultiActionController {
         // We only take action if the user pressed "save"
         if (request.getParameter("save") != null) {
             Dataset ds = this.config.getAllDatasets().get(request.getParameter("dataset.id"));
-            FeatureCollection<GridSeriesFeature<Float>> features = ds.getFeatureCollection();
+            FeatureCollection<GridSeriesFeature<?>> features = ds.getFeatureCollection();
             for (String fId : features.getFeatureIds()) {
-                GridSeriesFeature<Float> feature = features.getFeatureById(fId);
+                GridSeriesFeature<?> feature = features.getFeatureById(fId);
                 String newTitle = request.getParameter(feature.getId() + ".title").trim();
                 // Find the min and max colour scale range for this variable
                 // TODO: nicer error handling
