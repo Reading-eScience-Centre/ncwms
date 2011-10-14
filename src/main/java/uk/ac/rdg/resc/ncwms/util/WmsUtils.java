@@ -30,28 +30,32 @@ package uk.ac.rdg.resc.ncwms.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.geotoolkit.referencing.CRS;
-import org.jfree.ui.Layer;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.coverage.GridCoverage2D;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
+import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
+import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.RegularGridImpl;
-import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
+import uk.ac.rdg.resc.edal.position.TimePosition;
+import uk.ac.rdg.resc.edal.position.Vector2D;
+import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
 import uk.ac.rdg.resc.edal.util.Extents;
+import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.controller.GetMapDataRequest;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidCrsException;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidDimensionValueException;
@@ -226,41 +230,39 @@ public class WmsUtils
      * @return
      * @throws IOException if there was an error reading from the source data
      */
-    public static Extent<Float> estimateValueRange(GridSeriesFeature<Float> feature) throws IOException
+    public static Extent<Float> estimateValueRange(GridSeriesFeature<?> feature) throws IOException
     {
-        if (layer instanceof ScalarLayer)
-        {
-            List<Float> dataSample = readDataSample((ScalarLayer)layer);
-            return Extents.findMinMax(dataSample);
-        }
-        else if (layer instanceof VectorLayer)
-        {
-            VectorLayer vecLayer = (VectorLayer)layer;
-            List<Float> eastDataSample = readDataSample(vecLayer.getEastwardComponent());
-            List<Float> northDataSample = readDataSample(vecLayer.getEastwardComponent());
-            List<Float> magnitudes = WmsUtils.getMagnitudes(eastDataSample, northDataSample);
-            return Extents.findMinMax(magnitudes);
-        }
-        else
-        {
-            throw new IllegalStateException("Unrecognized layer type");
-        }
+        List<Float> dataSample = readDataSample(feature);
+        return Extents.findMinMax(dataSample);
     }
 
-    private static List<Float> readDataSample(GridSeriesFeature<Float> feature) throws IOException
-    {
-        try {
-            // Read a low-resolution grid of data covering the entire spatial extent
-            feature.extractHorizontalGrid(tindex, zindex, targetDomain)
-            return feature.readHorizontalPoints(
-                feature.getDefaultTimeValue(),
-                feature.getDefaultElevationValue(),
-                new RegularGridImpl(feature.getCoverage().getDomain().getHorizontalGrid().getCoordinateExtent(), 100, 100)
-            );
-        } catch (InvalidDimensionValueException idve) {
-            // This would only happen due to a programming error in getDefaultXValue()
-            throw new IllegalStateException(idve);
-        }
+    private static List<Float> readDataSample(GridSeriesFeature<?> feature) throws IOException {
+        final GridCoverage2D<?> coverage = feature.extractHorizontalGrid(
+                getClosestToCurrentTime(feature.getCoverage().getDomain().getTimeAxis()),
+                getUppermostElevation(feature),
+                new RegularGridImpl(feature.getCoverage().getDomain().getHorizontalGrid()
+                        .getCoordinateExtent(), 100, 100));
+        // Read a low-resolution grid of data covering the entire spatial
+        // extent
+        return new AbstractList<Float>() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public Float get(int index) {
+                Class<?> clazz = coverage.getRangeMetadata(null).getValueType();
+                if(clazz == Float.class){
+                    return (Float) coverage.getValues().get(index);
+                } else if(clazz == Vector2D.class){
+                    return ((Vector2D<Float>) coverage.getValues().get(index)).getMagnitude();
+                } else {
+                    return null;
+                }
+            }
+            
+            @Override
+            public int size() {
+                return (int) coverage.size();
+            }
+        };
     }
 
     /**
@@ -271,68 +273,6 @@ public class WmsUtils
         return MULTIPLE_WHITESPACE.matcher(theString).replaceAll(" ");
     }
 
-    /**
-     * Finds the VectorLayers that can be derived from the given collection of
-     * ScalarLayers, by examining the layer Titles (usually CF standard names)
-     * and looking for "eastward_X"/"northward_X" pairs.
-     */
-    public static List<VectorLayer> findVectorLayers(Collection<? extends ScalarLayer> scalarLayers)
-    {
-        // This hashtable will store pairs of components in eastward-northward
-        // order, keyed by the standard name for the vector quantity
-        Map<String, ScalarLayer[]> components = new LinkedHashMap<String, ScalarLayer[]>();
-        for (ScalarLayer layer : scalarLayers)
-        {
-            if (layer.getTitle().contains("eastward"))
-            {
-                String vectorKey = layer.getTitle().replaceFirst("eastward_", "");
-                // Look to see if we've already found the northward component
-                if (!components.containsKey(vectorKey))
-                {
-                    // We haven't found the northward component yet
-                    components.put(vectorKey, new ScalarLayer[2]);
-                }
-                components.get(vectorKey)[0] = layer;
-            }
-            else if (layer.getTitle().contains("northward"))
-            {
-                String vectorKey = layer.getTitle().replaceFirst("northward_", "");
-                // Look to see if we've already found the eastward component
-                if (!components.containsKey(vectorKey))
-                {
-                    // We haven't found the eastward component yet
-                    components.put(vectorKey, new ScalarLayer[2]);
-                }
-                components.get(vectorKey)[1] = layer;
-            }
-        }
-
-        // Now add the vector quantities to the collection of Layer objects
-        List<VectorLayer> vectorLayers = new ArrayList<VectorLayer>();
-        for (String key : components.keySet())
-        {
-            ScalarLayer[] comps = components.get(key);
-            if (comps[0] != null && comps[1] != null)
-            {
-                // We've found both components.  Create a new Layer object
-                VectorLayer vec = new SimpleVectorLayer(key, comps[0], comps[1]);
-                vectorLayers.add(vec);
-            }
-        }
-
-        return vectorLayers;
-    }
-
-    /**
-     * Returns true if the given layer is a VectorLayer.  This is used in the
-     * wmsUtils.tld taglib, since an "instanceof" function is not available in
-     * JSTL.
-     */
-    public static boolean isVectorLayer(Layer layer)
-    {
-        return layer instanceof VectorLayer;
-    }
-    
     /**
      * Returns the RuntimeException name. This used in 'displayDefaultException.jsp'
      * to show the exception name, to go around the use of '${exception.class.name}' where 
@@ -407,5 +347,43 @@ public class WmsUtils
         Collections.fill(list, null);
         return list;
     }
+    
+    public static TimePosition getClosestToCurrentTime(TimeAxis tAxis){
+        if (tAxis == null) return null; // no time axis
+        int index = TimeUtils.findTimeIndex(tAxis.getCoordinateValues(), new TimePositionImpl());
+        if (index < 0) {
+            // We can calculate the insertion point
+            int insertionPoint = -(index + 1); 
+            // We set the index to the most recent past time
+            if (insertionPoint > 0) index = insertionPoint - 1; // The most recent past time
+            else index = 0; // All DateTimes on the axis are in the future, so we take the earliest
+        }
+        
+        return tAxis.getCoordinateValue(index);
+    }
 
+    public static double getUppermostElevation(GridSeriesFeature<?> feature){
+        VerticalAxis vAxis = feature.getCoverage().getDomain().getVerticalAxis();
+        // We must access the elevation values via the accessor method in case
+        // subclasses override it.
+        if (vAxis == null) {
+            return Double.NaN;
+        }
+
+        if (vAxis.getVerticalCrs().isPressure()) {
+            // The vertical axis is pressure. The default (closest to the
+            // surface)
+            // is therefore the maximum value.
+            return Collections.max(vAxis.getCoordinateValues());
+        } else {
+            // The vertical axis represents linear height, so we find which
+            // value is closest to zero (the surface), i.e. the smallest
+            // absolute value
+            return Collections.min(vAxis.getCoordinateValues(), new Comparator<Double>() {
+                @Override public int compare(Double d1, Double d2) {
+                    return Double.compare(Math.abs(d1), Math.abs(d2));
+                }
+            });
+        }
+    }
 }

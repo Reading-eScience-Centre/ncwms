@@ -113,7 +113,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     private TimePosition lastFailedUpdateTime = null;
 
-    private FeatureCollection<GridSeriesFeature<Float>> features;
+    private FeatureCollection<GridSeriesFeature<?>> features;
 
     /**
      * Checks that the data we have read are valid. Checks that there are no
@@ -278,7 +278,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      *         no layer in this dataset with the given id.
      */
     @Override
-    public GridSeriesFeature<Float> getFeatureById(String featureId) {
+    public GridSeriesFeature<?> getFeatureById(String featureId) {
         return features.getFeatureById(featureId);
     }
 
@@ -286,7 +286,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      * @return a Collection of all the layers in this dataset.
      */
     @Override
-    public FeatureCollection<GridSeriesFeature<Float>> getFeatureCollection() {
+    public FeatureCollection<GridSeriesFeature<?>> getFeatureCollection() {
         return features;
     }
 
@@ -482,7 +482,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     private void readLayerConfig() {
         for (String featureId : features.getFeatureIds()) {
-            GridSeriesFeature<Float> feature = features.getFeatureById(featureId);
+            GridSeriesFeature<?> feature = features.getFeatureById(featureId);
             // Load the Variable object from the config file or create a new
             // one if it doesn't exist.
             FeaturePlottingMetadata featureMetadata = this.getPlottingMetadataMap().get(feature.getId());

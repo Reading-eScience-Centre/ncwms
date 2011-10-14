@@ -13,7 +13,7 @@
     <%-- If the layer has a time dimension we create a folder for each timestep --%>
     <c:otherwise>
         <c:forEach items="${layer.timesteps}" var="timestep">
-            <c:set var="isoTime" value="${wmsUtils:dateToISO8601(timestep.date)}"/>
+            <c:set var="isoTime" value="${wmsUtils:dateTimeToISO8601(timestep.date)}"/>
             <Folder>
                 <name>${isoTime}</name>
                 <wms2kml:regionBasedOverlay tiledLayer="${tiledLayer}" elevation="${elevation}" time="${isoTime}" baseURL="${baseURL}"/>

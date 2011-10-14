@@ -66,12 +66,12 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.data.xy.XYZDataset;
 import org.jfree.ui.HorizontalAlignment;
-import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleAnchor;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.TextAnchor;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
@@ -79,6 +79,8 @@ import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.LonLatPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
+import uk.ac.rdg.resc.edal.position.VerticalCrs;
+import uk.ac.rdg.resc.edal.position.VerticalCrs.PositiveDirection;
 import uk.ac.rdg.resc.edal.util.GISUtils;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
@@ -105,9 +107,10 @@ final class Charting {
 
         // Create a chart with no legend, tooltips or URLs
         String title = "Lon: " + lonLat.getLongitude() + ", Lat: " + lonLat.getLatitude();
-        String yLabel = feature.getName() + " (" + feature.getCoverage().getRangeMetadata(null).getUnits() + ")";
-        JFreeChart chart = ChartFactory.createTimeSeriesChart(title, "Date / time", yLabel, xydataset, false, false,
-                false);
+        String yLabel = feature.getName() + " ("
+                + feature.getCoverage().getRangeMetadata(null).getUnits() + ")";
+        JFreeChart chart = ChartFactory.createTimeSeriesChart(title, "Date / time", yLabel,
+                xydataset, false, false, false);
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
         renderer.setSeriesShape(0, new Ellipse2D.Double(-1.0, -1.0, 2.0, 2.0));
         renderer.setSeriesShapesVisible(0, true);
@@ -118,8 +121,9 @@ final class Charting {
         return chart;
     }
 
-    public static JFreeChart createVerticalProfilePlot(GridSeriesFeature<Float> feature, HorizontalPosition pos,
-            List<Double> elevationValues, List<Float> dataValues, TimePosition dateTime) {
+    public static JFreeChart createVerticalProfilePlot(GridSeriesFeature<?> feature,
+            HorizontalPosition pos, List<Double> elevationValues, List<Float> dataValues,
+            TimePosition dateTime) {
         if (elevationValues.size() != dataValues.size()) {
             throw new IllegalArgumentException("Z values and data values not of same length");
         }
@@ -167,12 +171,13 @@ final class Charting {
         return new JFreeChart(title, null, plot, false);
     }
 
-    private static String getAxisLabel(GridSeriesFeature<Float> feature) {
+    private static String getAxisLabel(GridSeriesFeature<?> feature) {
         return WmsUtils.removeDuplicatedWhiteSpace(feature.getName()) + " ("
                 + feature.getCoverage().getRangeMetadata(null).getUnits() + ")";
     }
 
-    public static JFreeChart createTransectPlot(Layer layer, LineString transectDomain, List<Float> transectData) {
+    public static JFreeChart createTransectPlot(GridSeriesFeature<?> feature,
+            LineString transectDomain, List<Float> transectData, String copyrightStatement) {
         JFreeChart chart;
         XYPlot plot;
         XYSeries series = new XYSeries("data", true); // TODO: more meaningful
@@ -187,9 +192,10 @@ final class Charting {
         // transect chart
         // using standard XYItem Renderer to keep the plot renderer consistent
         // with that of vertical section plot
-        if (layer.getElevationValues().size() > 1) {
+        VerticalAxis vAxis = feature.getCoverage().getDomain().getVerticalAxis();
+        if (vAxis != null && vAxis.size() > 1) {
             final XYItemRenderer renderer1 = new StandardXYItemRenderer();
-            final NumberAxis rangeAxis1 = new NumberAxis(getAxisLabel(layer));
+            final NumberAxis rangeAxis1 = new NumberAxis(getAxisLabel(feature));
             plot = new XYPlot(xySeriesColl, null, rangeAxis1, renderer1);
             plot.setRangeAxisLocation(AxisLocation.BOTTOM_OR_LEFT);
             plot.setBackgroundPaint(Color.lightGray);
@@ -198,22 +204,23 @@ final class Charting {
             plot.getRenderer().setSeriesPaint(0, Color.RED);
             plot.setOrientation(PlotOrientation.VERTICAL);
             chart = new JFreeChart(plot);
-        } else // If we have a layer which only has one elevation value, we
-        // simply create XY Line chart
-        {
-            chart = ChartFactory.createXYLineChart("Transect for " + layer.getTitle(), // title
-                    "distance along transect (arbitrary units)", // TODO more
-                    // meaningful x
-                    // axis label
-                    layer.getTitle() + " (" + layer.getUnits() + ")", xySeriesColl, PlotOrientation.VERTICAL, false, // show
+        } else {
+            // If we have a layer which only has one elevation value, we simply
+            // create XY Line chart
+            chart = ChartFactory.createXYLineChart("Transect for " + feature.getName(),
+                    "distance along transect (arbitrary units)",
+                    // TODO more meaningful xaxis label
+                    feature.getName() + " ("
+                            + feature.getCoverage().getRangeMetadata(null).getUnits() + ")",
+                    xySeriesColl, PlotOrientation.VERTICAL, false, // show
                     // legend
                     false, // show tooltips (?)
                     false // urls (?)
                     );
             plot = chart.getXYPlot();
         }
-        if (layer.getDataset().getCopyrightStatement() != null) {
-            final TextTitle textTitle = new TextTitle(layer.getDataset().getCopyrightStatement());
+        if (copyrightStatement != null) {
+            final TextTitle textTitle = new TextTitle(copyrightStatement);
             textTitle.setFont(new Font("SansSerif", Font.PLAIN, 10));
             textTitle.setPosition(RectangleEdge.BOTTOM);
             textTitle.setHorizontalAlignment(HorizontalAlignment.RIGHT);
@@ -231,12 +238,14 @@ final class Charting {
             if (prevCtrlPointDistance != null) {
                 // determine start end end value for marker based on index of
                 // ctrl point
-                IntervalMarker target = new IntervalMarker(transectData.size() * prevCtrlPointDistance, transectData
-                        .size()
-                        * ctrlPointDistance);
+                IntervalMarker target = new IntervalMarker(transectData.size()
+                        * prevCtrlPointDistance, transectData.size() * ctrlPointDistance);
                 // TODO: printing to two d.p. not always appropriate
-                target.setLabel("[" + printTwoDecimals(transectDomain.getControlPoints().get(i - 1).getY()) + ","
-                        + printTwoDecimals(transectDomain.getControlPoints().get(i - 1).getX()) + "]");
+                target.setLabel("["
+                        + printTwoDecimals(transectDomain.getControlPoints().get(i - 1).getY())
+                        + ","
+                        + printTwoDecimals(transectDomain.getControlPoints().get(i - 1).getX())
+                        + "]");
                 target.setLabelFont(new Font("SansSerif", Font.ITALIC, 11));
                 // alter color of segment and position of label based on
                 // odd/even index
@@ -294,21 +303,21 @@ final class Charting {
      * Creates a vertical axis for plotting the given elevation values from the
      * given layer
      */
-    private static ZAxisAndValues getZAxisAndValues(Layer layer, List<Double> elevationValues) {
-        // We can deal with three types of vertical axis: Height, Depth and
-        // Presssure.
-        // The code for this is very messy in ncWMS, sorry about that... We
-        // should
-        // improve this but there are possible knock-on effects, so it's not a
-        // very
-        // easy job.
-
+    private static ZAxisAndValues getZAxisAndValues(GridSeriesFeature<?> feature,
+            List<Double> elevationValues) {
+        /*
+         * We can deal with three types of vertical axis: Height, Depth and
+         * Pressure. The code for this is very messy in ncWMS, sorry about
+         * that... We should improve this but there are possible knock-on
+         * effects, so it's not a very easy job.
+         */
+        VerticalCrs vCrs = feature.getCoverage().getDomain().getVerticalAxis().getVerticalCrs();
         final String zAxisLabel;
         final boolean invertYAxis;
-        if (layer.isElevationPositive()) {
+        if (vCrs.getPositiveDirection() == PositiveDirection.UP) {
             zAxisLabel = "Height";
             invertYAxis = false;
-        } else if (layer.isElevationPressure()) {
+        } else if (vCrs.isPressure()) {
             zAxisLabel = "Pressure";
             invertYAxis = true;
         } else {
@@ -324,7 +333,7 @@ final class Charting {
             invertYAxis = true;
         }
 
-        NumberAxis zAxis = new NumberAxis(zAxisLabel + " (" + layer.getElevationUnits() + ")");
+        NumberAxis zAxis = new NumberAxis(zAxisLabel + " (" + vCrs.getUnits() + ")");
         zAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
         if (invertYAxis)
             zAxis.setInverted(true);
@@ -335,8 +344,8 @@ final class Charting {
     /**
      * Creates and returns a vertical section chart.
      * 
-     * @param layer
-     *            The Layer from which data have been read
+     * @param feature
+     *            The feature containing the data
      * @param horizPath
      *            The horizontal path described by the vertical section
      * @param elevationValues
@@ -347,10 +356,11 @@ final class Charting {
      *            one of the elevation values.
      * @return
      */
-    public static JFreeChart createVerticalSectionChart(Layer layer, LineString horizPath,
-            List<Double> elevationValues, List<List<Float>> sectionData, Extent<Float> colourScaleRange,
-            ColorPalette palette, int numColourBands, boolean logarithmic, double zValue) {
-        ZAxisAndValues zAxisAndValues = getZAxisAndValues(layer, elevationValues);
+    public static JFreeChart createVerticalSectionChart(GridSeriesFeature<?> feature,
+            LineString horizPath, List<Double> elevationValues, List<List<Float>> sectionData,
+            Extent<Float> colourScaleRange, ColorPalette palette, int numColourBands,
+            boolean logarithmic, double zValue) {
+        ZAxisAndValues zAxisAndValues = getZAxisAndValues(feature, elevationValues);
         // The elevation values might have been reversed
         elevationValues = zAxisAndValues.zValues;
 
@@ -370,8 +380,8 @@ final class Charting {
         // dataset. TODO: calculate this based on the minimum elevation spacing
         int numElValues = 300;
 
-        XYZDataset dataset = new VerticalSectionDataset(elevationValues, sectionData, minElValue, maxElValue,
-                numElValues);
+        XYZDataset dataset = new VerticalSectionDataset(elevationValues, sectionData, minElValue,
+                maxElValue, numElValues);
 
         NumberAxis xAxis = new NumberAxis("Distance along path (arbitrary units)");
         xAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
@@ -379,8 +389,8 @@ final class Charting {
         PaintScale scale = createPaintScale(palette, colourScaleRange, numColourBands, logarithmic);
 
         NumberAxis colorScaleBar = new NumberAxis();
-        org.jfree.data.Range colorBarRange = new org.jfree.data.Range(colourScaleRange.getLow(), colourScaleRange
-                .getHigh());
+        org.jfree.data.Range colorBarRange = new org.jfree.data.Range(colourScaleRange.getLow(),
+                colourScaleRange.getHigh());
         colorScaleBar.setRange(colorBarRange);
 
         PaintScaleLegend paintScaleLegend = new PaintScaleLegend(scale, colorScaleBar);
@@ -404,8 +414,8 @@ final class Charting {
             if (prevCtrlPointDistance != null) {
                 // determine start end end value for marker based on index of
                 // ctrl point
-                IntervalMarker target = new IntervalMarker(xAxisLength * prevCtrlPointDistance, xAxisLength
-                        * ctrlPointDistance);
+                IntervalMarker target = new IntervalMarker(xAxisLength * prevCtrlPointDistance,
+                        xAxisLength * ctrlPointDistance);
                 target.setPaint(TRANSPARENT);
                 // add marker to plot
                 plot.addDomainMarker(target);
@@ -421,7 +431,9 @@ final class Charting {
             prevCtrlPointDistance = horizPath.getFractionalControlPointDistance(i);
         }
 
-        JFreeChart chart = new JFreeChart(layer.getTitle() + " (" + layer.getUnits() + ")", plot);
+        JFreeChart chart = new JFreeChart(feature.getName() + " ("
+                + feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString() + ")",
+                plot);
         chart.removeLegend();
         chart.addSubtitle(paintScaleLegend);
         chart.setBackgroundPaint(Color.white);
@@ -441,9 +453,12 @@ final class Charting {
         private final double elevationResolution;
         private final int numElevations;
 
-        public VerticalSectionDataset(List<Double> elevationValues, List<List<Float>> sectionData, double minElValue,
-                double maxElValue, int numElevations) {
-            this.horizPathLength = sectionData.get(0).size();
+        public VerticalSectionDataset(List<Double> elevationValues, List<List<Float>> sectionData,
+                double minElValue, double maxElValue, int numElevations) {
+            /*
+             * TODO Test that this is the right way round
+             */
+            this.horizPathLength = sectionData.size();
             this.sectionData = sectionData;
             this.elevationValues = elevationValues;
             this.minElValue = minElValue;
@@ -511,7 +526,7 @@ final class Charting {
                     nearestElevationIndex = i;
                 }
             }
-            return sectionData.get(nearestElevationIndex).get(xIndex);
+            return sectionData.get(xIndex).get(nearestElevationIndex);
         }
 
         /**
@@ -528,9 +543,11 @@ final class Charting {
      * Creates and returns a JFreeChart {@link PaintScale} that converts data
      * values to {@link Color}s.
      */
-    public static PaintScale createPaintScale(ColorPalette colorPalette, final Extent<Float> colourScaleRange,
-            final int numColourBands, final boolean logarithmic) {
-        final IndexColorModel cm = colorPalette.getColorModel(numColourBands, 100, Color.white, true);
+    public static PaintScale createPaintScale(ColorPalette colorPalette,
+            final Extent<Float> colourScaleRange, final int numColourBands,
+            final boolean logarithmic) {
+        final IndexColorModel cm = colorPalette.getColorModel(numColourBands, 100, Color.white,
+                true);
 
         return new PaintScale() {
             @Override
@@ -561,8 +578,10 @@ final class Charting {
                     return numColourBands + 1; // represents an out-of-range
                     // pixel
                 } else {
-                    double min = logarithmic ? Math.log(this.getLowerBound()) : this.getLowerBound();
-                    double max = logarithmic ? Math.log(this.getUpperBound()) : this.getUpperBound();
+                    double min = logarithmic ? Math.log(this.getLowerBound()) : this
+                            .getLowerBound();
+                    double max = logarithmic ? Math.log(this.getUpperBound()) : this
+                            .getUpperBound();
                     double val = logarithmic ? Math.log(value) : value;
                     double frac = (val - min) / (max - min);
                     // Compute and return the index of the corresponding colour
