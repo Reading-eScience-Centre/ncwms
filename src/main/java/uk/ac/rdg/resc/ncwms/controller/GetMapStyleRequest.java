@@ -108,7 +108,7 @@ public class GetMapStyleRequest
         {
             // The client wants the image to be scaled according to the image's
             // own min and max values (giving maximum contrast)
-            return Extents.emptyExtent();
+            return Extents.emptyExtent(Float.class);
         }
         else
         {
