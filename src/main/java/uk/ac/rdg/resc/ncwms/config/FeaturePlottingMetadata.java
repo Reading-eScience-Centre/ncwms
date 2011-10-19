@@ -30,10 +30,11 @@ package uk.ac.rdg.resc.ncwms.config;
 
 import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.Root;
-import org.simpleframework.xml.load.PersistenceException;
-import org.simpleframework.xml.load.Validate;
+import org.simpleframework.xml.core.PersistenceException;
+import org.simpleframework.xml.core.Validate;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
 
@@ -169,7 +170,7 @@ public class FeaturePlottingMetadata
 
     /**
      * Gets the ID of this variable, which is unique within the containing
-     * {@link Dataset} and corresponds with {@link Layer#getId()}.
+     * {@link Dataset} and corresponds with {@link Feature#getId()}.
      * @return
      */
     public String getId() {

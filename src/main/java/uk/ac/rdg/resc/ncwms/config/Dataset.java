@@ -8,9 +8,9 @@ import java.util.Map;
 import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.ElementList;
 import org.simpleframework.xml.Root;
-import org.simpleframework.xml.load.Commit;
-import org.simpleframework.xml.load.PersistenceException;
-import org.simpleframework.xml.load.Validate;
+import org.simpleframework.xml.core.Commit;
+import org.simpleframework.xml.core.PersistenceException;
+import org.simpleframework.xml.core.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
