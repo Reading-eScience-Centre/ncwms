@@ -13,8 +13,8 @@
 </c:if>
 <c:if test="${dataset.ready}">
     <menu:folder label="${title}">
-        <c:forEach items="${dataset.layers}" var="layer">
-            <menu:layer dataset="${dataset}" name="${layer.name}" label="${layer.title}"/>
+        <c:forEach items="${dataset.featureCollection.features}" var="feature">
+            <menu:layer dataset="${dataset}" name="${dataset.id}/${feature.id}" label="${feature.name}"/>
         </c:forEach>
     </menu:folder>
 </c:if>

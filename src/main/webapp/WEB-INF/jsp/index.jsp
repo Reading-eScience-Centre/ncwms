@@ -61,12 +61,12 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                 <a href="wms?SERVICE=WMS&amp;REQUEST=GetCapabilities&amp;VERSION=1.1.1&amp;DATASET=${dataset.id}">WMS 1.1.1</a><br />
                 <a href="admin/editVariables?dataset=${dataset.id}">Edit variables</a> (requires login)
             </th>
-            <c:set var="layers" value="${dataset.layers}"/>
+            <c:set var="features" value="${dataset.featureCollection.features}"/>
             <td>
                 <!-- Direct links to the Godiva2 site -->
-                <c:forEach var="layer" items="${layers}">
-                    <c:set var="bbox" value="${layer.geographicBoundingBox}"/>
-                    <a href="godiva2.html?layer=${layer.name}&amp;bbox=${bbox.westBoundLongitude},${bbox.southBoundLatitude},${bbox.eastBoundLongitude},${bbox.northBoundLatitude}">${layer.title}</a><br />
+                <c:forEach var="feature" items="${features}">
+                    <c:set var="bbox" value="${feature.coverage.domain.horizontalGrid.coordinateExtent}"/>
+                    <a href="godiva2.html?layer=${dataset.id}/${feature.id}&amp;bbox=${bbox.minX},${bbox.minY},${bbox.maxX},${bbox.maxY}">${feature.name}</a><br />
                 </c:forEach>
             </td>
             <c:forEach var="mimeType" items="${supportedImageFormats}">
@@ -75,18 +75,18 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                     <c:set var="transparent" value="false"/>
                 </c:if>
                 <td>
-                    <c:forEach var="layer" items="${layers}">
-                    <c:set var="bbox" value="${layer.geographicBoundingBox}"/>
-                    <a href="wms?REQUEST=GetMap&amp;VERSION=1.3.0&amp;STYLES=&amp;CRS=CRS:84&amp;WIDTH=256&amp;HEIGHT=256&amp;FORMAT=${mimeType}&amp;TRANSPARENT=${transparent}&amp;LAYERS=${layer.name}&amp;BBOX=${bbox.westBoundLongitude},${bbox.southBoundLatitude},${bbox.eastBoundLongitude},${bbox.northBoundLatitude}">${layer.title}</a><br />
+                    <c:forEach var="feature" items="${features}">
+                    <c:set var="bbox" value="${feature.coverage.domain.horizontalGrid.coordinateExtent}"/>
+                    <a href="wms?REQUEST=GetMap&amp;VERSION=1.3.0&amp;STYLES=&amp;CRS=CRS:84&amp;WIDTH=256&amp;HEIGHT=256&amp;FORMAT=${mimeType}&amp;TRANSPARENT=${transparent}&amp;LAYERS=${dataset.id}/${feature.id}&amp;BBOX=${bbox.minX},${bbox.minY},${bbox.maxX},${bbox.maxY}">${feature.name}</a><br />
                     </c:forEach>
                 </td>
             </c:forEach>
             <td>
-                <c:forEach var="layer" items="${layers}">
-                <c:if test="${layer.queryable}">
-                <c:set var="bbox" value="${layer.geographicBoundingBox}"/>
-                <a href="wms?REQUEST=GetFeatureInfo&amp;VERSION=1.3.0&amp;STYLES=&amp;CRS=CRS:84&amp;WIDTH=256&amp;HEIGHT=256&amp;I=128&amp;J=128&amp;INFO_FORMAT=text/xml&amp;QUERY_LAYERS=${layer.name}&amp;BBOX=${bbox.westBoundLongitude},${bbox.southBoundLatitude},${bbox.eastBoundLongitude},${bbox.northBoundLatitude}">${layer.title}</a><br />
-                </c:if>
+                <c:forEach var="feature" items="${features}">
+<%--                 <c:if test="${feature.queryable}"> --%>
+                <c:set var="bbox" value="${feature.coverage.domain.horizontalGrid.coordinateExtent}"/>
+                <a href="wms?REQUEST=GetFeatureInfo&amp;VERSION=1.3.0&amp;STYLES=&amp;CRS=CRS:84&amp;WIDTH=256&amp;HEIGHT=256&amp;I=128&amp;J=128&amp;INFO_FORMAT=text/xml&amp;QUERY_LAYERS=${dataset.id}/${feature.id}&amp;BBOX=${bbox.minX},${bbox.minY},${bbox.maxX},${bbox.maxY}">${feature.name}</a><br />
+<%--                 </c:if> --%>
                 </c:forEach>
             </td>
         </tr>

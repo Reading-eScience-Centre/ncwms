@@ -11,6 +11,6 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
      Data (models) passed in to this page:
           valueRange = Range of floating-point values --%>
 <json:object>
-    <json:property name="min" value="${valueRange.minimum}"/>
-    <json:property name="max" value="${valueRange.maximum}"/>
+    <json:property name="min" value="${valueRange.low}"/>
+    <json:property name="max" value="${valueRange.high}"/>
 </json:object>
