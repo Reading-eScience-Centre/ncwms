@@ -21,38 +21,38 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                 axis that is closest to the required date (as passed to the server)
 --%>
 <json:object>
-    <json:property name="units" value="${layer.units}"/>
+    <json:property name="units" value="${units}"/>
 
-    <c:set var="bbox" value="${layer.geographicBoundingBox}"/>
+    <c:set var="bbox" value="${feature.coverage.domain.horizontalGrid.coordinateExtent}"/>
     <json:array name="bbox">
-        <json:property>${bbox.westBoundLongitude}</json:property>
-        <json:property>${bbox.southBoundLatitude}</json:property>
-        <json:property>${bbox.eastBoundLongitude}</json:property>
-        <json:property>${bbox.northBoundLatitude}</json:property>
+        <json:property>${bbox.minX}</json:property>
+        <json:property>${bbox.minY}</json:property>
+        <json:property>${bbox.maxX}</json:property>
+        <json:property>${bbox.maxY}</json:property>
     </json:array>
 
     <json:array name="scaleRange">
-        <json:property>${layer.approxValueRange.minimum}</json:property>
-        <json:property>${layer.approxValueRange.maximum}</json:property>
+        <json:property>${featureMetadata.colorScaleRange.low}</json:property>
+        <json:property>${featureMetadata.colorScaleRange.high}</json:property>
     </json:array>
 
-    <json:property name="numColorBands" value="${layer.defaultNumColorBands}"/>
+    <json:property name="numColorBands" value="${featureMetadata.numColorBands}"/>
 
     <c:set var="styles" value="boxfill"/>
-<%--     <c:if test="${utils:isVectorLayer(layer)}"> --%>
-<%--         <c:set var="styles" value="vector,boxfill"/> --%>
-<%--     </c:if> --%>
+    <c:if test="${utils:isVectorLayer(feature.coverage)}">
+        <c:set var="styles" value="vector,boxfill"/>
+    </c:if>
     <json:array name="supportedStyles" items="${styles}"/>
 
-    <c:if test="${not empty layer.elevationValues}">
+    <c:if test="${not empty feature.coverage.domain.verticalAxis}">
         <json:object name="zaxis">
-            <json:property name="units" value="${layer.elevationUnits}"/>
-            <json:property name="positive" value="${layer.elevationPositive}"/>
-            <json:array name="values" items="${layer.elevationValues}"/>
+            <json:property name="units" value="${feature.coverage.domain.verticalAxis.verticalCrs.units.unitString}"/>
+            <json:property name="positive" value="${feature.coverage.domain.verticalAxis.verticalCrs.positiveDirection}"/>
+            <json:array name="values" items="${feature.coverage.domain.verticalAxis.coordinateValues}"/>
         </json:object>
     </c:if>
 
-    <c:if test="${not empty layer.timeValues}">
+    <c:if test="${not empty feature.coverage.domain.timeAxis}">
         <json:object name="datesWithData">
             <c:forEach var="year" items="${datesWithData}">
                 <json:object name="${year.key}">
@@ -67,12 +67,12 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
         <json:property name="nearestTimeIso" value="${nearestTimeIso}"/>
         <%-- The time axis units: "ISO8601" for "normal" axes, "360_day" for
              axes that use the 360-day calendar, etc. --%>
-        <json:property name="timeAxisUnits" value="${utils:getTimeAxisUnits(layer.chronology)}"/>
+        <json:property name="timeAxisUnits" value="${utils:getTimeAxisUnits(feature.coverage.domain.timeAxis.calendarSystem)}"/>
     </c:if>
     
-    <json:property name="moreInfo" value="${layer.dataset.moreInfoUrl}"/>
-    <json:property name="copyright" value="${layer.dataset.copyrightStatement}"/>
+    <json:property name="moreInfo" value="${dataset.moreInfoUrl}"/>
+    <json:property name="copyright" value="${dataset.copyrightStatement}"/>
     <json:array name="palettes" items="${paletteNames}"/>
-    <json:property name="defaultPalette" value="${layer.defaultColorPalette.name}"/>
-    <json:property name="logScaling" value="${layer.logScaling}"/>
+    <json:property name="defaultPalette" value="${featureMetadata.paletteName}"/>
+    <json:property name="logScaling" value="${featureMetadata.logScaling}"/>
 </json:object>

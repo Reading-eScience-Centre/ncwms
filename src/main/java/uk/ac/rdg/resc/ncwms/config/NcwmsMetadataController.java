@@ -52,12 +52,9 @@ import uk.ac.rdg.resc.ncwms.wms.Dataset;
  */
 class NcwmsMetadataController extends AbstractMetadataController
 {
-    private final Config serverConfig;
-
     public NcwmsMetadataController(Config serverConfig, FeatureFactory layerFactory)
     {
-        super(layerFactory);
-        this.serverConfig = serverConfig;
+        super(serverConfig, layerFactory);
     }
 
     @Override
@@ -145,7 +142,7 @@ class NcwmsMetadataController extends AbstractMetadataController
     protected ModelAndView showMenu(HttpServletRequest request, UsageLogEntry usageLogEntry)
         throws Exception
     {
-        Map<String, ? extends Dataset> allDatasets = this.serverConfig.getAllDatasets();
+        Map<String, ? extends Dataset> allDatasets = super.config.getAllDatasets();
         String menu = "default";
         // Let's see if the client has requested a specific menu.  If so, we'll
         // construct the menu based on the appropriate JSP.
@@ -156,7 +153,7 @@ class NcwmsMetadataController extends AbstractMetadataController
         }
         usageLogEntry.setMenu(menu);
         Map<String, Object> models = new HashMap<String, Object>();
-        models.put("serverTitle", this.serverConfig.getTitle());
+        models.put("serverTitle", super.config.getTitle());
         models.put("datasets", allDatasets);
         return new ModelAndView(menu + "Menu", models);
     }

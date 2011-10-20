@@ -9,9 +9,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.datatype.Duration;
 
-import org.jfree.ui.Layer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
@@ -29,6 +27,8 @@ import uk.ac.rdg.resc.edal.position.impl.TimePeriodImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
+import uk.ac.rdg.resc.ncwms.config.Config;
+import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.FeatureFactory;
 import uk.ac.rdg.resc.ncwms.exceptions.FeatureNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
@@ -48,7 +48,10 @@ public abstract class AbstractMetadataController {
 
     private final FeatureFactory featureFactory;
 
-    protected AbstractMetadataController(FeatureFactory featureFactory) {
+    protected Config config;
+
+    protected AbstractMetadataController(Config config, FeatureFactory featureFactory) {
+        this.config = config;
         this.featureFactory = featureFactory;
     }
 
@@ -75,6 +78,7 @@ public abstract class AbstractMetadataController {
             // Wrap all exceptions in a MetadataException. These will be
             // automatically
             // displayed via displayMetadataException.jsp, in JSON format
+            e.printStackTrace();
             throw new MetadataException(e);
         }
     }
@@ -93,7 +97,7 @@ public abstract class AbstractMetadataController {
         GridSeriesFeature<?> feature = getFeature(request);
         usageLogEntry.setFeature(feature);
         TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
-
+        
         // Find the time the user has requested (this is the time that is
         // currently displayed on the Godiva2 site). If no time has been
         // specified we use the current time
@@ -156,8 +160,17 @@ public abstract class AbstractMetadataController {
         }
 
         Map<String, Object> models = new HashMap<String, Object>();
-        models.put("layer", feature);
+        models.put("feature", feature);
+        /*
+         * request.getParameter("layerName") cannot fail - if it would fail, it
+         * will have done so in the earlier getFeature call, so this point won't
+         * be reached
+         */
+        FeaturePlottingMetadata mD = WmsUtils.getMetadata(config, request.getParameter("layerName"));
+        models.put("featureMetadata", WmsUtils.getMetadata(config, request.getParameter("layerName")));
+        models.put("dataset", WmsUtils.getDataset(config, request.getParameter("layerName")));
         models.put("datesWithData", datesWithData);
+        models.put("units", feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString());
         models.put("nearestTimeIso", TimeUtils.dateTimeToISO8601(nearestDateTime));
         // The names of the palettes supported by this layer. Actually this
         // will be the same for all layers, but we can't put this in the menu
@@ -235,7 +248,7 @@ public abstract class AbstractMetadataController {
         // extraction
         // TODO: the hard-coded "1.3.0" is ugly: it basically means that the
         // GetMapDataRequest object will look for "CRS" instead of "SRS"
-        GetMapDataRequest dr = new GetMapDataRequest(params, "1.3.0");
+        GetMapDataRequest dr = new GetMapDataRequest(params, params.getWmsVersion());
 
         // Get the variable we're interested in
         GridSeriesFeature<?> feature = featureFactory.getFeature(dr.getLayers()[0]);
@@ -262,7 +275,8 @@ public abstract class AbstractMetadataController {
             magnitudes =  new AbstractList<Float>() {
                 @Override
                 public Float get(int index) {
-                    return ((Vector2D<Float>)hGridCoverage.getValues().get(index)).getMagnitude();
+                    Object obj = hGridCoverage.getValues().get(index);
+                    return obj == null ? null : ((Vector2D<Float>)obj).getMagnitude();
                 }
 
                 @Override

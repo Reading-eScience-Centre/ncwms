@@ -455,7 +455,7 @@ public abstract class AbstractWmsController extends AbstractController {
         // Create an object that will turn data into BufferedImages
         Extent<Float> scaleRange = styleRequest.getColorScaleRange();
 
-        FeaturePlottingMetadata metadata = getMetadata(layerName);
+        FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
 
         if (scaleRange == null)
             scaleRange = metadata.getColorScaleRange();
@@ -551,15 +551,6 @@ public abstract class AbstractWmsController extends AbstractController {
                 tValueStrings, dr.getElevationString(), legend);
 
         return null;
-    }
-
-    private FeaturePlottingMetadata getMetadata(String layerName) {
-        int slashIndex = layerName.lastIndexOf("/");
-        String datasetId = layerName.substring(0, slashIndex);
-        Dataset ds = ((Config) serverConfig).getDatasetById(datasetId);
-        String featureId = layerName.substring(slashIndex + 1);
-        FeaturePlottingMetadata metadata = ds.getPlottingMetadataMap().get(featureId);
-        return metadata;
     }
 
     /**
@@ -730,7 +721,7 @@ public abstract class AbstractWmsController extends AbstractController {
             // the colour scale range and the layer in question
             String layerName = params.getMandatoryString("layer");
 
-            FeaturePlottingMetadata metadata = getMetadata(layerName);
+            FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
 
             // Layer layer = layerFactory.getLayer(layerName);
 
@@ -983,7 +974,7 @@ public abstract class AbstractWmsController extends AbstractController {
         Extent<Float> scaleRange = GetMapStyleRequest.getColorScaleRange(params);
 
         String layerStr = params.getMandatoryString("layer");
-        FeaturePlottingMetadata metadata = getMetadata(layerStr);
+        FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerStr);
         if (scaleRange == null)
             scaleRange = metadata.getColorScaleRange();
         // TODO: deal with auto scale ranges - look at actual values extracted
@@ -1191,7 +1182,8 @@ public abstract class AbstractWmsController extends AbstractController {
      *             value
      */
     static double getElevationValue(String zValue, GridSeriesFeature<?> feature) throws InvalidDimensionValueException {
-        if (feature.getCoverage().getDomain().getVerticalAxis().size() == 0) {
+        if (feature.getCoverage().getDomain().getVerticalAxis() == null || 
+                feature.getCoverage().getDomain().getVerticalAxis().size() == 0) {
             return Double.NaN;
         }
         if (zValue == null) {
@@ -1429,7 +1421,7 @@ public abstract class AbstractWmsController extends AbstractController {
     public void setServerConfig(ServerConfig serverConfig) {
         this.serverConfig = serverConfig;
     }
-
+    
     /**
      * Called by Spring to inject the usage logger
      */

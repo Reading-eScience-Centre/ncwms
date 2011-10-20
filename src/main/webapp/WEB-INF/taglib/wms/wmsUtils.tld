@@ -23,7 +23,12 @@
     <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
     <function-signature>java.lang.String formatUTCTimeOnly(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
   </function>
-  
+  <function>
+    <description>Returns true if the given layer is a vector layer</description>
+    <name>isVectorLayer</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>boolean isVectorLayer(uk.ac.rdg.resc.edal.coverage.Coverage)</function-signature>
+  </function>
   <function>
     <description>Returns exception name</description>
     <name>getExceptionName</name>
@@ -35,7 +40,7 @@
     <description>Returns the units for the time dimension for Capabilities documents</description>
     <name>getTimeAxisUnits</name>
     <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
-    <function-signature>java.lang.String getTimeAxisUnits(uk.av.rdg.resc.edal.position.CalendarSystem)</function-signature>
+    <function-signature>java.lang.String getTimeAxisUnits(uk.ac.rdg.resc.edal.position.CalendarSystem)</function-signature>
   </function>
 
   <function>

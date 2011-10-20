@@ -30,7 +30,6 @@ package uk.ac.rdg.resc.ncwms.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,6 +42,7 @@ import org.geotoolkit.referencing.CRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.coverage.Coverage;
 import uk.ac.rdg.resc.edal.coverage.GridCoverage2D;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
@@ -56,10 +56,12 @@ import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
+import uk.ac.rdg.resc.ncwms.config.Config;
+import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
 import uk.ac.rdg.resc.ncwms.controller.GetMapDataRequest;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidCrsException;
-import uk.ac.rdg.resc.ncwms.exceptions.InvalidDimensionValueException;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
+import uk.ac.rdg.resc.ncwms.wms.Dataset;
 
 /**
  * <p>Collection of static utility methods that are useful in the WMS application.</p>
@@ -78,8 +80,6 @@ public class WmsUtils
      * The versions of the WMS standard that this server supports
      */
     public static final Set<String> SUPPORTED_VERSIONS = new HashSet<String>();
-
-    private static final String EMPTY_STRING = "";
 
     // Patterns are immutable and therefore thread-safe.
     private static final Pattern MULTIPLE_WHITESPACE = Pattern.compile("\\s+");
@@ -236,33 +236,30 @@ public class WmsUtils
         return Extents.findMinMax(dataSample);
     }
 
+    @SuppressWarnings("unchecked")
     private static List<Float> readDataSample(GridSeriesFeature<?> feature) throws IOException {
+        /*
+         * Read a low-resolution grid of data covering the entire spatial extent
+         */
         final GridCoverage2D<?> coverage = feature.extractHorizontalGrid(
                 getClosestToCurrentTime(feature.getCoverage().getDomain().getTimeAxis()),
                 getUppermostElevation(feature),
                 new RegularGridImpl(feature.getCoverage().getDomain().getHorizontalGrid()
                         .getCoordinateExtent(), 100, 100));
-        // Read a low-resolution grid of data covering the entire spatial
-        // extent
-        return new AbstractList<Float>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public Float get(int index) {
-                Class<?> clazz = coverage.getRangeMetadata(null).getValueType();
-                if(clazz == Float.class){
-                    return (Float) coverage.getValues().get(index);
-                } else if(clazz == Vector2D.class){
-                    return ((Vector2D<Float>) coverage.getValues().get(index)).getMagnitude();
-                } else {
-                    return null;
-                }
+        List<Float> ret = new ArrayList<Float>();
+        Class<?> clazz = coverage.getRangeMetadata(null).getValueType();
+        for(Object o : coverage.getValues()){
+            if(o == null){
+                ret.add(null);
+            } else if(clazz == Float.class){
+                ret.add((Float) o);
+            } else if(clazz == Vector2D.class){
+                ret.add(((Vector2D<Float>) o).getMagnitude());
+            } else {
+                ret.add(null);
             }
-            
-            @Override
-            public int size() {
-                return (int) coverage.size();
-            }
-        };
+        }
+        return ret;
     }
 
     /**
@@ -282,24 +279,6 @@ public class WmsUtils
     public static String getExceptionName(Exception e)
     {
         return e.getClass().getName();
-    }
-
-    /** Adds leading zeros and removes trailing zeros as appropriate, to make
-     * the given number of milliseconds suitable for placing after a decimal
-     * point (e.g. 500 becomes 5, 5 becomes 005). */
-    private static String addOrRemoveZeros(long millis)
-    {
-        if (millis == 0) return "";
-        String s = Long.toString(millis);
-        if (millis < 10) return "00" + s;
-
-        if (millis < 100) s = "0" + s;
-        // Now remove all trailing zeros
-        while (s.endsWith("0"))
-        {
-            s = s.substring(0, s.length() - 1);
-        }
-        return s;
     }
 
     /**
@@ -385,5 +364,27 @@ public class WmsUtils
                 }
             });
         }
+    }
+    
+    public static Dataset getDataset(Config serverConfig, String layerName){
+        int slashIndex = layerName.lastIndexOf("/");
+        String datasetId = layerName.substring(0, slashIndex);
+        return serverConfig.getDatasetById(datasetId);
+    }
+    
+    public static FeaturePlottingMetadata getMetadata(Config serverConfig, String layerName) {
+        int slashIndex = layerName.lastIndexOf("/");
+        String datasetId = layerName.substring(0, slashIndex);
+        Dataset ds = serverConfig.getDatasetById(datasetId);
+        String featureId = layerName.substring(slashIndex + 1);
+        FeaturePlottingMetadata metadata = ds.getPlottingMetadataMap().get(featureId);
+        return metadata;
+    }
+    
+    public static boolean isVectorLayer(Coverage<?, ?> coverage){
+        if(coverage.getRangeMetadata(null).getValueType() == Vector2D.class){
+            return true;
+        }
+        return false;
     }
 }
