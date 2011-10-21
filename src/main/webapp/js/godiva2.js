@@ -86,7 +86,7 @@ window.onload = function()
             // Styling parameters are needed if we create a vertical section plot
             '&COLORSCALERANGE=' + scaleMinVal + ',' + scaleMaxVal +
             '&NUMCOLORBANDS=' + $('numColorBands').value +
-            '&LOGSCALE' + logscale +
+            '&LOGSCALE=' + logscale +
             '&PALETTE=' + paletteName;
         popUp(transectUrl, 450, 350);
     });

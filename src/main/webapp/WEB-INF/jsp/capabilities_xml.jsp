@@ -84,31 +84,31 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
             <c:if test="${dataset.ready}">
             <Layer>
                 <Title><c:out value="${dataset.title}"/></Title>
-                <c:forEach var="layer" items="${dataset.layers}">
-                <Layer<c:if test="${layer.queryable}"> queryable="1"</c:if>>
-                    <Name>${layer.name}</Name>
-                    <Title><c:out value="${layer.title}"/></Title>
-                    <Abstract><c:out value="${layer.layerAbstract}"/></Abstract>
-                    <c:set var="bbox" value="${layer.geographicBoundingBox}"/>
+                <c:forEach var="layer" items="${dataset.featureCollection.features}">
+                <Layer<c:if test="${dataset.queryable}"> queryable="1"</c:if>>
+                    <Name>${dataset.id}/${layer.id}</Name>
+                    <Title><c:out value="${layer.name}"/></Title>
+                    <Abstract><c:out value="${layer.description}"/></Abstract>
+                    <c:set var="bbox" value="${utils:getWmsBoundingBox(layer)}"/>
                     <EX_GeographicBoundingBox>
-                        <westBoundLongitude>${bbox.westBoundLongitude}</westBoundLongitude>
-                        <eastBoundLongitude>${bbox.eastBoundLongitude}</eastBoundLongitude>
-                        <southBoundLatitude>${bbox.southBoundLatitude}</southBoundLatitude>
-                        <northBoundLatitude>${bbox.northBoundLatitude}</northBoundLatitude>
+                        <westBoundLongitude>${bbox.minX}</westBoundLongitude>
+                        <eastBoundLongitude>${bbox.maxX}</eastBoundLongitude>
+                        <southBoundLatitude>${bbox.minY}</southBoundLatitude>
+                        <northBoundLatitude>${bbox.maxY}</northBoundLatitude>
                     </EX_GeographicBoundingBox>
-                    <BoundingBox CRS="CRS:84" minx="${bbox.westBoundLongitude}" maxx="${bbox.eastBoundLongitude}" miny="${bbox.southBoundLatitude}" maxy="${bbox.northBoundLatitude}"/>
-                    <c:if test="${not empty layer.elevationValues}">
-                    <Dimension name="elevation" units="${layer.elevationUnits}" default="${layer.defaultElevationValue}">
+                    <BoundingBox CRS="CRS:84" minx="${bbox.minX}" maxx="${bbox.maxX}" miny="${bbox.minY}" maxy="${bbox.maxY}"/>
+                    <c:if test="${not empty layer.coverage.domain.verticalAxis}">
+                    <Dimension name="elevation" units="${layer.coverage.domain.verticalCrs.units.unitString}" default="${utils:getDefaultElevation(layer)}">
                         <%-- Print out the dimension values, comma separated, making sure
                              that there is no comma at the start or end of the list.  Note that
                              we can't use ${fn:join} because the z values are an array of doubles,
                              not strings. --%>
-                        <c:forEach var="zval" items="${layer.elevationValues}" varStatus="status"><c:if test="${status.index > 0}">,</c:if>${zval}</c:forEach>
+                        <c:forEach var="zval" items="${layer.coverage.domain.verticalAxis.coordinateValues}" varStatus="status"><c:if test="${status.index > 0}">,</c:if>${zval}</c:forEach>
                     </Dimension>
                     </c:if>
-                    <c:set var="tvalues" value="${layer.timeValues}"/>
-                    <c:if test="${not empty tvalues}">
-                        <Dimension name="time" units="${utils:getTimeAxisUnits(layer.chronology)}" multipleValues="true" current="true" default="${utils:dateTimeToISO8601(layer.defaultTimeValue)}">
+                    <c:if test="${not empty layer.coverage.domain.timeAxis}">
+                    	<c:set var="tvalues" value="${layer.coverage.domain.timeAxis.coordinateValues}"/>
+                        <Dimension name="time" units="${utils:getTimeAxisUnits(layer.coverage.domain.timeAxis.calendarSystem)}" multipleValues="true" current="true" default="${utils:dateTimeToISO8601(utils:getDefaultTime(layer.coverage.domain.timeAxis))}">
                             <c:choose>
                                 <c:when test="${verboseTimes}">
                                     <%-- Use the verbose version of the time string --%>
@@ -122,9 +122,9 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                         </Dimension>
                     </c:if>
                     <c:set var="styles" value="boxfill"/>
-<%--                     <c:if test="${utils:isVectorLayer(layer)}"> --%>
-<%--                         <c:set var="styles" value="vector,boxfill"/> --%>
-<%--                     </c:if> --%>
+                    <c:if test="${utils:isVectorLayer(layer.coverage)}">
+                        <c:set var="styles" value="vector,boxfill"/>
+                    </c:if>
                     <c:forEach var="style" items="${styles}">
                     <c:forEach var="paletteName" items="${paletteNames}">
                     <Style>

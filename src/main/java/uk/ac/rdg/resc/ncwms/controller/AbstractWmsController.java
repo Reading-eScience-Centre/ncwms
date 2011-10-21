@@ -61,7 +61,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
-import uk.ac.rdg.resc.edal.Domain;
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.GridSeriesCoverage;
 import uk.ac.rdg.resc.edal.coverage.ProfileCoverage;
@@ -353,8 +352,7 @@ public abstract class AbstractWmsController extends AbstractController {
         // Show only a subset of the CRS codes that we are likely to use.
         // Otherwise Capabilities doc gets very large indeed.
         // TODO: make configurable in admin app
-        String[] supportedCrsCodes = new String[] { "EPSG:4326", "CRS:84", // Plate
-                // Carree
+        String[] supportedCrsCodes = new String[] { "EPSG:4326", "CRS:84", // Plate Carree
                 "EPSG:41001", // Mercator
                 "EPSG:27700", // British National Grid
                 // See http://nsidc.org/data/atlas/ogc_services.html for useful
@@ -373,7 +371,6 @@ public abstract class AbstractWmsController extends AbstractController {
         models.put("legendHeight", ColorPalette.LEGEND_HEIGHT);
         models.put("paletteNames", ColorPalette.getAvailablePaletteNames());
         models.put("verboseTimes", verboseTimes);
-
         // Do WMS version negotiation. From the WMS 1.3.0 spec:
         // * If a version unknown to the server and higher than the lowest
         // supported version is requested, the server shall send the highest
@@ -422,7 +419,7 @@ public abstract class AbstractWmsController extends AbstractController {
      *      DefaultDataReader.read()
      * @todo Separate Model and View code more cleanly
      */
-    protected ModelAndView getMap(RequestParams params, FeatureFactory featureFactory,
+    protected synchronized ModelAndView getMap(RequestParams params, FeatureFactory featureFactory,
             HttpServletResponse httpServletResponse, UsageLogEntry usageLogEntry) throws WmsException, Exception {
         // Parse the URL parameters
         GetMapRequest getMapRequest = new GetMapRequest(params);
@@ -613,11 +610,11 @@ public abstract class AbstractWmsController extends AbstractController {
         // Find out the i,j coordinates of this point in the source grid (could
         // be null)
         HorizontalGrid horizGrid = feature.getCoverage().getDomain().getHorizontalGrid();
-        GridCell2D gridCoords = horizGrid.getGridCell(horizGrid.findContainingCell(pos));
+        GridCell2D gridCell = horizGrid.getGridCell(horizGrid.findContainingCell(pos));
         LonLatPosition gridCellCentre = null;
-        if (gridCoords != null) {
+        if (gridCell != null) {
             // Get the location of the centre of the grid cell
-            HorizontalPosition gridCellCentrePos = gridCoords.getCentre();
+            HorizontalPosition gridCellCentrePos = gridCell.getCentre();
             gridCellCentre = GISUtils.transformToWgs84LonLat(gridCellCentrePos);
         }
 
@@ -680,7 +677,7 @@ public abstract class AbstractWmsController extends AbstractController {
             Map<String, Object> models = new HashMap<String, Object>();
             models.put("longitude", lonLat.getLongitude());
             models.put("latitude", lonLat.getLatitude());
-            models.put("gridCoords", gridCoords);
+            models.put("gridCoords", gridCell.getGridCoordinates());
             models.put("gridCentre", gridCellCentre);
             models.put("data", featureData);
             return new ModelAndView("showFeatureInfo_xml", models);
@@ -798,12 +795,14 @@ public abstract class AbstractWmsController extends AbstractController {
         List<Float> transectData = new ArrayList<Float>();
         List<HorizontalPosition> positions = transectDomain.getDomainObjects();
         if(valueType == Float.class){
+            @SuppressWarnings("unchecked")
             GridSeriesCoverage<Float> coverage = (GridSeriesCoverage<Float>) feature.getCoverage();
             for(HorizontalPosition pos : positions){
                 transectData.add(coverage.evaluate(new GeoPositionImpl(pos,
                         new VerticalPositionImpl(zValue, vCrs), tValue)));
             }
         } else if(valueType == Vector2D.class){
+            @SuppressWarnings("unchecked")
             GridSeriesCoverage<Vector2D<Float>> coverage = (GridSeriesCoverage<Vector2D<Float>>) feature.getCoverage();
             for(HorizontalPosition pos : positions){
                 transectData.add(coverage.evaluate(new GeoPositionImpl(pos,
@@ -1150,20 +1149,6 @@ public abstract class AbstractWmsController extends AbstractController {
                 return pointList;
             }
         }
-    }
-
-    /**
-     * Returns true if all the values in the given list are null
-     * 
-     * @param data
-     * @return
-     */
-    private static boolean allNull(List<Float> data) {
-        for (Float val : data) {
-            if (val != null)
-                return false;
-        }
-        return true;
     }
 
     /**

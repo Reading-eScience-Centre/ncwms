@@ -39,7 +39,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.geotoolkit.referencing.CRS;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.util.FactoryException;
 
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.Coverage;
@@ -302,6 +304,20 @@ public class WmsUtils
             throw new InvalidCrsException(crsCode);
         }
     }
+    
+    public static void main(String[] args) {
+        try {
+            System.out.println(CRS.decode("EPSG:4326", true));
+        } catch (NoSuchAuthorityCodeException e) {
+            // TODO Auto-generated catch block
+            System.out.println("NSACE");
+            e.printStackTrace();
+        } catch (FactoryException e) {
+            // TODO Auto-generated catch block
+            System.out.println("FE");
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Gets a {@link RegularGrid} representing the image requested by a client
@@ -386,5 +402,34 @@ public class WmsUtils
             return true;
         }
         return false;
+    }
+    
+    public static BoundingBox getWmsBoundingBox(GridSeriesFeature<?> feature){
+        BoundingBox inBbox = feature.getCoverage().getDomain().getHorizontalGrid().getCoordinateExtent();
+        // TODO: should take into account the cell bounds
+        double minLon = inBbox.getMinX() % 360;
+        double maxLon = inBbox.getMaxX() % 360;
+        double minLat = inBbox.getMinY();
+        double maxLat = inBbox.getMaxY();
+        // Correct the bounding box in case of mistakes or in case it
+        // crosses the date line
+        if ((minLon < 180 && maxLon > 180) || (minLon < -180 && maxLon > -180) || minLon >= maxLon)
+        {
+            minLon = -180.0;
+            maxLon = 180.0;
+        }
+        if (minLat >= maxLat)
+        {
+            minLat = -90.0;
+            maxLat = 90.0;
+        }
+        // Sometimes the bounding boxes can be NaN, e.g. for a VerticalPerspectiveView
+        // that encompasses more than the Earth's disc
+        minLon = Double.isNaN(minLon) ? -180.0 : minLon;
+        minLat = Double.isNaN(minLat) ?  -90.0 : minLat;
+        maxLon = Double.isNaN(maxLon) ?  180.0 : maxLon;
+        maxLat = Double.isNaN(maxLat) ?   90.0 : maxLat;
+        double[] bbox = {minLon, minLat, maxLon, maxLat};
+        return new BoundingBoxImpl(bbox, inBbox.getCoordinateReferenceSystem());
     }
 }

@@ -108,7 +108,7 @@ final class Charting {
         // Create a chart with no legend, tooltips or URLs
         String title = "Lon: " + lonLat.getLongitude() + ", Lat: " + lonLat.getLatitude();
         String yLabel = feature.getName() + " ("
-                + feature.getCoverage().getRangeMetadata(null).getUnits() + ")";
+                + feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString() + ")";
         JFreeChart chart = ChartFactory.createTimeSeriesChart(title, "Date / time", yLabel,
                 xydataset, false, false, false);
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
@@ -173,7 +173,7 @@ final class Charting {
 
     private static String getAxisLabel(GridSeriesFeature<?> feature) {
         return WmsUtils.removeDuplicatedWhiteSpace(feature.getName()) + " ("
-                + feature.getCoverage().getRangeMetadata(null).getUnits() + ")";
+                + feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString() + ")";
     }
 
     public static JFreeChart createTransectPlot(GridSeriesFeature<?> feature,
@@ -211,7 +211,7 @@ final class Charting {
                     "distance along transect (arbitrary units)",
                     // TODO more meaningful xaxis label
                     feature.getName() + " ("
-                            + feature.getCoverage().getRangeMetadata(null).getUnits() + ")",
+                            + feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString() + ")",
                     xySeriesColl, PlotOrientation.VERTICAL, false, // show
                     // legend
                     false, // show tooltips (?)
@@ -333,7 +333,7 @@ final class Charting {
             invertYAxis = true;
         }
 
-        NumberAxis zAxis = new NumberAxis(zAxisLabel + " (" + vCrs.getUnits() + ")");
+        NumberAxis zAxis = new NumberAxis(zAxisLabel + " (" + vCrs.getUnits().getUnitString() + ")");
         zAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
         if (invertYAxis)
             zAxis.setInverted(true);

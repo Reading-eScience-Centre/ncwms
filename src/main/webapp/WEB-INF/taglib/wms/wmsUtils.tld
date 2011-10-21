@@ -46,7 +46,30 @@
   <function>
     <description>Returns a concise string representing the time axis values</description>
     <name>getTimeStringForCapabilities</name>
-    <function-class>uk.ac.rdg.resc.ncwms.util.TimeUtils</function-class>
+    <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
     <function-signature>java.lang.String getTimeStringForCapabilities(java.util.List)</function-signature>
   </function>
+
+  <function>
+    <description>Returns the uppermost elevation (i.e. the default)</description>
+    <name>getDefaultElevation</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>java.lang.Double getUppermostElevation(uk.ac.rdg.resc.edal.feature.GridSeriesFeature)</function-signature>
+  </function>
+
+  <function>
+    <description>Returns the closest time to the current one (i.e. the default)</description>
+    <name>getDefaultTime</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>uk.ac.rdg.resc.edal.position.TimePosition getClosestToCurrentTime(uk.ac.rdg.resc.edal.coverage.grid.TimeAxis)</function-signature>
+  </function>
+
+  <function>
+    <description>Sets the bounding box to conform with GIS standards</description>
+    <name>getWmsBoundingBox</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>uk.ac.rdg.resc.edal.geometry.BoundingBox getWmsBoundingBox(uk.ac.rdg.resc.edal.feature.GridSeriesFeature)</function-signature>
+  </function>
+  
+  
 </taglib>
