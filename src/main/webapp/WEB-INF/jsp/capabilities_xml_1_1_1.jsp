@@ -106,28 +106,28 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
             <c:if test="${dataset.ready}">
             <Layer>
                 <Title><c:out value="${dataset.title}"/></Title>
-                <c:forEach var="layer" items="${dataset.layers}">
-                <Layer<c:if test="${layer.queryable}"> queryable="1"</c:if>>
-                    <Name>${layer.name}</Name>
-                    <Title><c:out value="${layer.title}"/></Title>
-                    <Abstract><c:out value="${layer.layerAbstract}"/></Abstract>
-                    <c:set var="bbox" value="${layer.geographicBoundingBox}"/>
-                    <LatLonBoundingBox minx="${bbox.westBoundLongitude}" maxx="${bbox.eastBoundLongitude}" miny="${bbox.southBoundLatitude}" maxy="${bbox.northBoundLatitude}"/>
-                    <BoundingBox SRS="EPSG:4326" minx="${bbox.westBoundLongitude}" maxx="${bbox.eastBoundLongitude}" miny="${bbox.southBoundLatitude}" maxy="${bbox.northBoundLatitude}"/>
-                    <c:if test="${not empty layer.elevationValues}"><Dimension name="elevation" units="${layer.elevationUnits}"/><!-- TODO: units correct? --></c:if>
-                    <c:if test="${not empty layer.timeValues}"><Dimension name="time" units="${utils:getTimeAxisUnits(layer.chronology)}"/></c:if>
-                    <c:if test="${not empty layer.elevationValues}">
-                    <Extent name="elevation" default="${layer.defaultElevationValue}">
+                <c:forEach var="layer" items="${dataset.featureCollection.features}">
+                <Layer<c:if test="${dataset.queryable}"> queryable="1"</c:if>>
+                    <Name>${dataset.id}/${layer.id}</Name>
+                    <Title><c:out value="${layer.name}"/></Title>
+                    <Abstract><c:out value="${layer.description}"/></Abstract>
+                    <c:set var="bbox" value="${utils:getWmsBoundingBox(layer)}"/>
+                    <LatLonBoundingBox minx="${bbox.minX}" maxx="${bbox.maxX}" miny="${bbox.minY}" maxy="${bbox.maxY}"/>
+                    <BoundingBox SRS="EPSG:4326" minx="${bbox.minX}" maxx="${bbox.maxX}" miny="${bbox.minY}" maxy="${bbox.maxY}"/>
+                    <c:if test="${not empty layer.coverage.domain.verticalAxis}"><Dimension name="elevation" units="${ayer.coverage.domain.verticalCrs.units.unitString}"/><!-- TODO: units correct? --></c:if>
+                    <c:if test="${not empty layer.coverage.domain.timeAxis}"><Dimension name="time" units="${utils:getTimeAxisUnits(layer.coverage.domain.timeAxis.calendarSystem)}"/></c:if>
+                    <c:if test="${not empty layer.coverage.domain.verticalAxis}">
+                    <Extent name="elevation" default="${utils:getDefaultElevation(layer)}">
                         <%-- Print out the dimension values, comma separated, making sure
                              that there is no comma at the start or end of the list.  Note that
                              we can't use ${fn:join} because the z values are an array of doubles,
                              not strings. --%>
-                        <c:forEach var="zval" items="${layer.elevationValues}" varStatus="status"><c:if test="${status.index > 0}">,</c:if>${zval}</c:forEach>
+                        <c:forEach var="zval" items="${layer.coverage.domain.verticalAxis.coordinateValues}" varStatus="status"><c:if test="${status.index > 0}">,</c:if>${zval}</c:forEach>
                     </Extent>
                     </c:if>
-                    <c:set var="tvalues" value="${layer.timeValues}"/>
-                    <c:if test="${not empty tvalues}">
-                    <Extent name="time" multipleValues="1" current="1" default="${utils:dateTimeToISO8601(layer.defaultTimeValue)}">
+                    <c:if test="${not empty layer.coverage.domain.timeAxis}">
+                    <c:set var="tvalues" value="${layer.coverage.domain.timeAxis.coordinateValues}"/>
+                    <Extent name="time" multipleValues="1" current="1" default="${utils:dateTimeToISO8601(utils:getDefaultTime(layer.coverage.domain.timeAxis))}">
                         <c:choose>
                             <c:when test="${verboseTimes}">
                                 <%-- Use the verbose version of the time string --%>

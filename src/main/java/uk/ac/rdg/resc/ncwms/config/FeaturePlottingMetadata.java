@@ -165,7 +165,8 @@ public class FeaturePlottingMetadata
         // In previous versions of ncWMS we used a comma as a separator,
         // which caused problems in certain locales where a comma is used
         // as a decimal separator
-        return String.format("%f %f", colorScaleRange.getLow(), colorScaleRange.getHigh());
+        return Float.toString(colorScaleRange.getLow()) + " "
+                + Float.toString(colorScaleRange.getHigh());
     }
 
     /**

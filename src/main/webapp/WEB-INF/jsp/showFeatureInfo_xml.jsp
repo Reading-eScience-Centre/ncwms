@@ -17,9 +17,9 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 <FeatureInfoResponse>
     <longitude>${longitude}</longitude>
     <latitude>${latitude}</latitude>
-    <c:if test="${not empty gridCoords.coordinateValues}">
-        <iIndex>${gridCoords.coordinateValues[0]}</iIndex>
-        <jIndex>${gridCoords.coordinateValues[1]}</jIndex>
+    <c:if test="${not empty gridCoords}">
+        <iIndex>${gridCoords.XIndex}</iIndex>
+        <jIndex>${gridCoords.YIndex}</jIndex>
         <gridCentreLon>${gridCentre.longitude}</gridCentreLon>
         <gridCentreLat>${gridCentre.latitude}</gridCentreLat>
     </c:if>

@@ -23,7 +23,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 <json:object>
     <json:property name="units" value="${units}"/>
 
-    <c:set var="bbox" value="${feature.coverage.domain.horizontalGrid.coordinateExtent}"/>
+    <c:set var="bbox" value="${utils:getWmsBoundingBox(feature)}"/>
     <json:array name="bbox">
         <json:property>${bbox.minX}</json:property>
         <json:property>${bbox.minY}</json:property>
