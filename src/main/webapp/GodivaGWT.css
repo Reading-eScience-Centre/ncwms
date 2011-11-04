@@ -1,0 +1,156 @@
+/** Add css rules here for your application. */
+
+
+h1 {
+  font-size: 2em;
+  font-weight: bold;
+  color: #777777;
+  margin: 40px 0px 70px;
+  text-align: center;
+}
+
+/* This is used for the palette and animation popups */
+.gwt-DialogBox{
+    z-index: 2000;
+    width: 400px;
+}
+
+/* This is used for the palette and animation popups */
+.gwt-DialogBox .Caption{
+  font-size: 1em;
+  font-weight: bold;
+  color: #111111;
+  text-align: center;
+}
+
+.gwt-PopupPanel{
+	z-index: 1999;
+}
+
+/* This is used for the labels which are actually buttons */
+.hiddenButton {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #111111;
+  /* top right bottom left */
+  margin: 3px 10px 10px;
+  text-align: left;
+  background-color: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.inactiveHiddenButton {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #777777;
+  /* top right bottom left */
+  margin: 3px 10px 10px;
+  text-align: left;
+  background-color: transparent;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+
+/* This is used for the labels on the time/elevation/variable selectors */
+.labelStyle {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #111111;
+  /* top right bottom left */
+  margin: 3px 10px 10px 12px;
+  text-align: left;
+}
+
+/* This is used for the labels on the time/elevation/variable selectors (when disabled) */
+.inactiveLabelStyle {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #777777;
+  margin: 3px 10px 10px 12px;
+  text-align: left;
+}
+
+/* This is used for the labels on the time/elevation/variable selectors (when disabled) */
+.lightLabel {
+  font-size: 1em;
+  font-weight: normal;
+  color: #111111;
+  margin: 5px 2px 0px;
+  text-align: left;
+}
+
+.linkStyle {
+  font-size: 1.0em;
+  font-weight: normal;
+  color: #111111;
+  /* top right bottom left */
+  margin: 3px 10px 10px;
+  text-align: center;
+}
+
+/* Used by the links */
+.linkStyle:link{
+  color: #000000 
+}
+
+/* Used by the links */
+.linkStyle:visited{
+  color: #000000 
+}
+
+/* Used for the non-editable scale labels */
+.tickmark {
+  font-size: 0.9em;
+  font-weight: normal;
+  color: #000000;
+  /* top right bottom left */
+  margin: 0px 5px 10px;
+  text-align: left;
+}
+
+/* Not currently used */
+.olPopupContent {
+  font-size: 0.7em;
+  color: #111111;
+  margin: 3px 0px 0px 0px;
+  text-align: left;
+  z-index: 2100
+}
+
+/* Not currently used */
+.listBoxStyle {
+  font-size: 1em;
+  color: #000033;
+  background: #FFFFFF;
+  margin: 5px 5px 5px;
+  text-align: left;
+}
+
+/* Used for the map */
+.mapStyle{
+	float: right;
+    font-family: sans-serif;
+    font-size: 16px;
+    padding: 35px 10px 15px 35px;
+}
+
+/** Set ids using widget.getElement().setId("idOfElement") */
+#closeButton {
+  margin: 15px 6px 6px;
+}
+
+.olControlDrawFeaturePointItemInactive {
+    visibility: hidden;
+}
+.olControlDrawFeaturePointItemActive {
+    visibility: hidden;
+}
+.olControlDrawFeaturePolygonItemInactive {
+    visibility: hidden;
+}
+.olControlDrawFeaturePolygonItemActive {
+    visibility: hidden;
+}
