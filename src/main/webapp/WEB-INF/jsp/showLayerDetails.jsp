@@ -47,7 +47,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
     <c:if test="${not empty feature.coverage.domain.verticalAxis}">
         <json:object name="zaxis">
             <json:property name="units" value="${feature.coverage.domain.verticalAxis.verticalCrs.units.unitString}"/>
-            <json:property name="positive" value="${feature.coverage.domain.verticalAxis.verticalCrs.positiveDirection}"/>
+            <json:property name="positive" value="${feature.coverage.domain.verticalAxis.verticalCrs.positiveDirection.positive}"/>
             <json:array name="values" items="${feature.coverage.domain.verticalAxis.coordinateValues}"/>
         </json:object>
     </c:if>

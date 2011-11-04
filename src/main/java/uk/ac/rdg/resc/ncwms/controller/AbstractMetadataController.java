@@ -148,7 +148,7 @@ public abstract class AbstractMetadataController {
             // We need to subtract 1 from the month number as Javascript months
             // are 0-based (Joda-time months are 1-based). This retains
             // compatibility with previous behaviour.
-            int month = dateTime.getMonthOfYear() - 1;
+            int month = dateTime.getMonthOfYear();
             List<Integer> days = months.get(month);
             if (days == null) {
                 days = new ArrayList<Integer>();
@@ -199,15 +199,14 @@ public abstract class AbstractMetadataController {
     private ModelAndView showTimesteps(HttpServletRequest request) throws Exception {
         GridSeriesFeature<?> feature = getFeature(request);
         TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
-        if (tAxis.getCoordinateValues().isEmpty())
+        if (tAxis == null || tAxis.getCoordinateValues().isEmpty())
             return null; // return no data if no time axis present
 
         String dayStr = request.getParameter("day");
         if (dayStr == null) {
             throw new Exception("Must provide a value for the day parameter");
         }
-        TimePosition date = TimeUtils.iso8601ToDateTime(dayStr, tAxis.getCalendarSystem());
-
+        TimePosition date = TimeUtils.iso8601ToDate(dayStr, tAxis.getCalendarSystem());
         // List of date-times that fall on this day
         List<TimePosition> timesteps = new ArrayList<TimePosition>();
         // Search exhaustively through the layer's valid time values

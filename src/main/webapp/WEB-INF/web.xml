@@ -50,4 +50,8 @@
     <welcome-file-list>
 	<welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
+    <mime-mapping>
+	   <extension>js</extension>
+	   <mime-type>application/javascript</mime-type>
+	</mime-mapping>
 </web-app>
