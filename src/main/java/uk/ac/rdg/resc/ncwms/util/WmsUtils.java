@@ -39,9 +39,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.geotoolkit.referencing.CRS;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.util.FactoryException;
 
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.Coverage;
@@ -305,20 +303,6 @@ public class WmsUtils
         }
     }
     
-    public static void main(String[] args) {
-        try {
-            System.out.println(CRS.decode("EPSG:4326", true));
-        } catch (NoSuchAuthorityCodeException e) {
-            // TODO Auto-generated catch block
-            System.out.println("NSACE");
-            e.printStackTrace();
-        } catch (FactoryException e) {
-            // TODO Auto-generated catch block
-            System.out.println("FE");
-            e.printStackTrace();
-        }
-    }
-
     /**
      * Gets a {@link RegularGrid} representing the image requested by a client
      * in a GetMap operation

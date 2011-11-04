@@ -9,8 +9,8 @@
 -->
 
 <beans xmlns='http://www.springframework.org/schema/beans'
-       xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
-       xsi:schemaLocation='http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd'>
+	xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+	xsi:schemaLocation='http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd'>
 
     <!-- An object that stores the context of the ncWMS application.  This contains
          the location of the application's working directory, which defaults to
@@ -174,4 +174,7 @@
         <property name="defaultErrorView" value="displayDefaultException"/>
     </bean>
     
+    <bean id="epsgDatabaseInit"
+    	class="uk.ac.rdg.resc.ncwms.util.EPSGDatabaseInitialiser">
+    </bean>
 </beans>
