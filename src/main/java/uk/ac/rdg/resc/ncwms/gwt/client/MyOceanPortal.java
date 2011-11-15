@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.gwtopenmaps.openlayers.client.LonLat;
 import org.gwtopenmaps.openlayers.client.OpenLayers;
+import org.gwtopenmaps.openlayers.client.control.WMSGetFeatureInfo;
+import org.gwtopenmaps.openlayers.client.control.WMSGetFeatureInfoOptions;
 
 import uk.ac.rdg.resc.ncwms.gwt.client.handlers.ElevationSelectionHandler;
 import uk.ac.rdg.resc.ncwms.gwt.client.handlers.GodivaActionsHandler;
