@@ -2,6 +2,7 @@ package uk.ac.rdg.resc.ncwms.controller;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,12 +15,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.google.gwt.dom.client.Style.TableLayout;
+
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.GridCoverage2D;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
+import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.TimePeriod;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
@@ -101,11 +105,15 @@ public abstract class AbstractMetadataController {
         // Find the time the user has requested (this is the time that is
         // currently displayed on the Godiva2 site). If no time has been
         // specified we use the current time
-        TimePosition targetDateTime = new TimePositionImpl(tAxis.getCalendarSystem());
+        CalendarSystem calendarSystem = null;
+        if(tAxis != null){
+            calendarSystem = tAxis.getCalendarSystem();
+        }
+        TimePosition targetDateTime = new TimePositionImpl(calendarSystem);
         String targetDateIso = request.getParameter("time");
         if (targetDateIso != null && !targetDateIso.trim().equals("")) {
             try {
-                targetDateTime = TimeUtils.iso8601ToDateTime(targetDateIso, tAxis.getCalendarSystem());
+                targetDateTime = TimeUtils.iso8601ToDateTime(targetDateIso, calendarSystem);
             } catch (IllegalArgumentException iae) {
                 // targetDateIso was not valid for the layer's chronology
                 // We swallow this exception: targetDateTime will remain
@@ -114,7 +122,11 @@ public abstract class AbstractMetadataController {
         }
 
         Map<Integer, Map<Integer, List<Integer>>> datesWithData = new LinkedHashMap<Integer, Map<Integer, List<Integer>>>();
-        List<TimePosition> timeValues = tAxis.getCoordinateValues();
+        List<TimePosition> timeValues;
+        if(tAxis != null)
+            timeValues = tAxis.getCoordinateValues();
+        else
+            timeValues = Collections.emptyList();
         TimePosition nearestDateTime = timeValues.isEmpty() ? new TimePositionImpl(0) : timeValues.get(0);
 
         /*
@@ -166,7 +178,6 @@ public abstract class AbstractMetadataController {
          * will have done so in the earlier getFeature call, so this point won't
          * be reached
          */
-        FeaturePlottingMetadata mD = WmsUtils.getMetadata(config, request.getParameter("layerName"));
         models.put("featureMetadata", WmsUtils.getMetadata(config, request.getParameter("layerName")));
         models.put("dataset", WmsUtils.getDataset(config, request.getParameter("layerName")));
         models.put("datesWithData", datesWithData);
