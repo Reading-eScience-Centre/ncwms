@@ -100,7 +100,7 @@
 		<dependency>
 		    <groupId>org.gwtopenmaps.openlayers</groupId>
 		    <artifactId>gwt-openlayers-client</artifactId>
-		    <version>0.6</version>
+		    <version>0.7-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 		    <groupId>org.geotoolkit</groupId>
@@ -130,5 +130,12 @@
             <name>EDAL's repository of JARs</name>
             <url>http://edal-java.googlecode.com/hg/repository/</url>
         </repository>
+        <repository>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus Snapshots</name>
+            <url>http://oss.sonatype.org/content/repositories/snapshots
+            </url>
+        </repository>
+        
     </repositories>
 </project>
