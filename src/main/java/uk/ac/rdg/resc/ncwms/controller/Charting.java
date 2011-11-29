@@ -415,7 +415,7 @@ final class Charting {
         Double prevCtrlPointDistance = null;
         int xAxisLength = 0;
         if(sectionData.size() > 0)
-            xAxisLength = sectionData.get(0).size();
+            xAxisLength = sectionData.size();
         for (int i = 0; i < horizPath.getControlPoints().size(); i++) {
             double ctrlPointDistance = horizPath.getFractionalControlPointDistance(i);
             if (prevCtrlPointDistance != null) {
@@ -466,7 +466,7 @@ final class Charting {
              * TODO Test that this is the right way round
              */
             if(sectionData.size() > 0)
-                this.horizPathLength = sectionData.get(0).size();
+                this.horizPathLength = sectionData.size();
             else
                 this.horizPathLength = 0;
             this.sectionData = sectionData;
