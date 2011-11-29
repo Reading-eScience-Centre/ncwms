@@ -9,22 +9,13 @@ h1 {
   text-align: center;
 }
 
-/* This is used for the palette and animation popups */
-.gwt-DialogBox{
-    z-index: 2000;
-    width: 400px;
+.loadingImage{
+  z-index: 1999;
 }
 
-/* This is used for the palette and animation popups */
-.gwt-DialogBox .Caption{
-  font-size: 1em;
-  font-weight: bold;
-  color: #111111;
+.gwt-PushButton{
+  margin: 3px 10px 10px;
   text-align: center;
-}
-
-.gwt-PopupPanel{
-	z-index: 1999;
 }
 
 /* This is used for the labels which are actually buttons */
@@ -153,4 +144,22 @@ h1 {
 }
 .olControlDrawFeaturePolygonItemActive {
     visibility: hidden;
+}
+
+/* This is used for the palette and animation popups */
+.gwt-DialogBox{
+    z-index: 2000;
+    width: 400px;
+}
+
+/* This is used for the palette and animation popups */
+.gwt-DialogBox .Caption{
+  font-size: 1em;
+  font-weight: bold;
+  color: #111111;
+  text-align: center;
+}
+
+.gwt-PopupPanel{
+	z-index: 1999;
 }

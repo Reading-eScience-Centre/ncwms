@@ -7,16 +7,20 @@ import uk.ac.rdg.resc.ncwms.gwt.client.handlers.LayerSelectionHandler;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.event.dom.client.MouseUpEvent;
-import com.google.gwt.event.dom.client.MouseUpHandler;
+import com.google.gwt.event.logical.shared.OpenEvent;
+import com.google.gwt.event.logical.shared.OpenHandler;
+import com.google.gwt.event.logical.shared.SelectionEvent;
+import com.google.gwt.event.logical.shared.SelectionHandler;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.PopupPanel;
+import com.google.gwt.user.client.ui.PushButton;
 import com.google.gwt.user.client.ui.Tree;
 import com.google.gwt.user.client.ui.TreeItem;
+import com.google.gwt.user.client.ui.VerticalPanel;
 
 public class LayerSelectorCombo extends Button {
     private LayerSelectionHandler layerSelectionHandler;
@@ -50,8 +54,32 @@ public class LayerSelectorCombo extends Button {
             }
         });
 
+        VerticalPanel vPanel = new VerticalPanel();
+        PushButton button = new PushButton("Refresh");
+        button.setTitle("Click to refresh the layers list");
+        button.addClickHandler(new ClickHandler() {
+            @Override
+            public void onClick(ClickEvent event) {
+                layerSelectionHandler.refreshLayerList();
+            }
+        });
         tree = new Tree();
-        popup.add(tree);
+        tree.addOpenHandler(new OpenHandler<TreeItem>() {
+            @Override
+            public void onOpen(OpenEvent<TreeItem> event) {
+                TreeItem selected = event.getTarget();
+                for(int i=0; i< tree.getItemCount(); i++){
+                    TreeItem other = tree.getItem(i);
+                    if(!other.equals(selected) && other.getState()){
+                        other.setState(false);
+                    }
+                }
+                
+            }
+        });
+        vPanel.add(tree);
+        vPanel.add(button);
+        popup.add(vPanel);
     }
 
     /**
@@ -60,6 +88,7 @@ public class LayerSelectorCombo extends Button {
      * @param json
      */
     public void populateLayers(JSONObject json) {
+        tree.clear();
         String nodeLabel = json.get("label").isString().stringValue();
         JSONValue children = json.get("children");
         setHTML("<big>" + nodeLabel + "</big>");
@@ -85,10 +114,14 @@ public class LayerSelectorCombo extends Button {
                 @Override
                 public void onClick(ClickEvent event) {
                     setSelectedLayer(id);
+                    layerSelectionHandler.layerSelected(id);
                 }
             });
             parentNode.addItem(leaf);
         } else {
+            /*
+             * We have a branch node
+             */
             String nodeLabel = json.get("label").isString().stringValue();
             TreeItem nextNode = new TreeItem(nodeLabel);
             if (parentNode == null) {
@@ -110,7 +143,6 @@ public class LayerSelectorCombo extends Button {
     public void setSelectedLayer(String id) {
         selectedLayer = id;
         setHTML(layerIdToTitle.get(id));
-        layerSelectionHandler.layerSelected(id);
         if (popup.isShowing()) {
             popup.hide();
         }

@@ -6,8 +6,6 @@ import java.util.Map;
 
 import org.gwtopenmaps.openlayers.client.LonLat;
 import org.gwtopenmaps.openlayers.client.OpenLayers;
-import org.gwtopenmaps.openlayers.client.control.WMSGetFeatureInfo;
-import org.gwtopenmaps.openlayers.client.control.WMSGetFeatureInfoOptions;
 
 import uk.ac.rdg.resc.ncwms.gwt.client.handlers.ElevationSelectionHandler;
 import uk.ac.rdg.resc.ncwms.gwt.client.handlers.GodivaActionsHandler;
@@ -22,9 +20,7 @@ import uk.ac.rdg.resc.ncwms.gwt.client.requests.TimeRequestBuilder;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.TimeRequestCallback;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.AnimationButton;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelector;
-import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerSelectorCombo;
-import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerTree;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.MapArea;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.PaletteSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.TimeSelector;
@@ -94,10 +90,10 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
     private Anchor email;
     // Link to a screenshot of the current state
     private Anchor screenshot;
-    // The myOcean logo/loading indicator
-    private Image myOceanLogo;
-    private static final String logoStaticUrl = "img/myocean-logo.jpg";
-    private static final String logoDynamicUrl = "img/myocean-logo-anim.gif";
+    // The logo
+    private Image logo;
+    // The loading indicator
+    private Image loadingImage;
     
     /*
      * Essential metadata
@@ -177,30 +173,30 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
      * This is the entry point method.
      */
     public void onModuleLoad() {
-        RequestBuilder getConfig = new RequestBuilder(RequestBuilder.GET, "getconfig");
-        getConfig.setCallback(new RequestCallback() {
-            @Override
-            public void onResponseReceived(Request request, Response response) {
-                try{
-                    JSONValue jsonMap = JSONParser.parseLenient(response.getText());
-                    JSONObject parentObj = jsonMap.isObject();
-                    proxyUrl = parentObj.get("proxy").isString().stringValue();
-                    docHref = parentObj.get("docLocation").isString().stringValue();
-                    mapHeight = Integer.parseInt(parentObj.get("mapHeight").isString().stringValue());
-                    mapWidth = Integer.parseInt(parentObj.get("mapWidth").isString().stringValue());
-                    baseMapUrl = parentObj.get("baseMapUrl").isString().stringValue();
-                    baseMapLayer = parentObj.get("baseMapLayer").isString().stringValue();
-                    init();
-                } catch(Exception e){
-                    initWithDefaults();
-                }
-            }
-            
-            @Override
-            public void onError(Request request, Throwable exception) {
-                initWithDefaults();
-            }
-        });
+//        RequestBuilder getConfig = new RequestBuilder(RequestBuilder.GET, "getconfig");
+//        getConfig.setCallback(new RequestCallback() {
+//            @Override
+//            public void onResponseReceived(Request request, Response response) {
+//                try{
+//                    JSONValue jsonMap = JSONParser.parseLenient(response.getText());
+//                    JSONObject parentObj = jsonMap.isObject();
+//                    proxyUrl = parentObj.get("proxy").isString().stringValue();
+//                    docHref = parentObj.get("docLocation").isString().stringValue();
+//                    mapHeight = Integer.parseInt(parentObj.get("mapHeight").isString().stringValue());
+//                    mapWidth = Integer.parseInt(parentObj.get("mapWidth").isString().stringValue());
+//                    baseMapUrl = parentObj.get("baseMapUrl").isString().stringValue();
+//                    baseMapLayer = parentObj.get("baseMapLayer").isString().stringValue();
+//                    init();
+//                } catch(Exception e){
+//                    initWithDefaults();
+//                }
+//            }
+//            
+//            @Override
+//            public void onError(Request request, Throwable exception) {
+//                initWithDefaults();
+//            }
+//        });
 //        try {
 //            getConfig.send();
 //        } catch (RequestException e) {
@@ -303,8 +299,11 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
         screenshot.setTarget("_blank");
         screenshot.setTitle("Open a downloadable image in a new window - may be slow to load");
         
-        myOceanLogo = new Image(logoStaticUrl);
-        myOceanLogo.setWidth("150px");
+        logo = new Image("img/resc_logo.png");
+
+        loadingImage = new Image("img/loading.gif");
+        loadingImage.setVisible(false);
+        loadingImage.setStylePrimaryName("loadingImage");
         
         mapArea = new MapArea(baseUrl, mapWidth, mapHeight, this, baseMapUrl, baseMapLayer);
         
@@ -313,7 +312,7 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
         RootLayoutPanel mainWindow = RootLayoutPanel.get();
         
         
-        mainWindow.add(LayoutManager.getMyOceanViewerV2Layout(layerSelectorCombo,
+        mainWindow.add(LayoutManager.getGodivaLayout(layerSelectorCombo,
                                                               unitsInfo, 
                                                               timeSelector, 
                                                               elevationSelector, 
@@ -324,8 +323,9 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
                                                               email,
                                                               docLink,
                                                               screenshot,
-                                                              myOceanLogo, 
-                                                              mapArea));
+                                                              logo, 
+                                                              mapArea,
+                                                              loadingImage));
         
         timeSelector.setEnabled(false);
         elevationSelector.setEnabled(false);
@@ -336,10 +336,12 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
     }
 
     private void populateLayerInfo() {
+        System.out.println("pLI");
         RequestBuilder getMenuRequest = new RequestBuilder(RequestBuilder.GET, getUrl("?request=GetMetadata&item=menu"));
         getMenuRequest.setCallback(new RequestCallback() {
             @Override
             public void onResponseReceived(Request req, Response response) {
+                System.out.println("Got menu");
                 try {
                     if(response.getStatusCode() != Response.SC_OK){
                         throw new ConnectionException("Error contacting server");
@@ -372,6 +374,7 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
                     if (!permalinking) {
                         dealWithLayerSelection(layerSelectorCombo.getSelectedId(), true);
                     } else {
+                        System.out.println("Permalink");
                         String currentLayer = permalinkParamsMap.get("layer");
                         if (currentLayer != null) {
                             layerSelectorCombo.setSelectedLayer(currentLayer);
@@ -405,6 +408,7 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
     }
 
     private void dealWithLayerSelection(String selectedId, final boolean autoUpdate) {
+        System.out.println("LS:"+autoUpdate);
         if (selectedId == null) {
             // We have no variables defined in the selected layer
             // Return here. We are already dealing with the case where there are
@@ -755,11 +759,13 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
         if(loading){
             loadingCount++;
             if(loadingCount == 1)
-                myOceanLogo.setUrl(logoDynamicUrl);
+                loadingImage.setVisible(true);
+//                myOceanLogo.setUrl(logoDynamicUrl);
         } else {
             loadingCount--;
             if(loadingCount == 0)
-                myOceanLogo.setUrl(logoStaticUrl);
+                loadingImage.setVisible(false);
+//                myOceanLogo.setUrl(logoStaticUrl);
         }
     }
 
@@ -866,5 +872,10 @@ public class MyOceanPortal implements EntryPoint, ErrorHandler, LayerSelectionHa
     @Override
     public void autoAdjustPalette() {
         getAutoRange(true);
+    }
+
+    @Override
+    public void refreshLayerList() {
+        populateLayerInfo();
     }
 }
