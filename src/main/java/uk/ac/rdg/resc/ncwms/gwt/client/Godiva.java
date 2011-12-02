@@ -336,12 +336,10 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
     }
 
     private void populateLayerInfo() {
-        System.out.println("pLI");
         RequestBuilder getMenuRequest = new RequestBuilder(RequestBuilder.GET, getUrl("?request=GetMetadata&item=menu"));
         getMenuRequest.setCallback(new RequestCallback() {
             @Override
             public void onResponseReceived(Request req, Response response) {
-                System.out.println("Got menu");
                 try {
                     if(response.getStatusCode() != Response.SC_OK){
                         throw new ConnectionException("Error contacting server");
@@ -408,7 +406,6 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
     }
 
     private void dealWithLayerSelection(String selectedId, final boolean autoUpdate) {
-        System.out.println("LS:"+autoUpdate);
         if (selectedId == null) {
             // We have no variables defined in the selected layer
             // Return here. We are already dealing with the case where there are

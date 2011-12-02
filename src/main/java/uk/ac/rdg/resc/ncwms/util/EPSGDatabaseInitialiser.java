@@ -24,11 +24,12 @@ import org.springframework.jdbc.datasource.SingleConnectionDataSource;
  */
 public class EPSGDatabaseInitialiser {
     private DataSource dataSource;
+    private Connection conn;
     public EPSGDatabaseInitialiser() {
         try {
             String databasePath = new File("epsgcodes.db").getCanonicalPath();
 //            Class.forName("org.h2.Driver");
-            Connection conn = DriverManager.getConnection("jdbc:h2:" + databasePath);
+            conn = DriverManager.getConnection("jdbc:h2:" + databasePath);
             conn.setAutoCommit(true);
             dataSource = new SingleConnectionDataSource(conn, true);
             Hints.putSystemDefault(Hints.EPSG_DATA_SOURCE, dataSource);
@@ -54,5 +55,11 @@ public class EPSGDatabaseInitialiser {
     
     public DataSource getDataSource(){
         return dataSource;
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        conn.close();
     }
 }
