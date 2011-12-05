@@ -544,7 +544,7 @@ public abstract class AbstractWmsController extends AbstractController {
                     + feature.getId() + ".kmz");
         }
         // Render the images and write to the output stream
-        imageFormat.writeImage(imageProducer.getRenderedFrames(), httpServletResponse.getOutputStream(), feature,
+        imageFormat.writeImage(imageProducer.getRenderedFrames(), httpServletResponse.getOutputStream(), feature, dr.getBbox(),
                 tValueStrings, dr.getElevationString(), legend);
 
         return null;
