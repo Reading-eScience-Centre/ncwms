@@ -279,6 +279,8 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Override
     public GridSeriesFeature<?> getFeatureById(String featureId) {
+        if(features == null)
+            return null;
         return features.getFeatureById(featureId);
     }
 

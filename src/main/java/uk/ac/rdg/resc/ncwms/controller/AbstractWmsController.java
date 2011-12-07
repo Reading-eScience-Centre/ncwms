@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -71,7 +72,7 @@ import uk.ac.rdg.resc.edal.coverage.grid.HorizontalGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
-import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinatesImpl;
+import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinates2DImpl;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.feature.ProfileFeature;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
@@ -602,7 +603,7 @@ public abstract class AbstractWmsController extends AbstractController {
         // Get the real-world coordinate values of the point of interest
         // Remember that the vertical axis is flipped
         int j = dr.getHeight() - dr.getPixelRow() - 1;
-        HorizontalPosition pos = grid.transformCoordinates(new GridCoordinatesImpl(dr.getPixelColumn(), j));
+        HorizontalPosition pos = grid.transformCoordinates(new GridCoordinates2DImpl(dr.getPixelColumn(), j));
 
         // Transform these coordinates into lon-lat
         LonLatPosition lonLat = GISUtils.transformToWgs84LonLat(pos);
@@ -1151,6 +1152,13 @@ public abstract class AbstractWmsController extends AbstractController {
         }
     }
 
+    /** Compares double values based upon their absolute value */
+    private static final Comparator<Double> ABSOLUTE_VALUE_COMPARATOR = new Comparator<Double>() {
+        @Override public int compare(Double d1, Double d2) {
+            return Double.compare(Math.abs(d1), Math.abs(d2));
+        }
+    };
+
     /**
      * Gets the elevation value requested by the client.
      * 
@@ -1178,9 +1186,9 @@ public abstract class AbstractWmsController extends AbstractController {
                 throw new InvalidDimensionValueException("elevation", "null");
             }
             if (vAxis.getVerticalCrs().isPressure()) {
-                defaultVal = vAxis.getCoordinateExtent().getHigh();
+                defaultVal = Collections.max(vAxis.getCoordinateValues());
             } else {
-                defaultVal = vAxis.getCoordinateExtent().getLow();
+                defaultVal = Collections.min(vAxis.getCoordinateValues(), ABSOLUTE_VALUE_COMPARATOR);
             }
             return defaultVal;
         }

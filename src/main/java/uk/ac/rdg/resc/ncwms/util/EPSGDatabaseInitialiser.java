@@ -9,9 +9,7 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import org.geotoolkit.factory.Hints;
-import org.geotoolkit.referencing.CRS;
 import org.geotoolkit.referencing.factory.epsg.EpsgInstaller;
-import org.geotoolkit.referencing.factory.epsg.EpsgInstaller.Result;
 import org.opengis.util.FactoryException;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
@@ -36,7 +34,7 @@ public class EPSGDatabaseInitialiser {
             EpsgInstaller i = new EpsgInstaller();
             i.setDatabase(conn);
             if(!i.exists()){
-                Result r = i.call();
+                i.call();
 //                System.out.println(r.elapsedTime);
                 // TODO put logging here (once logging is sorted out)
             }
@@ -56,10 +54,23 @@ public class EPSGDatabaseInitialiser {
     public DataSource getDataSource(){
         return dataSource;
     }
+
+    /**
+     * Called by Spring to clean up the database
+     */
+    public void close() {
+        if (conn != null) {
+            try {
+                conn.close();
+            } catch (SQLException sqle) {
+                // TODO handle this better
+            }
+        }
+    }
     
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        conn.close();
+        close();
     }
 }

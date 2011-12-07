@@ -92,6 +92,11 @@
 		    <version>1.2</version>
 		</dependency>
 	    <dependency>
+			<groupId>json-taglib</groupId>
+			<artifactId>json-taglib</artifactId>
+			<version>0.4.1</version>
+		</dependency>
+	    <dependency>
 	      <groupId>com.google.gwt</groupId>
 	      <artifactId>gwt-user</artifactId>
 	      <version>2.4.0</version>
@@ -106,6 +111,11 @@
 		    <groupId>org.geotoolkit</groupId>
 		    <artifactId>geotk-epsg</artifactId>
 		    <version>3.18-geoapi-3.0</version>
+		</dependency>
+		<dependency>
+		    <groupId>javax.validation</groupId>
+		    <artifactId>validation-api</artifactId>
+		    <version>1.0.0.GA</version>
 		</dependency>
     </dependencies>
 	<build>
@@ -131,11 +141,16 @@
             <url>http://edal-java.googlecode.com/hg/repository/</url>
         </repository>
         <repository>
+<!--         	This is for the newest gwt-openlayers stuff (i.e. SNAPSHOT, which is needed for our app) -->
             <id>sonatype-nexus-snapshots</id>
             <name>Sonatype Nexus Snapshots</name>
-            <url>http://oss.sonatype.org/content/repositories/snapshots
-            </url>
+            <url>http://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
-        
+        <repository>
+<!--         	This has the JSON taglib in it -->
+            <id>mvnsearch</id>
+            <name>Mvnsearch.org</name>
+            <url>http://www.mvnsearch.org/maven2/</url>
+        </repository>
     </repositories>
 </project>
