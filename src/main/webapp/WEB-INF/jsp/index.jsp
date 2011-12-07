@@ -65,7 +65,11 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
             <td>
                 <!-- Direct links to the Godiva2 site -->
                 <c:forEach var="feature" items="${features}">
-                    <c:set var="bbox" value="${feature.coverage.domain.horizontalGrid.coordinateExtent}"/>
+                    <c:set var="cov" value="${feature.coverage}"/>
+                    <c:set var="dom" value="${cov.domain}"/>
+                    <c:set var="hgrid" value="${dom.horizontalGrid}"/>
+                    <c:set var="bbox" value="${hgrid.coordinateExtent}"/>
+<%--                     <c:set var="bbox" value="${feature.coverage.domain.horizontalGrid.coordinateExtent}"/> --%>
                     <a href="godiva2.html?layer=${dataset.id}/${feature.id}&amp;bbox=${bbox.minX},${bbox.minY},${bbox.maxX},${bbox.maxY}">${feature.name}</a><br />
                 </c:forEach>
             </td>

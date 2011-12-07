@@ -175,6 +175,6 @@
     </bean>
     
     <bean id="epsgDatabaseInit"
-    	class="uk.ac.rdg.resc.ncwms.util.EPSGDatabaseInitialiser">
+    	class="uk.ac.rdg.resc.ncwms.util.EPSGDatabaseInitialiser" destroy-method="close">
     </bean>
 </beans>
