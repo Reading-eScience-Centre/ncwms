@@ -420,7 +420,7 @@ public abstract class AbstractWmsController extends AbstractController {
      *      DefaultDataReader.read()
      * @todo Separate Model and View code more cleanly
      */
-    protected synchronized ModelAndView getMap(RequestParams params, FeatureFactory featureFactory,
+    protected ModelAndView getMap(RequestParams params, FeatureFactory featureFactory,
             HttpServletResponse httpServletResponse, UsageLogEntry usageLogEntry) throws WmsException, Exception {
         // Parse the URL parameters
         GetMapRequest getMapRequest = new GetMapRequest(params);
@@ -1281,7 +1281,11 @@ public abstract class AbstractWmsController extends AbstractController {
      *             if the layer does not contain the given time, or if the given
      *             ISO8601 string is not valid.
      */
-    static int findTIndex(String isoDateTime, TimeAxis tAxis)
+    /*
+     * This method is synchronized because if it isn't, it causes problems, and
+     * exceptions can be thrown
+     */
+    static synchronized int findTIndex(String isoDateTime, TimeAxis tAxis)
             throws InvalidDimensionValueException {
         TimePosition target;
         if (isoDateTime.equals("current")) {
@@ -1294,10 +1298,12 @@ public abstract class AbstractWmsController extends AbstractController {
             }
         }
 
-        // Find the equivalent DateTime in the Layer. Note that we can't simply
-        // use the contains() method of the List, since this is based on
-        // equals().
-        // We want to find the DateTime with the same millisecond instant.
+        /*
+         * Find the equivalent DateTime in the Layer. Note that we can't simply
+         * use the contains() method of the List, since this is based on
+         * equals(). We want to find the DateTime with the same millisecond
+         * instant.
+         */
         int index = TimeUtils.findTimeIndex(tAxis.getCoordinateValues(), target);
         if (index < 0) {
             throw new InvalidDimensionValueException("time", isoDateTime);
