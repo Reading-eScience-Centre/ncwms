@@ -998,10 +998,13 @@ public abstract class AbstractWmsController extends AbstractController {
                 @Override
                 @SuppressWarnings("unchecked")
                 public Float get(int index) {
-                    if(clazz == Float.class){
-                        return ((List<Float>)pCoverage.getValues()).get(index);
-                    } else if(clazz == Vector2D.class){
-                        return ((List<Vector2D<Float>>)pCoverage.getValues()).get(index).getMagnitude();
+                    List<?> values = pCoverage.getValues();
+                    if (values == null)
+                        return null;
+                    if (clazz == Float.class) {
+                        return ((List<Float>) values).get(index);
+                    } else if (clazz == Vector2D.class) {
+                        return ((List<Vector2D<Float>>) values).get(index).getMagnitude();
                     } else {
                         // Shouldn't happen
                         throw new UnsupportedOperationException("Unsupported layer type");
