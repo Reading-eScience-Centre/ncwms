@@ -19,7 +19,7 @@ import uk.ac.rdg.resc.edal.cdm.feature.GridSeriesFeatureCollectionFactory;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.position.TimePosition;
-import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
+import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 
@@ -325,7 +325,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
         if (this.copyrightStatement == null || this.copyrightStatement.trim().equals("")) {
             return "";
         }
-        int currentYear = new TimePositionImpl().getYear();
+        int currentYear = new TimePositionJoda().getYear();
         // Don't forget to escape dollar signs and backslashes in the regexp
         return this.copyrightStatement.replaceAll("\\$\\{year\\}", "" + currentYear);
     }
@@ -407,7 +407,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
             this.err = null;
             this.numErrorsInARow = 0;
             this.state = State.READY;
-            this.lastSuccessfulUpdateTime = new TimePositionImpl();
+            this.lastSuccessfulUpdateTime = new TimePositionJoda();
 
             logger.debug("Loaded metadata for {}", this.id);
 
@@ -417,7 +417,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
         } catch (Exception e) {
             this.state = State.ERROR;
             this.numErrorsInARow++;
-            this.lastFailedUpdateTime = new TimePositionImpl();
+            this.lastFailedUpdateTime = new TimePositionJoda();
             // Reduce logging volume by only logging the error if it's a new
             // type of exception.
             if (this.err == null || this.err.getClass() != e.getClass()) {
@@ -447,7 +447,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
             delaySeconds = Math.min(delaySeconds, 10 * 60);
             // lastFailedUpdateTime should never be null: this is defensive
             boolean needsRefresh = lastFailedUpdateTime == null ? true
-                    : (new TimePositionImpl().getValue() > lastFailedUpdateTime.getValue()
+                    : (new TimePositionJoda().getValue() > lastFailedUpdateTime.getValue()
                             + (1000 * (long) delaySeconds));
             logger.debug("delay = {} seconds, needsRefresh = {}", delaySeconds, needsRefresh);
             return needsRefresh;
@@ -456,7 +456,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
         } else {
             // State = READY. Check the age of the metadata
             // Return true if we are after the next scheduled update
-            return (new TimePositionImpl().getValue() > lastSuccessfulUpdateTime.getValue() + 60 * 1000 * updateInterval);
+            return (new TimePositionJoda().getValue() > lastSuccessfulUpdateTime.getValue() + 60 * 1000 * updateInterval);
         }
     }
 

@@ -26,7 +26,7 @@ import uk.ac.rdg.resc.edal.position.TimePeriod;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.impl.TimePeriodImpl;
-import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
+import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.config.Config;
@@ -106,7 +106,7 @@ public abstract class AbstractMetadataController {
         if(tAxis != null){
             calendarSystem = tAxis.getCalendarSystem();
         }
-        TimePosition targetDateTime = new TimePositionImpl(calendarSystem);
+        TimePosition targetDateTime = new TimePositionJoda(calendarSystem);
         String targetDateIso = request.getParameter("time");
         if (targetDateIso != null && !targetDateIso.trim().equals("")) {
             try {
@@ -124,7 +124,7 @@ public abstract class AbstractMetadataController {
             timeValues = tAxis.getCoordinateValues();
         else
             timeValues = Collections.emptyList();
-        TimePosition nearestDateTime = timeValues.isEmpty() ? new TimePositionImpl(0) : timeValues.get(0);
+        TimePosition nearestDateTime = timeValues.isEmpty() ? new TimePositionJoda() : timeValues.get(0);
 
         /*
          * Takes an array of time values for a layer and turns it into a Map of
