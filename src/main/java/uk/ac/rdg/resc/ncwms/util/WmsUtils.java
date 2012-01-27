@@ -53,7 +53,7 @@ import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
-import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
+import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.config.Config;
@@ -329,7 +329,7 @@ public class WmsUtils
     
     public static TimePosition getClosestToCurrentTime(TimeAxis tAxis){
         if (tAxis == null) return null; // no time axis
-        int index = TimeUtils.findTimeIndex(tAxis.getCoordinateValues(), new TimePositionImpl());
+        int index = TimeUtils.findTimeIndex(tAxis.getCoordinateValues(), new TimePositionJoda());
         if (index < 0) {
             // We can calculate the insertion point
             int insertionPoint = -(index + 1); 

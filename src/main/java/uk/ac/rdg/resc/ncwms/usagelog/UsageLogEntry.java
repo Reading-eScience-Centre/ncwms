@@ -34,7 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.position.TimePosition;
-import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
+import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.ncwms.controller.GetFeatureInfoDataRequest;
 import uk.ac.rdg.resc.ncwms.controller.GetFeatureInfoRequest;
 import uk.ac.rdg.resc.ncwms.controller.GetMapDataRequest;
@@ -54,7 +54,7 @@ import uk.ac.rdg.resc.ncwms.controller.GetMapStyleRequest;
 public class UsageLogEntry
 {
     // These fields appear in every log entry
-    private TimePosition requestTime = new TimePositionImpl(); // The time at which the request was received
+    private TimePosition requestTime = new TimePositionJoda(); // The time at which the request was received
     private String clientIpAddress = null;
     private String clientHost = null;
     private String clientReferrer = null;

@@ -88,7 +88,7 @@ import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.VerticalCrs;
 import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.HorizontalPositionImpl;
-import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
+import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.position.impl.VerticalPositionImpl;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.GISUtils;
@@ -348,7 +348,7 @@ public abstract class AbstractWmsController extends AbstractController {
         models.put("config", this.serverConfig);
         models.put("datasets", datasets);
         // We use the current time if the last update time is unknown
-        models.put("lastUpdate", lastUpdateTime == null ? new TimePositionImpl() : lastUpdateTime);
+        models.put("lastUpdate", lastUpdateTime == null ? new TimePositionJoda() : lastUpdateTime);
         models.put("wmsBaseUrl", httpServletRequest.getRequestURL().toString());
         // Show only a subset of the CRS codes that we are likely to use.
         // Otherwise Capabilities doc gets very large indeed.
@@ -423,6 +423,7 @@ public abstract class AbstractWmsController extends AbstractController {
     protected ModelAndView getMap(RequestParams params, FeatureFactory featureFactory,
             HttpServletResponse httpServletResponse, UsageLogEntry usageLogEntry) throws WmsException, Exception {
         // Parse the URL parameters
+        
         GetMapRequest getMapRequest = new GetMapRequest(params);
         usageLogEntry.setGetMapRequest(getMapRequest);
 
@@ -487,7 +488,6 @@ public abstract class AbstractWmsController extends AbstractController {
                 throw new StyleNotDefinedException("There is no palette with the name " + paletteName);
             }
         }
-
         ImageProducer imageProducer = new ImageProducer.Builder().width(dr.getWidth()).height(dr.getHeight()).style(
                 style).palette(palette).colourScaleRange(scaleRange).backgroundColour(
                 styleRequest.getBackgroundColour()).transparent(styleRequest.isTransparent()).logarithmic(logScale)
@@ -530,7 +530,6 @@ public abstract class AbstractWmsController extends AbstractController {
         }
         long timeToExtractData = System.currentTimeMillis() - beforeExtractData;
         usageLogEntry.setTimeToExtractDataMs(timeToExtractData);
-
         // We only create a legend object if the image format requires it
         BufferedImage legend = imageFormat.requiresLegend() ? imageProducer.getLegend(feature.getName(), feature
                 .getCoverage().getRangeMetadata(null).getUnits().getUnitString()) : null;
@@ -631,7 +630,6 @@ public abstract class AbstractWmsController extends AbstractController {
 
         // First we read the timeseries data. If the layer doesn't have a time
         // axis we'll use ScalarLayer.readSinglePoint() instead.
-        // TODO: this code is messy: refactor.
         List<Float> tsData;
         if(tValues.isEmpty()){
             GridSeriesCoverage<?> cov = feature.getCoverage();
@@ -1234,7 +1232,7 @@ public abstract class AbstractWmsController extends AbstractController {
         if (timeString == null) {
             TimePosition defaultDateTime;
 
-            int index = TimeUtils.findTimeIndex(tAxis.getCoordinateValues(), new TimePositionImpl());
+            int index = TimeUtils.findTimeIndex(tAxis.getCoordinateValues(), new TimePositionJoda());
             if (index < 0) {
                 // We can calculate the insertion point
                 int insertionPoint = -(index + 1); // see docs for
@@ -1290,7 +1288,7 @@ public abstract class AbstractWmsController extends AbstractController {
      * not a big performance hit to synchronize this method, as it is pretty
      * quick.
      */
-    static synchronized int findTIndex(String isoDateTime, TimeAxis tAxis)
+    static int findTIndex(String isoDateTime, TimeAxis tAxis)
             throws InvalidDimensionValueException {
         TimePosition target;
         if (isoDateTime.equalsIgnoreCase("current")) {

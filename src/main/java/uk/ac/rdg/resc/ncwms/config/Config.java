@@ -33,7 +33,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -63,7 +62,7 @@ import org.springframework.context.ApplicationContextAware;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.unidata.io.RandomAccessFile;
 import uk.ac.rdg.resc.edal.position.TimePosition;
-import uk.ac.rdg.resc.edal.position.impl.TimePositionImpl;
+import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.ncwms.controller.ServerConfig;
 import uk.ac.rdg.resc.ncwms.security.Users;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
@@ -154,7 +153,7 @@ public class Config implements ServerConfig, ApplicationContextAware
                 configFile.getPath());
         }
 
-        config.lastUpdateTime = new TimePositionImpl(new Date().getTime());
+        config.lastUpdateTime = new TimePositionJoda();
 
         // Initialize the cache of NetcdfDatasets.  Hold between 50 and 500
         // datasets, clearing out the cache every 5 minutes.  If the number of
