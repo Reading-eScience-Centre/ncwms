@@ -25,6 +25,7 @@ import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.TimePeriod;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
+import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePeriodImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.util.Extents;
@@ -265,7 +266,7 @@ public abstract class AbstractMetadataController {
         RegularGrid grid = WmsUtils.getImageGrid(dr);
 
         // Get the value on the z axis
-        double zValue = AbstractWmsController.getElevationValue(dr.getElevationString(), feature);
+        VerticalPosition zValue = AbstractWmsController.getElevationValue(dr.getElevationString(), feature);
 
         // Get the requested timestep (taking the first only if an animation is
         // requested)

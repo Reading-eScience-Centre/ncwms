@@ -81,6 +81,7 @@ import uk.ac.rdg.resc.edal.position.LonLatPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.VerticalCrs;
 import uk.ac.rdg.resc.edal.position.VerticalCrs.PositiveDirection;
+import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.util.GISUtils;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
@@ -359,7 +360,7 @@ final class Charting {
     public static JFreeChart createVerticalSectionChart(GridSeriesFeature<?> feature,
             LineString horizPath, List<Double> elevationValues, List<List<Float>> sectionData,
             Extent<Float> colourScaleRange, ColorPalette palette, int numColourBands,
-            boolean logarithmic, double zValue) {
+            boolean logarithmic, VerticalPosition zValue) {
         ZAxisAndValues zAxisAndValues = getZAxisAndValues(feature, elevationValues);
         // The elevation values might have been reversed
         elevationValues = zAxisAndValues.zValues;
@@ -427,7 +428,7 @@ final class Charting {
                 // add marker to plot
                 plot.addDomainMarker(target);
                 // add line marker to vertical section plot
-                final Marker verticalLevel = new ValueMarker(Math.abs(zValue));
+                final Marker verticalLevel = new ValueMarker(Math.abs(zValue.getZ()));
                 verticalLevel.setPaint(Color.lightGray);
                 verticalLevel.setLabel("at " + zValue + "  level ");
                 verticalLevel.setLabelAnchor(RectangleAnchor.BOTTOM_RIGHT);

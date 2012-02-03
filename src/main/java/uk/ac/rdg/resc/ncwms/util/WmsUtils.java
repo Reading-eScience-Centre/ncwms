@@ -53,7 +53,9 @@ import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
+import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
+import uk.ac.rdg.resc.edal.position.impl.VerticalPositionImpl;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.config.Config;
@@ -341,29 +343,31 @@ public class WmsUtils
         return tAxis.getCoordinateValue(index);
     }
 
-    public static double getUppermostElevation(GridSeriesFeature<?> feature){
+    public static VerticalPosition getUppermostElevation(GridSeriesFeature<?> feature){
         VerticalAxis vAxis = feature.getCoverage().getDomain().getVerticalAxis();
         // We must access the elevation values via the accessor method in case
         // subclasses override it.
         if (vAxis == null) {
-            return Double.NaN;
+            return new VerticalPositionImpl(Double.NaN, null);
         }
 
+        double value;
         if (vAxis.getVerticalCrs().isPressure()) {
             // The vertical axis is pressure. The default (closest to the
             // surface)
             // is therefore the maximum value.
-            return Collections.max(vAxis.getCoordinateValues());
+            value = Collections.max(vAxis.getCoordinateValues());
         } else {
             // The vertical axis represents linear height, so we find which
             // value is closest to zero (the surface), i.e. the smallest
             // absolute value
-            return Collections.min(vAxis.getCoordinateValues(), new Comparator<Double>() {
+            value = Collections.min(vAxis.getCoordinateValues(), new Comparator<Double>() {
                 @Override public int compare(Double d1, Double d2) {
                     return Double.compare(Math.abs(d1), Math.abs(d2));
                 }
             });
         }
+        return new VerticalPositionImpl(value, vAxis.getVerticalCrs());
     }
     
     public static Dataset getDataset(Config serverConfig, String layerName){
