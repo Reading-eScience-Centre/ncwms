@@ -75,17 +75,22 @@ import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinates2DImpl;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.feature.ProfileFeature;
+import uk.ac.rdg.resc.edal.geometry.BoundingBox;
+import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.graphics.ImageFormat;
-import uk.ac.rdg.resc.edal.graphics.ImageProducer;
 import uk.ac.rdg.resc.edal.graphics.KmzFormat;
+import uk.ac.rdg.resc.edal.graphics.MapRenderer;
+import uk.ac.rdg.resc.edal.graphics.MapStyleDescriptor;
+import uk.ac.rdg.resc.edal.graphics.MapStyleDescriptor.Style;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.LonLatPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.VerticalCrs;
+import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.HorizontalPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
@@ -445,11 +450,14 @@ public abstract class AbstractWmsController extends AbstractController {
         }
 
         String layerName = getLayerName(dr);
+//        String[] layerNames = dr.getLayers();
+//        boolean usedGridLayer = false;
+//        for(String layer : layerNames){
+//            
+//        }
+        
         GridSeriesFeature<?> feature = featureFactory.getFeature(layerName);
         usageLogEntry.setFeature(feature);
-
-        // Get the grid onto which the data will be projected
-        RegularGrid grid = WmsUtils.getImageGrid(dr);
 
         // Create an object that will turn data into BufferedImages
         Extent<Float> scaleRange = styleRequest.getColorScaleRange();
@@ -464,44 +472,48 @@ public abstract class AbstractWmsController extends AbstractController {
         /*
          * DEFAULT style is BOXFILL for scalar quantities, and VECTOR for vector quantities
          */
-        ImageProducer.Style style = ImageProducer.Style.DEFAULT;
-        ColorPalette palette = ColorPalette.get(metadata.getPaletteName());
+        MapStyleDescriptor styleDescriptor = new MapStyleDescriptor();
+
+        styleDescriptor.setColorPalette(metadata.getPaletteName());
         String[] styles = styleRequest.getStyles();
         if (styles.length > 0) {
             String[] styleStrEls = styles[0].split("/");
 
             // Get the style type
             String styleType = styleStrEls[0];
-            if (styleType.equalsIgnoreCase("boxfill"))
-                style = ImageProducer.Style.BOXFILL;
-            else if (styleType.equalsIgnoreCase("vector"))
-                style = ImageProducer.Style.VECTOR;
-            else
-                throw new StyleNotDefinedException("The style " + styles[0] + " is not supported by this server");
+            if (styleType.equalsIgnoreCase("boxfill")) {
+                // TODO deal with style here
+            } else if (styleType.equalsIgnoreCase("vector")) {
+                // TODO deal with style here
+            } else {
+                throw new StyleNotDefinedException("The style " + styles[0]
+                        + " is not supported by this server");
+            }
 
             // Now get the colour palette
             String paletteName = null;
             if (styleStrEls.length > 1)
                 paletteName = styleStrEls[1];
-            palette = ColorPalette.get(paletteName);
-            if (palette == null) {
-                throw new StyleNotDefinedException("There is no palette with the name " + paletteName);
-            }
+            styleDescriptor.setColorPalette(paletteName);
         }
-        ImageProducer imageProducer = new ImageProducer.Builder().width(dr.getWidth()).height(dr.getHeight()).style(
-                style).palette(palette).colourScaleRange(scaleRange).backgroundColour(
-                styleRequest.getBackgroundColour()).transparent(styleRequest.isTransparent()).logarithmic(logScale)
-                .opacity(styleRequest.getOpacity()).numColourBands(styleRequest.getNumColourBands()).build();
+        
+        styleDescriptor.setScaleRange(scaleRange);
+        styleDescriptor.setTransparent(styleRequest.isTransparent());
+        styleDescriptor.setLogarithmic(logScale);
+        styleDescriptor.setOpacity(styleRequest.getOpacity());
+        styleDescriptor.setNumColourBands(styleRequest.getNumColourBands());
+        
         // Need to make sure that the images will be compatible with the
         // requested image format
-        if (imageProducer.isTransparent() && !imageFormat.supportsFullyTransparentPixels()) {
+        if (styleRequest.isTransparent() && !imageFormat.supportsFullyTransparentPixels()) {
             throw new WmsException("The image format " + mimeType + " does not support fully-transparent pixels");
         }
-        if (imageProducer.getOpacity() < 100 && !imageFormat.supportsPartiallyTransparentPixels()) {
+        if (styleRequest.getOpacity() < 100 && !imageFormat.supportsPartiallyTransparentPixels()) {
             throw new WmsException("The image format " + mimeType + " does not support partially-transparent pixels");
         }
-
-        double zValue = getElevationValue(dr.getElevationString(), feature);
+        BoundingBox bbox = new BoundingBoxImpl(dr.getBbox(), WmsUtils.getCrs(dr.getCrsCode()));
+        MapRenderer mapRenderer = new MapRenderer(styleDescriptor, dr.getWidth(), dr.getHeight(), bbox);
+        VerticalPosition zValue = getElevationValue(dr.getElevationString(), feature);
 
         // Cycle through all the provided timesteps, extracting data for each
         // step
@@ -523,15 +535,16 @@ public abstract class AbstractWmsController extends AbstractController {
             }
             tValueStrings.add(tValueStr);
             
-            /*
-             * TODO Cache this...
-             */
-            imageProducer.addFrame(feature.extractHorizontalGrid(timeValue, zValue, grid), tValueStr);
+            mapRenderer.addData(feature, timeValue, zValue, tValueStr);
+//            /*
+//             * TODO Cache this...
+//             */
+//            imageProducer.addFrame(feature, timeValue, zValue, tValueStr);
         }
         long timeToExtractData = System.currentTimeMillis() - beforeExtractData;
         usageLogEntry.setTimeToExtractDataMs(timeToExtractData);
         // We only create a legend object if the image format requires it
-        BufferedImage legend = imageFormat.requiresLegend() ? imageProducer.getLegend(feature.getName(), feature
+        BufferedImage legend = imageFormat.requiresLegend() ? styleDescriptor.getLegend(feature.getName(), feature
                 .getCoverage().getRangeMetadata(null).getUnits().getUnitString()) : null;
 
         // Write the image to the client.
@@ -544,7 +557,7 @@ public abstract class AbstractWmsController extends AbstractController {
                     + feature.getId() + ".kmz");
         }
         // Render the images and write to the output stream
-        imageFormat.writeImage(imageProducer.getRenderedFrames(), httpServletResponse.getOutputStream(), feature, dr.getBbox(),
+        imageFormat.writeImage(mapRenderer.getRenderedFrames(), httpServletResponse.getOutputStream(), feature, dr.getBbox(),
                 tValueStrings, dr.getElevationString(), legend);
 
         return null;
@@ -619,8 +632,7 @@ public abstract class AbstractWmsController extends AbstractController {
         }
 
         // Get the elevation value requested
-        double zValue = getElevationValue(dr.getElevationString(), feature);
-        VerticalCrs vCrs = feature.getCoverage().getDomain().getVerticalCrs();
+        VerticalPosition zValue = getElevationValue(dr.getElevationString(), feature);
 
         // Get the requested timesteps. If the layer doesn't have
         // a time axis then this will return a single-element List with value
@@ -633,7 +645,7 @@ public abstract class AbstractWmsController extends AbstractController {
         List<Float> tsData;
         if(tValues.isEmpty()){
             GridSeriesCoverage<?> cov = feature.getCoverage();
-            Object val = cov.evaluate(new GeoPositionImpl(pos, new VerticalPositionImpl(zValue, vCrs), null));
+            Object val = cov.evaluate(new GeoPositionImpl(pos, zValue, null));
             if(cov.getRangeMetadata(null).getValueType() == Float.class){
                 tsData = Arrays.asList((Float) val);
             } else if(cov.getRangeMetadata(null).getValueType() == Vector2D.class){
@@ -645,7 +657,7 @@ public abstract class AbstractWmsController extends AbstractController {
             tsData = new ArrayList<Float>();
             for(TimePosition time : tValues){
                 GridSeriesCoverage<?> cov = feature.getCoverage();
-                Object val = cov.evaluate(new GeoPositionImpl(pos, new VerticalPositionImpl(zValue, vCrs), time));
+                Object val = cov.evaluate(new GeoPositionImpl(pos, zValue, time));
                 if(cov.getRangeMetadata(null).getValueType() == Float.class){
                     tsData.add((Float) val);
                 } else if(cov.getRangeMetadata(null).getValueType() == Vector2D.class){
@@ -770,8 +782,7 @@ public abstract class AbstractWmsController extends AbstractController {
         String outputFormat = params.getMandatoryString("format");
         List<TimePosition> tValues = getTimeValues(params.getString("time"), feature);
         TimePosition tValue = tValues.isEmpty() ? null : tValues.get(0);
-        double zValue = getElevationValue(params.getString("elevation"), feature);
-        VerticalCrs vCrs = feature.getCoverage().getDomain().getVerticalCrs();
+        VerticalPosition zValue = getElevationValue(params.getString("elevation"), feature);
 
         if (!outputFormat.equals(FEATURE_INFO_PNG_FORMAT) && !outputFormat.equals(FEATURE_INFO_XML_FORMAT)) {
             throw new InvalidFormatException(outputFormat);
@@ -797,14 +808,14 @@ public abstract class AbstractWmsController extends AbstractController {
             GridSeriesCoverage<Float> coverage = (GridSeriesCoverage<Float>) feature.getCoverage();
             for(HorizontalPosition pos : positions){
                 transectData.add(coverage.evaluate(new GeoPositionImpl(pos,
-                        new VerticalPositionImpl(zValue, vCrs), tValue)));
+                        zValue, tValue)));
             }
         } else if(valueType == Vector2D.class){
             @SuppressWarnings("unchecked")
             GridSeriesCoverage<Vector2D<Float>> coverage = (GridSeriesCoverage<Vector2D<Float>>) feature.getCoverage();
             for(HorizontalPosition pos : positions){
                 transectData.add(coverage.evaluate(new GeoPositionImpl(pos,
-                        new VerticalPositionImpl(zValue, vCrs), tValue)).getMagnitude());
+                        zValue, tValue)).getMagnitude());
             }
         } else {
             throw new IllegalStateException("Unrecognized layer type");
@@ -1031,7 +1042,7 @@ public abstract class AbstractWmsController extends AbstractController {
             scaleRange = Extents.newExtent(min, max);
         }
 
-        double zValue = getElevationValue(params.getString("elevation"), feature);
+        VerticalPosition zValue = getElevationValue(params.getString("elevation"), feature);
 
         return Charting.createVerticalSectionChart(feature, lineString, zValues, sectionData, scaleRange, palette,
                 numColourBands, logScale, zValue);
@@ -1174,14 +1185,14 @@ public abstract class AbstractWmsController extends AbstractController {
      *             is null and the layer does not support a default elevation
      *             value
      */
-    static double getElevationValue(String zValue, GridSeriesFeature<?> feature) throws InvalidDimensionValueException {
+    static VerticalPosition getElevationValue(String zValue, GridSeriesFeature<?> feature) throws InvalidDimensionValueException {
         if (feature.getCoverage().getDomain().getVerticalAxis() == null || 
                 feature.getCoverage().getDomain().getVerticalAxis().size() == 0) {
-            return Double.NaN;
+            return new VerticalPositionImpl(Double.NaN, null);
         }
+        VerticalAxis vAxis = feature.getCoverage().getDomain().getVerticalAxis();
         if (zValue == null) {
             double defaultVal;
-            VerticalAxis vAxis = feature.getCoverage().getDomain().getVerticalAxis();
             if (vAxis == null) {
                 throw new InvalidDimensionValueException("elevation", "null");
             }
@@ -1190,7 +1201,7 @@ public abstract class AbstractWmsController extends AbstractController {
             } else {
                 defaultVal = Collections.min(vAxis.getCoordinateValues(), ABSOLUTE_VALUE_COMPARATOR);
             }
-            return defaultVal;
+            return new VerticalPositionImpl(defaultVal, vAxis.getVerticalCrs());
         }
 
         // Check to see if this is a single value (the
@@ -1200,7 +1211,7 @@ public abstract class AbstractWmsController extends AbstractController {
         }
 
         try {
-            return Double.parseDouble(zValue);
+            return new VerticalPositionImpl(Double.parseDouble(zValue), vAxis.getVerticalCrs());
         } catch (NumberFormatException nfe) {
             throw new InvalidDimensionValueException("elevation", zValue);
         }
