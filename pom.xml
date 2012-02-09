@@ -15,22 +15,22 @@
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-core</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-impl</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-graphics</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-cdm</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 		<dependency>
 			<groupId>commons-httpclient</groupId>
@@ -110,7 +110,7 @@
 		<dependency>
 		    <groupId>org.gwtopenmaps.openlayers</groupId>
 		    <artifactId>gwt-openlayers-client</artifactId>
-		    <version>0.7-SNAPSHOT</version>
+		    <version>0.7</version>
 		</dependency>
 		<dependency>
 		    <groupId>org.geotoolkit</groupId>
@@ -121,6 +121,11 @@
 		    <groupId>javax.validation</groupId>
 		    <artifactId>validation-api</artifactId>
 		    <version>1.0.0.GA</version>
+		</dependency>
+        <dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.16</version>
 		</dependency>
     </dependencies>
 	<build>
