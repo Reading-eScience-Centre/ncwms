@@ -68,7 +68,7 @@ public class MapArea extends MapWidget {
     private WMSGetFeatureInfo getFeatureInfo;
 
     public MapArea(String baseUrl, int width, int height,
-            final GodivaActionsHandler godivaListener, String baseMapUrl, String baseMapLayer) {
+            final GodivaActionsHandler godivaListener) {
         super(width + "px", height + "px", getDefaultMapOptions());
         this.baseUrl = baseUrl;
         loadStartListener = new LayerLoadStartListener() {
@@ -90,7 +90,7 @@ public class MapArea extends MapWidget {
             }
         };
         this.widgetDisabler = godivaListener;
-        init(baseMapUrl, baseMapLayer);
+        init();
         map.addMapMoveListener(godivaListener);
         map.addMapZoomListener(godivaListener);
 
@@ -274,29 +274,13 @@ public class MapArea extends MapWidget {
         return mapOptions;
     }
 
-    private void init(String baseMapUrl, String baseMapLayer) {
+    private void init() {
         this.setStylePrimaryName("mapStyle");
         map = this.getMap();
 
         addBaseLayers();
-        baseUrlForExport = baseMapUrl + "&LAYERS=" + baseMapLayer;
 
         currentProjection = map.getProjection();
-
-        map.addMapBaseLayerChangedListener(new MapBaseLayerChangedListener() {
-            @Override
-            public void onBaseLayerChanged(MapBaseLayerChangedEvent eventObject) {
-                String url = eventObject.getLayer().getJSObject().getPropertyAsString("url");
-                String layers = eventObject.getLayer().getJSObject().getPropertyAsArray("params")[0]
-                        .getPropertyAsString("LAYERS");
-                baseUrlForExport = url + (url.contains("?") ? "&" : "?") + "LAYERS="
-                        + URL.encode(layers);
-                if (!map.getProjection().equals(currentProjection)) {
-                    map.zoomToMaxExtent();
-                    currentProjection = map.getProjection();
-                }
-            }
-        });
 
         map.addControl(new LayerSwitcher());
         addDrawingLayer();
@@ -407,7 +391,6 @@ public class MapArea extends MapWidget {
         map.addLayer(srtmDem);
         map.addLayer(northPole);
         map.addLayer(southPole);
-        map.setBaseLayer(demis);
         currentProjection = map.getProjection();
         map.addMapBaseLayerChangedListener(new MapBaseLayerChangedListener() {
             @Override
@@ -429,6 +412,7 @@ public class MapArea extends MapWidget {
                 }
             }
         });
+        map.setBaseLayer(demis);
     }
 
     private WMSOptions getOptionsForCurrentProjection() {

@@ -63,7 +63,6 @@ public class AnimationButton extends ToggleButton {
     private boolean completed;
     private String style;
     
-
     public AnimationButton(final MapArea map, final String jsonProxyUrl) {
         super(new Image("img/film.png"), new Image("img/stop.png"));
         super.setTitle("Open the animation wizard");
@@ -134,7 +133,7 @@ public class AnimationButton extends ToggleButton {
         setLoading();
         
         LayerRequestBuilder getLayerDetails = new LayerRequestBuilder(animLayer, jsonProxyUrl, null);
-        getLayerDetails.setCallback(new LayerRequestCallback(new ErrorHandler() {
+        getLayerDetails.setCallback(new LayerRequestCallback(animLayer, new ErrorHandler() {
             @Override
             public void handleError(Throwable e) {
                 e.printStackTrace();
@@ -144,7 +143,7 @@ public class AnimationButton extends ToggleButton {
             public void onResponseReceived(Request request, Response response) {
                 super.onResponseReceived(request, response);
                 availableTimes = new HashMap<String, List<String>>();
-                availableDates = getAvailableDates();
+                availableDates = getLayerDetails().getAvailableDates();
                 if(availableDates == null || availableDates.size() < 2){
                     setNoAnimationPossible("We do not have multiple time data to create an animation.  "
                             + "Please choose a variable with multiple time values");
@@ -197,14 +196,14 @@ public class AnimationButton extends ToggleButton {
         if(startTimeSelector == null){
             startTimeSelector = new TimeSelector("Start time", new TimeDateSelectionHandler() {
                 @Override
-                public void timeSelected(String selectedTime) {
+                public void timeSelected(String id, String selectedTime) {
                     /*
                      * Do nothing here - we only check the time when the "Next" button is clicked
                      */
                 }
                 
                 @Override
-                public void dateSelected(String selectedDate) {
+                public void dateSelected(String id, String selectedDate) {
                     startTimeSelector.populateTimes(availableTimes.get(startTimeSelector.getSelectedDate()));
                 }
             });
@@ -216,14 +215,14 @@ public class AnimationButton extends ToggleButton {
         if(endTimeSelector == null){
             endTimeSelector = new TimeSelector("End time", new TimeDateSelectionHandler() {
                 @Override
-                public void timeSelected(String selectedTime) {
+                public void timeSelected(String id, String selectedTime) {
                     /*
                      * Do nothing here - we only check the time when the "Next" button is clicked
                      */
                 }
                 
                 @Override
-                public void dateSelected(String selectedDate) {
+                public void dateSelected(String id, String selectedDate) {
                     endTimeSelector.populateTimes(availableTimes.get(endTimeSelector.getSelectedDate()));
                 }
             });

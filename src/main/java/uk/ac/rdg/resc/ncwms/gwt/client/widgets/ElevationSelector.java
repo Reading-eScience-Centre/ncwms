@@ -11,20 +11,22 @@ import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.i18n.client.NumberFormat;
 import com.google.gwt.user.client.ui.ListBox;
 
-public class ElevationSelector extends BaseSelector {
+public class ElevationSelector extends BaseSelector implements ElevationSelectorIF {
 	private ListBox elevations;
     private boolean positive;
     private final NumberFormat format = NumberFormat.getFormat("#0.##");
     private Map<String, String> formattedValuesToRealValues;
+    private String id;
     
-	public ElevationSelector(String title, final ElevationSelectionHandler handler) {
+	public ElevationSelector(String id, String title, final ElevationSelectionHandler handler) {
 		super(title);
+		this.id = id;
 		
 		elevations = new ListBox();
 		elevations.addChangeHandler(new ChangeHandler() {
             @Override
             public void onChange(ChangeEvent event) {
-                handler.elevationSelected(getSelectedElevation());
+                handler.elevationSelected(ElevationSelector.this.id, getSelectedElevation());
             }
         });
 		add(elevations);
@@ -32,7 +34,12 @@ public class ElevationSelector extends BaseSelector {
 		formattedValuesToRealValues = new HashMap<String, String>();
 	}
 	
-	public void populateVariables(List<String> availableElevations, String currentElevation){
+	@Override
+    public void setId(String id) {
+	    this.id = id;
+    }
+
+    public void populateVariables(List<String> availableElevations, String currentElevation){
 		elevations.clear();
 		if(availableElevations == null || availableElevations.size()==0){
 			label.setStylePrimaryName("inactiveLabelStyle");
