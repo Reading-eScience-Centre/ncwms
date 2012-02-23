@@ -14,6 +14,7 @@ import uk.ac.rdg.resc.ncwms.gwt.client.handlers.PaletteSelectionHandler;
 import uk.ac.rdg.resc.ncwms.gwt.client.handlers.TimeDateSelectionHandler;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.ConnectionException;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.ErrorHandler;
+import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerDetails;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerRequestBuilder;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerRequestCallback;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.TimeRequestBuilder;
@@ -164,8 +165,6 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
     private int mapWidth;
     private String proxyUrl;
     private String docHref;
-    private String baseMapUrl;
-    private String baseMapLayer;
 
     private CaseInsensitiveParameterMap permalinkParamsMap;
 
@@ -173,36 +172,34 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
      * This is the entry point method.
      */
     public void onModuleLoad() {
-//        RequestBuilder getConfig = new RequestBuilder(RequestBuilder.GET, "getconfig");
-//        getConfig.setCallback(new RequestCallback() {
-//            @Override
-//            public void onResponseReceived(Request request, Response response) {
-//                try{
-//                    JSONValue jsonMap = JSONParser.parseLenient(response.getText());
-//                    JSONObject parentObj = jsonMap.isObject();
-//                    proxyUrl = parentObj.get("proxy").isString().stringValue();
-//                    docHref = parentObj.get("docLocation").isString().stringValue();
-//                    mapHeight = Integer.parseInt(parentObj.get("mapHeight").isString().stringValue());
-//                    mapWidth = Integer.parseInt(parentObj.get("mapWidth").isString().stringValue());
-//                    baseMapUrl = parentObj.get("baseMapUrl").isString().stringValue();
-//                    baseMapLayer = parentObj.get("baseMapLayer").isString().stringValue();
-//                    init();
-//                } catch(Exception e){
-//                    initWithDefaults();
-//                }
-//            }
-//            
-//            @Override
-//            public void onError(Request request, Throwable exception) {
-//                initWithDefaults();
-//            }
-//        });
-//        try {
-//            getConfig.send();
-//        } catch (RequestException e) {
-//            initWithDefaults();
-//        }
-        initWithDefaults();
+        RequestBuilder getConfig = new RequestBuilder(RequestBuilder.GET, "getconfig");
+        getConfig.setCallback(new RequestCallback() {
+            @Override
+            public void onResponseReceived(Request request, Response response) {
+                try{
+                    JSONValue jsonMap = JSONParser.parseLenient(response.getText());
+                    JSONObject parentObj = jsonMap.isObject();
+                    proxyUrl = parentObj.get("proxy").isString().stringValue();
+                    docHref = parentObj.get("docLocation").isString().stringValue();
+                    mapHeight = Integer.parseInt(parentObj.get("mapHeight").isString().stringValue());
+                    mapWidth = Integer.parseInt(parentObj.get("mapWidth").isString().stringValue());
+                    init();
+                } catch(Exception e){
+                    initWithDefaults();
+                }
+            }
+            
+            @Override
+            public void onError(Request request, Throwable exception) {
+                initWithDefaults();
+            }
+        });
+        try {
+            getConfig.send();
+        } catch (RequestException e) {
+            initWithDefaults();
+        }
+//        initWithDefaults();
     }
     
     private void initWithDefaults(){
@@ -211,8 +208,6 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
         proxyUrl = "proxy?";
         proxyUrl = "";
         docHref = "http://www.resc.rdg.ac.uk/trac/ncWMS/wiki/GodivaTwoUserGuide";
-        baseMapUrl = "http://www2.demis.nl/wms/wms.ashx?WMS=BlueMarble";
-        baseMapLayer = "Earth Image";
         init();
     }
      
@@ -270,9 +265,9 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
 
         layerSelectorCombo = new LayerSelectorCombo(this);
 
-        elevationSelector = new ElevationSelector("Depth", this);
-        timeSelector = new TimeSelector(this);
-        paletteSelector = new PaletteSelector(mapHeight, this, baseUrl);
+        elevationSelector = new ElevationSelector("mainLayer", "Depth", this);
+        timeSelector = new TimeSelector("mainLayer", this);
+        paletteSelector = new PaletteSelector("mainLayer", mapHeight, this, baseUrl);
         unitsInfo = new UnitsInfo();
         
         
@@ -305,7 +300,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
         loadingImage.setVisible(false);
         loadingImage.setStylePrimaryName("loadingImage");
         
-        mapArea = new MapArea(baseUrl, mapWidth, mapHeight, this, baseMapUrl, baseMapLayer);
+        mapArea = new MapArea(baseUrl, mapWidth, mapHeight, this);
         
         anim = new AnimationButton(mapArea, proxyUrl+baseUrl);
         
@@ -424,7 +419,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
         
         LayerRequestBuilder getLayerDetailsRequest = new LayerRequestBuilder(selectedId, proxyUrl+baseUrl, currentTime);
         
-        getLayerDetailsRequest.setCallback(new LayerRequestCallback(this) {
+        getLayerDetailsRequest.setCallback(new LayerRequestCallback(selectedId, this) {
             @Override
             public void onResponseReceived(Request req, Response response) {
                 try {
@@ -433,25 +428,27 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
                         throw new ConnectionException("Error contacting server");
                     }
 
-                    units = getUnits();
-                    extents = getExtents();
+                    LayerDetails layerDetails = getLayerDetails();
+                    
+                    units = layerDetails.getUnits();
+                    extents = layerDetails.getExtents();
 
-                    supportedStyles = getSupportedStyles();
+                    supportedStyles = layerDetails.getSupportedStyles();
                     if(supportedStyles.size() > 0){
                         currentStyle = supportedStyles.get(0);
                     }
 
-                    zUnits = getZUnits();
-                    elevationSelector.setUnitsAndDirection(zUnits, isZPositive());
-                    elevationSelector.populateVariables(getAvailableZs(), currentElevation);
+                    zUnits = layerDetails.getZUnits();
+                    elevationSelector.setUnitsAndDirection(zUnits, layerDetails.isZPositive());
+                    elevationSelector.populateVariables(layerDetails.getAvailableZs(), currentElevation);
 
-                    paletteSelector.populatePalettes(getAvailablePalettes());
+                    paletteSelector.populatePalettes(layerDetails.getAvailablePalettes());
 
                     String nearestDate;
-                    timeSelector.populateDates(getAvailableDates());
-                    if (getNearestTime() != null) {
-                        nearestTime = getNearestTime();
-                        nearestDate = getNearestDate();
+                    timeSelector.populateDates(layerDetails.getAvailableDates());
+                    if (layerDetails.getNearestTime() != null) {
+                        nearestTime = layerDetails.getNearestTime();
+                        nearestDate = layerDetails.getNearestDate();
                         timeSelector.selectDate(nearestDate);
                     } else {
                         nearestDate = timeSelector.getSelectedDate();
@@ -489,17 +486,17 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
                         }
                     } else {
                         if (!paletteSelector.isLocked()) {
-                            scaleRange = getScaleRange();
+                            scaleRange = layerDetails.getScaleRange();
                             paletteSelector.setScaleRange(scaleRange);
 
-                            nColorBands = getNumColorBands();
+                            nColorBands = layerDetails.getNumColorBands();
                             paletteSelector.setNumColorBands(nColorBands);
 
-                            logScale = isLogScale();
+                            logScale = layerDetails.isLogScale();
                             paletteSelector.setLogScale(logScale);
                         }
                         if (autoUpdate) {
-                            currentPalette = getSelectedPalette();
+                            currentPalette = layerDetails.getSelectedPalette();
                             paletteSelector.selectPalette(currentPalette);
                         }
                         currentElevation = elevationSelector.getSelectedElevation();
@@ -509,7 +506,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
                     // moreInfo = getMoreInfo();
                     // copyright = getCopyright();
 
-                    dateSelected(nearestDate);
+                    dateSelected(null,nearestDate);
 
                     if (autoUpdate) {
                         try {
@@ -588,16 +585,15 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
                         double min = parentObj.get("min").isNumber().doubleValue();
                         double max = parentObj.get("max").isNumber().doubleValue();
                         String scaleRange = min + "," + max;
-                        minMaxDetailsLoaded = true;
                         if(paletteSelector.setScaleRange(scaleRange)){
                             Godiva.this.scaleRange = scaleRange;
                             updateMap();
                         }
                     } catch (Exception e){
-                        minMaxDetailsLoaded = true;
                         updateMap();
                     }
                 }
+                minMaxDetailsLoaded = true;
                 setLoading(false);
             }
 
@@ -620,7 +616,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
     }
 
     @Override
-    public void dateSelected(String selectedDate) {
+    public void dateSelected(String layerId, String selectedDate) {
         if(selectedDate == null){
             dateTimeDetailsLoaded = true;
             updateMap();
@@ -640,7 +636,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
                     if (nearestTime != null){
                         timeSelector.selectTime(nearestTime); 
                     }
-                    timeSelected(timeSelector.getSelectedDateTime());
+                    timeSelected(null, timeSelector.getSelectedDateTime());
                     dateTimeDetailsLoaded = true;
                     updateMap();
                 } catch (Exception e){
@@ -668,7 +664,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
     }
     
     @Override
-    public void timeSelected(String selectedTime) {
+    public void timeSelected(String layerId, String selectedTime) {
         currentTime = selectedTime;
         nearestTime = null;
         updateMap();
@@ -757,12 +753,10 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
             loadingCount++;
             if(loadingCount == 1)
                 loadingImage.setVisible(true);
-//                myOceanLogo.setUrl(logoDynamicUrl);
         } else {
             loadingCount--;
             if(loadingCount == 0)
                 loadingImage.setVisible(false);
-//                myOceanLogo.setUrl(logoStaticUrl);
         }
     }
 
@@ -842,32 +836,32 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
     }
 
     @Override
-    public void elevationSelected(String elevation) {
+    public void elevationSelected(String layerId, String elevation) {
         currentElevation = elevation;
         updateMap();
     }
 
     @Override
-    public void paletteChanged(String paletteName, int nColorBands) {
+    public void paletteChanged(String layerId, String paletteName, int nColorBands) {
         currentPalette = paletteName;
         this.nColorBands = nColorBands;
         updateMap();
     }
 
     @Override
-    public void scaleRangeChanged(String scaleRange) {
+    public void scaleRangeChanged(String layerId, String scaleRange) {
         this.scaleRange = scaleRange;
         updateMap();
     }
 
     @Override
-    public void logScaleChanged(boolean newIsLogScale) {
+    public void logScaleChanged(String layerId, boolean newIsLogScale) {
         logScale = newIsLogScale;
         updateMap();
     }
 
     @Override
-    public void autoAdjustPalette() {
+    public void autoAdjustPalette(String layerId) {
         getAutoRange(true);
     }
 

@@ -18,7 +18,7 @@
   <inherits name='com.google.gwt.http.HTTP'/>
   <inherits name="com.google.gwt.json.JSON"/>
   <!-- Specify the app entry point class.                         -->
-  <entry-point class='uk.ac.rdg.resc.ncwms.gwt.client.Godiva'/>
+  <entry-point class='uk.ac.rdg.resc.ncwms.gwt.client.Godiva3'/>
 <!--   <entry-point class='uk.ac.rdg.resc.ncwms.gwt.client.MyOceanPortal'/> -->
 
   <!-- Specify the paths for translatable code                    -->

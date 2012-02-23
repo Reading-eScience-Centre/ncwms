@@ -2,7 +2,7 @@ package uk.ac.rdg.resc.ncwms.gwt.client.widgets;
 
 import com.google.gwt.user.client.ui.Label;
 
-public class UnitsInfo extends BaseSelector {
+public class UnitsInfo extends BaseSelector implements UnitsInfoIF {
     private Label units;
     public UnitsInfo() {
         super("Units");

@@ -9,17 +9,20 @@ import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.user.client.ui.ListBox;
 
-public class TimeSelector extends BaseSelector {
+public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 	private ListBox dates;
 	private ListBox times;
+	private String id;
 	
-	public TimeSelector(String label, final TimeDateSelectionHandler handler) {
+	public TimeSelector(String id, String label, final TimeDateSelectionHandler handler) {
 	    super(label);
+	    this.id = id;
 	    init(handler);
 	}
 	
-	public TimeSelector(final TimeDateSelectionHandler handler) {
+	public TimeSelector(String id, final TimeDateSelectionHandler handler) {
 		super("Time");
+		this.id = id;
 		init(handler);
 	}
 	
@@ -29,7 +32,7 @@ public class TimeSelector extends BaseSelector {
 		dates.addChangeHandler(new ChangeHandler() {
             @Override
             public void onChange(ChangeEvent event) {
-                handler.dateSelected(getSelectedDate());
+                handler.dateSelected(id, getSelectedDate());
             }
         });
 		dates.setTitle("Adjust the date");
@@ -41,10 +44,14 @@ public class TimeSelector extends BaseSelector {
 		times.addChangeHandler(new ChangeHandler() {
             @Override
             public void onChange(ChangeEvent event) {
-                handler.timeSelected(getSelectedDateTime());
+                handler.timeSelected(id, getSelectedDateTime());
             }
         });
 		add(times);
+	}
+	
+	public void setId(String id){
+	    this.id = id;
 	}
 	
 	public void populateDates(List<String> availableDates){

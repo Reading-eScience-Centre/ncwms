@@ -21,6 +21,8 @@ import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerDetails;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerRequestBuilder;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerRequestCallback;
+import uk.ac.rdg.resc.ncwms.gwt.client.requests.TimeRequestBuilder;
+import uk.ac.rdg.resc.ncwms.gwt.client.requests.TimeRequestCallback;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.AnimationButton;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerSelectorCombo;
@@ -63,12 +65,34 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     private String proxyUrl;
     protected String wmsUrl;
     private String docHref;
-    private String currentProjection;
     
-    private String currentTime;
-    private String currentElevation;
-    
+    /*
+     * We need this because the call to layerDetails (where we receive this
+     * time) is separate to the call where we discover what actual times (as
+     * opposed to dates) are available
+     */
+    private String nearestTime;
+
+    /*
+     * Map widget and state information
+     */
     protected MapArea mapArea;
+    private int zoom = 1;
+    private LonLat centre = new LonLat(0.0, 0.0);
+    
+    /*
+     * TODO these links may be useful. Make private and provide getters. Then if
+     * a subclass wants them, it can ask for them and put them where it likes
+     */
+    // The link to the Google Earth KMZ
+    protected Anchor kmzLink;
+    // Link to the current state
+    protected Anchor permalink;
+    // Email a link to the current state
+    protected Anchor email;
+    // Link to a screenshot of the current state
+    protected Anchor screenshot;
+    
     /*
      * A count of how many items we are currently waiting to load.
      */
@@ -164,6 +188,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
         screenshot.setTarget("_blank");
         screenshot.setTitle("Open a downloadable image in a new window - may be slow to load");
         
+
 /*
  * TODO GOES SOMEWHERE ELSE
  */
@@ -177,7 +202,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     }
     
     protected String getWmsUrl(String request, Map<String, String> parameters){
-        StringBuilderImpl url = new StringBuilderImpl();
+        StringBuilder url = new StringBuilder();
         url.append("?request="+request);
         for(String key : parameters.keySet()){
             url.append("&"+key+"="+parameters.get(key));
@@ -210,7 +235,13 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     
     private void addNode(JSONObject json, LayerMenuItem parentItem) {
         final String label = json.get("label").isString().stringValue();
-        final String id = json.get("id").isString().stringValue();
+        JSONValue idJson = json.get("id");
+        // TODO add gridded info (but be aware that it might not be present)
+        final String id;
+        if(idJson != null)
+            id = idJson.isString().stringValue();
+        else
+            id = "branchNode";
         LayerMenuItem newChild = new LayerMenuItem(label, id);
         parentItem.addChildItem(newChild);
         
@@ -268,7 +299,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
      * @param currentTime can be null
      * @param autoUpdate
      */
-    protected void requestLayerDetails(String layerId, final String currentElevation, final String currentTime, final boolean autoUpdate){
+    protected void requestLayerDetails(String layerId, String currentTime, final boolean autoUpdate){
         if (layerId == null) {
             // We have no variables defined in the selected layer
             // Return here. We are already dealing with the case where there are
@@ -296,17 +327,18 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                     }
                     
                     layerDetailsLoaded(getLayerDetails(), autoUpdate);
-                    
-                    dateSelected(null,getLayerDetails().getNearestDate());
+                    dateSelected(getLayerDetails().getId(),getLayerDetails().getNearestDate());
 
                     if (autoUpdate) {
                         try {
-                            mapArea.zoomToExtents(extents);
+                            mapArea.zoomToExtents(getLayerDetails().getExtents());
                             // extentsUpdated = false;
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        requestAutoRange(getLayerDetails().getId(), currentElevation, currentTime, false);
+                        String layerId = getLayerDetails().getId();
+                        requestAutoRange(layerId, getLayerState(layerId).getCurrentElevation(),
+                                getLayerState(layerId).getCurrentTime(), false);
                     } else {
                         minMaxDetailsLoaded = true;
                     }
@@ -345,7 +377,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
          */
         parameters.put("item", "minmax");
         parameters.put("layers", layer);
-        parameters.put("srs", currentProjection);
+        parameters.put("srs", mapArea.getMap().getProjection());
         parameters.put("height", "50");
         parameters.put("width", "50");
         parameters.put("version", "1.1.1");
@@ -353,8 +385,8 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
         if(elevation != null){
             parameters.put("elevation", elevation);
         }
-        if(time != null){
-            parameters.put("time", time);
+        if(nearestTime != null){
+            parameters.put("time", nearestTime);
         }
 
         RequestBuilder getMinMaxRequest = new RequestBuilder(RequestBuilder.GET, getWmsUrl("GetMetadata", parameters));
@@ -369,10 +401,11 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                         double max = parentObj.get("max").isNumber().doubleValue();
                         rangeLoaded(min, max);
                     } catch (Exception e){
-                        minMaxDetailsLoaded = true;
-                        updateMap();
+                        invalidJson(e);
                     }
                 }
+                minMaxDetailsLoaded = true;
+                updateMap();
                 setLoading(false);
             }
 
@@ -408,6 +441,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     }
         
     protected void invalidJson(Exception e){
+        e.printStackTrace();
         final DialogBox popup = new DialogBox();
         VerticalPanel v = new VerticalPanel();
         if(e instanceof ConnectionException){
@@ -447,64 +481,76 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     }
     
     private void updateLinksEtc() {
-        anim.updateDetails(currentLayer, currentElevation, currentPalette, currentStyle, scaleRange, nColorBands, logScale);
-        
-        String baseurl = "http://" + Window.Location.getHost() + Window.Location.getPath() + "?permalinking=true&";
-
-        String urlParams = "dataset=" + wmsUrl +
-                           "&numColorBands=" + nColorBands + 
-                           "&logScale=" + logScale + 
-                           "&zoom=" + zoom +
-                           "&centre=" + centre.lon() + "," + centre.lat() ;
-                           
-//+"&gwt.codesvr=127.0.0.1:9997";
-        
-        if (currentLayer != null) {
-            urlParams += "&layer=" + currentLayer;
-        }
-        if (currentTime != null) {
-            urlParams += "&time=" + currentTime;
-        }
-        if (currentElevation != null) {
-            urlParams += "&elevation=" + currentElevation;
-        }
-        if (currentPalette != null) {
-            urlParams += "&palette=" + currentPalette;
-        }
-        if (scaleRange != null) {
-            urlParams += "&scaleRange=" + scaleRange;
-        }
-        permalink.setHref(URL.encode(baseurl+urlParams));
-        email.setHref("mailto:?subject=MyOcean Data Link&body="+URL.encodeQueryString(baseurl+urlParams));
-        
-        // Screenshot-only stuff
-        urlParams += "&bbox=" + mapArea.getMap().getExtent().toBBox(6);
-        if(layerIdToTitle != null)
-            urlParams += "&layerName=" + layerIdToTitle.get(currentLayer);
-        urlParams += "&datasetName=" + datasetTitle;
-        urlParams += "&crs=EPSG:4326";
-        urlParams += "&mapHeight="+mapHeight;
-        urlParams += "&mapWidth="+mapWidth;
-        urlParams += "&style="+currentStyle;
-//        urlParams += "&baseUrl="+mapArea.getBaseLayerUrl();
-        if(zUnits != null)
-            urlParams += "&zUnits="+zUnits;
-        if(units != null)
-            urlParams += "&units="+units;
-        screenshot.setHref("screenshot?"+urlParams);
-        
-        kmzLink.setHref(mapArea.getKMZUrl());
+        // TODO implement this
+//        /*
+//         * TODO Perhaps we should have a getStateInfo() method or similar here.  Then the anim button (and anything else that wanted it)
+//         * could request the "current" state.  This could be overridden in subclasses which want to implement the "current" state differently
+//         */
+//        anim.updateDetails(currentLayer, currentElevation, currentPalette, currentStyle, scaleRange, nColorBands, logScale);
+//        
+//        String baseurl = "http://" + Window.Location.getHost() + Window.Location.getPath() + "?permalinking=true&";
+//
+//        String urlParams = "dataset=" + wmsUrl +
+//                           "&numColorBands=" + nColorBands + 
+//                           "&logScale=" + logScale + 
+//                           "&zoom=" + zoom +
+//                           "&centre=" + centre.lon() + "," + centre.lat() ;
+//                           
+////+"&gwt.codesvr=127.0.0.1:9997";
+//        
+//        if (currentLayer != null) {
+//            urlParams += "&layer=" + currentLayer;
+//        }
+//        if (currentTime != null) {
+//            urlParams += "&time=" + currentTime;
+//        }
+//        if (currentElevation != null) {
+//            urlParams += "&elevation=" + currentElevation;
+//        }
+//        if (currentPalette != null) {
+//            urlParams += "&palette=" + currentPalette;
+//        }
+//        if (scaleRange != null) {
+//            urlParams += "&scaleRange=" + scaleRange;
+//        }
+//        permalink.setHref(URL.encode(baseurl+urlParams));
+//        email.setHref("mailto:?subject=MyOcean Data Link&body="+URL.encodeQueryString(baseurl+urlParams));
+//        
+//        // Screenshot-only stuff
+//        urlParams += "&bbox=" + mapArea.getMap().getExtent().toBBox(6);
+//        /*
+//         * TODO This is only for screenshots. look into it more
+//         */
+//        if(layerIdToTitle != null)
+//            urlParams += "&layerName=" + layerIdToTitle.get(currentLayer);
+//        // TODO this too
+//        urlParams += "&datasetName=" + datasetTitle;
+//        urlParams += "&crs=EPSG:4326";
+//        urlParams += "&mapHeight="+mapHeight;
+//        urlParams += "&mapWidth="+mapWidth;
+//        urlParams += "&style="+currentStyle;
+////        urlParams += "&baseUrl="+mapArea.getBaseLayerUrl();
+//        // TODO this too
+//        if(zUnits != null)
+//            urlParams += "&zUnits="+zUnits;
+//        /*
+//         * TODO also only for screenshots.  this should be gettable from the subclass somehow
+//         */
+//        if(units != null)
+//            urlParams += "&units="+units;
+//        screenshot.setHref("screenshot?"+urlParams);
+//        
+//        kmzLink.setHref(mapArea.getKMZUrl());
     }
     
     protected void populateWidgets(LayerDetails layerDetails, WidgetCollection widgetCollection, boolean autoUpdate){
+        widgetCollection.getElevationSelector().setId(layerDetails.getId());
+        widgetCollection.getTimeSelector().setId(layerDetails.getId());
+        widgetCollection.getPaletteSelector().setId(layerDetails.getId());
+
         widgetCollection.getUnitsInfo().setUnits(layerDetails.getUnits());
         
         String extents = layerDetails.getExtents();
-
-        supportedStyles = layerDetails.getSupportedStyles();
-        if(supportedStyles.size() > 0){
-            currentStyle = supportedStyles.get(0);
-        }
 
         widgetCollection.getElevationSelector().setUnitsAndDirection(layerDetails.getZUnits(), layerDetails.isZPositive());
         // TODO change the null to an elevation (current?  current for this layer?  ????)
@@ -512,14 +558,14 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
 
         widgetCollection.getPaletteSelector().populatePalettes(layerDetails.getAvailablePalettes());
 
-        String nearestDate;
+//        String nearestDate;
         widgetCollection.getTimeSelector().populateDates(layerDetails.getAvailableDates());
         if (layerDetails.getNearestTime() != null) {
-//            nearestTime = layerDetails.getNearestTime()error;
-            nearestDate = layerDetails.getNearestDate();
-            widgetCollection.getTimeSelector().selectDate(nearestDate);
+            nearestTime = layerDetails.getNearestTime();
+//            nearestDate = layerDetails.getNearestDate();
+            widgetCollection.getTimeSelector().selectDate(layerDetails.getNearestDate());
         } else {
-            nearestDate = timeSelector.getSelectedDate();
+//            nearestDate = widgetCollection.getTimeSelector().getSelectedDate();
         }
         
         if (!widgetCollection.getPaletteSelector().isLocked()) {
@@ -535,7 +581,8 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     
     private void updateMap() {
         if (layerDetailsLoaded && dateTimeDetailsLoaded && minMaxDetailsLoaded) {
-            unitsInfo.setUnits(units);
+            // TODO Check that this isn't needed (it shouldn't be...)
+//            unitsInfo.setUnits(units);
             if(permalinking) {
                 String centre = permalinkParamsMap.get("centre");
                 if(centre != null) {
@@ -550,12 +597,12 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                 }
                 permalinking = false;
             }
-            currentStyle = "boxfill";
-            if(supportedStyles.size() > 0){
-                currentStyle = supportedStyles.get(0);
-            }
-            mapArea.changeLayer(currentLayer, currentTime, currentElevation, currentStyle, currentPalette, scaleRange, nColorBands,
-                    logScale);
+            LayerState layerState = getLayerState(null);
+            String currentLayer = getLayerId();
+            mapArea.changeLayer(currentLayer, layerState.getCurrentTime(),
+                    layerState.getCurrentElevation(), layerState.getStyle(),
+                    layerState.getPalette(), layerState.getScaleRange(),
+                    layerState.getNColorBands(), layerState.isLogScale());
             updateLinksEtc();
         }
     }
@@ -613,211 +660,117 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
      * Widgets
      */
     // Selects the variable to display in the WMS layer
-    private LayerSelectorCombo layerSelectorCombo;
-    // Selects the time and date
-    private TimeSelector timeSelector;
-    // Selects the elevation/depth
-    private ElevationSelector elevationSelector;
-    // Selects the palette
-    private PaletteSelector paletteSelector;
-    // Selects the opacity
-    // private OpacitySelector opacitySelector;
-    // The current units (for info)
-    private UnitsInfo unitsInfo;
+//    private LayerSelectorCombo layerSelectorCombo;
+//    // Selects the time and date
+//    private TimeSelector timeSelector;
+//    // Selects the elevation/depth
+//    private ElevationSelector elevationSelector;
+//    // Selects the palette
+//    private PaletteSelector paletteSelector;
+//    // Selects the opacity
+//    // private OpacitySelector opacitySelector;
+//    // The current units (for info)
+//    private UnitsInfo unitsInfo;
     // Animation wizard button
-    private AnimationButton anim;
-    // The link to the Google Earth KMZ
-    protected Anchor kmzLink;
-    // Link to the current state
-    protected Anchor permalink;
-    // Email a link to the current state
-    protected Anchor email;
-    // Link to a screenshot of the current state
-    protected Anchor screenshot;
+//    private AnimationButton anim;
+
 
     /*
      * Essential metadata
      */
     // The title of this dataset (which holds all of the variables)
-    private String datasetTitle;
+//    private String datasetTitle;
     // Layer ID to title is used to populate the variable list, and for
     // screenshots
-    private Map<String, String> layerIdToTitle;
+//    private Map<String, String> layerIdToTitle;
 
     /*
      * Non-essential metadata
      */
-    private String units;
-    @SuppressWarnings("unused")
-    private String moreInfo;
-    @SuppressWarnings("unused")
-    private String copyright;
+//    private String units;
 
     /*
      * State information
      */
+    // TODO FIND HOW TO DEAL WITH STATE INFO
     // The bounds of the data in the current layer
-    private String extents;
+//    private String extents;
     // The colour scale range
-    private String scaleRange;
-    // The currently selected variable
-    private String currentLayer;
-    // The current style name
-    private String currentStyle;
-    // The current palette name
-    private String currentPalette;
-    // The current number of colour bands
-    private int nColorBands;
-    // Whether we are viewing a logarithmic scale
-    private boolean logScale;
-    // A list of supported styles (currently only the first one will be used)
-    private List<String> supportedStyles;
+//    private String scaleRange;
+//    // The currently selected variable
+//    private String currentLayer;
+//    // The current style name
+//    private String currentStyle;
+//    // The current palette name
+//    private String currentPalette;
+//    // The current number of colour bands
+//    private int nColorBands;
+//    // Whether we are viewing a logarithmic scale
+//    private boolean logScale;
+//    // A list of supported styles (currently only the first one will be used)
+//    private List<String> supportedStyles;
 
-    // Zoom level and central point for permalink
-    private int zoom = 1;
-    private LonLat centre = new LonLat(0.0, 0.0);
-    private String zUnits = null;
-
-
-
-    // A count of how many items we are currently waiting to load.
-    // If this is > 0, display a loading indicator. When it reaches zero,
-    // remove the indicator
-
-    // We need this because the call to layerDetails (where we receive this
-    // time) is separate to
-    // the call where we discover what actual times (as opposed to dates) are
-    // available
-    private String nearestTime;
-
-
+    public abstract String getLayerId();
+    public abstract LayerState getLayerState(String layerId);
     public abstract void menuLoaded(LayerMenuItem menuTree);
     public abstract void layerDetailsLoaded(LayerDetails layerDetails, boolean autoUpdate);
+    public abstract void availableTimesLoaded(String layerId, List<String> availableTimes, String nearestTime);
     public abstract void loadingStarted();
     public abstract void loadingFinished();
 
-//    {
-//        units = layerDetails.getUnits();
-//        extents = layerDetails.getExtents();
-//
-//        supportedStyles = layerDetails.getSupportedStyles();
-//        if(supportedStyles.size() > 0){
-//            currentStyle = supportedStyles.get(0);
-//        }
-//
-//        zUnits = layerDetails.getZUnits();
-//        elevationSelector.setUnitsAndDirection(zUnits, layerDetails.isZPositive());
-//        elevationSelector.populateVariables(layerDetails.getAvailableZs(), currentElevation);
-//
-//        paletteSelector.populatePalettes(layerDetails.getAvailablePalettes());
-//
-//        String nearestDate;
-//        timeSelector.populateDates(layerDetails.getAvailableDates());
-//        if (layerDetails.getNearestTime() != null) {
-//            nearestTime = layerDetails.getNearestTime();
-//            nearestDate = layerDetails.getNearestDate();
-//            timeSelector.selectDate(nearestDate);
-//        } else {
-//            nearestDate = timeSelector.getSelectedDate();
-//        }
-//
-//        if (permalinking) {
-//            String scaleRange = permalinkParamsMap.get("scaleRange");
-//            if (scaleRange != null) {
-//                this.scaleRange = scaleRange;
-//                paletteSelector.setScaleRange(scaleRange);
-//            }
-//
-//            String numColorBands = permalinkParamsMap.get("numColorBands");
-//            if (numColorBands != null) {
-//                this.nColorBands = Integer.parseInt(numColorBands);
-//                paletteSelector.setNumColorBands(this.nColorBands);
-//            }
-//
-//            String logScale = permalinkParamsMap.get("logScale");
-//            if (logScale != null) {
-//                this.logScale = Boolean.parseBoolean(logScale);
-//                paletteSelector.setLogScale(this.logScale);
-//            }
-//
-//            String currentElevation = permalinkParamsMap.get("elevation");
-//            if (currentElevation != null) {
-//                this.currentElevation = currentElevation;
-//                elevationSelector.setSelectedElevation(this.currentElevation);
-//            }
-//
-//            String currentPalette = permalinkParamsMap.get("palette");
-//            if (currentPalette != null) {
-//                this.currentPalette = currentPalette;
-//                paletteSelector.selectPalette(currentPalette);
-//            }
-//        } else {
-//            if (!paletteSelector.isLocked()) {
-//                scaleRange = layerDetails.getScaleRange();
-//                paletteSelector.setScaleRange(scaleRange);
-//
-//                nColorBands = layerDetails.getNumColorBands();
-//                paletteSelector.setNumColorBands(nColorBands);
-//
-//                logScale = layerDetails.isLogScale();
-//                paletteSelector.setLogScale(logScale);
-//            }
-//            if (autoUpdate) {
-//                currentPalette = layerDetails.getSelectedPalette();
-//                paletteSelector.selectPalette(currentPalette);
-//            }
-//            currentElevation = elevationSelector.getSelectedElevation();
-//        }
-//
-//        // Not currently used.
-//        // moreInfo = getMoreInfo();
-//        // copyright = getCopyright();
-//
-//        dateSelected(null,nearestDate);
-//
-//        if (autoUpdate) {
-//            try {
-//                mapArea.zoomToExtents(extents);
-//                // extentsUpdated = false;
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//            getAutoRange(false);
-//        } else {
-//            minMaxDetailsLoaded = true;
-//        }
-//
-//        layerDetailsLoaded = true;
-//        updateMap();
-//    }
+
+    public abstract void enableWidgets();
+    public abstract void disableWidgets();
 
     @Override
-    public void disableWidgets() {
-        layerSelectorCombo.setEnabled(false);
-        timeSelector.setEnabled(false);
-        elevationSelector.setEnabled(false);
-        paletteSelector.setEnabled(false);
-        unitsInfo.setEnabled(false);
-    }
-
-    @Override
-    public void enableWidgets() {
-        layerSelectorCombo.setEnabled(true);
-        timeSelector.setEnabled(true);
-        elevationSelector.setEnabled(true);
-        paletteSelector.setEnabled(true);
-        unitsInfo.setEnabled(true);
-    }
-
-    @Override
-    public void dateSelected(String layerId, String selectedDate) {
-        // TODO Auto-generated method stub
+    public void dateSelected(final String layerId, String selectedDate) {
+        if(selectedDate == null){
+            dateTimeDetailsLoaded = true;
+            updateMap();
+            return;
+        }
+        dateTimeDetailsLoaded = false;
+        TimeRequestBuilder getTimeRequest = new TimeRequestBuilder(layerId, selectedDate, proxyUrl+wmsUrl);
+        getTimeRequest.setCallback(new TimeRequestCallback() {
+            @Override
+            public void onResponseReceived(Request request, Response response) {
+                try{
+                    super.onResponseReceived(request, response);
+                    if(response.getStatusCode() != Response.SC_OK){
+                        throw new ConnectionException("Error contacting server");
+                    }
+                    availableTimesLoaded(layerId, getAvailableTimesteps(), nearestTime);
+                    // TODO removed this but it needs to go back??
+//                    timeSelected(null, timeSelector.getSelectedDateTime());
+                    timeSelected(layerId, getLayerState(layerId).getCurrentTime());
+                    dateTimeDetailsLoaded = true;
+                    updateMap();
+                } catch (Exception e){
+                    invalidJson(e);
+                } finally {
+                    setLoading(false);
+                }
+            }
+            
+            @Override
+            public void onError(Request request, Throwable exception) {
+                setLoading(false);
+                dateTimeDetailsLoaded = true;
+                updateMap();
+                handleError(exception);
+            }
+        });
         
+        try {
+            setLoading(true);
+            getTimeRequest.send();
+        } catch (RequestException e) {
+            handleError(e);
+        }
     }
 
     @Override
     public void timeSelected(String layerId, String selectedTime) {
-        currentTime = selectedTime;
         nearestTime = null;
         updateMap();
     }
@@ -836,38 +789,40 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
 
     @Override
     public void layerSelected(String layerName) {
-        requestLayerDetails(layerName, currentElevation, currentTime, true);
+        requestLayerDetails(layerName, getLayerState(layerName).getCurrentTime(), true);
+//        currentLayer = layerName;
         updateMap();
     }
 
     @Override
     public void elevationSelected(String layerId, String elevation) {
-        currentElevation = elevation;
+//        currentElevation = elevation;
         updateMap();
     }
 
     @Override
     public void paletteChanged(String layerId, String paletteName, int nColorBands) {
-        currentPalette = paletteName;
-        this.nColorBands = nColorBands;
+//        currentPalette = paletteName;
+//        this.nColorBands = nColorBands;
         updateMap();
     }
 
     @Override
     public void scaleRangeChanged(String layerId, String scaleRange) {
-        this.scaleRange = scaleRange;
+//        this.scaleRange = scaleRange;
         updateMap();
     }
 
     @Override
     public void logScaleChanged(String layerId, boolean newIsLogScale) {
-        logScale = newIsLogScale;
+//        logScale = newIsLogScale;
         updateMap();
     }
 
     @Override
     public void autoAdjustPalette(String layerId) {
-        requestAutoRange(layerId, currentElevation, currentTime, true);
+        requestAutoRange(layerId, getLayerState(layerId).getCurrentElevation(),
+                getLayerState(layerId).getCurrentTime(), true);
     }
 
     @Override
@@ -875,8 +830,5 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
         requestMenu();
     }
 
-    public void rangeLoaded(double min, double max) {
-        // TODO Auto-generated method stub
-        
-    }
+    public abstract void rangeLoaded(double min, double max);
 }

@@ -1,6 +1,7 @@
 package uk.ac.rdg.resc.ncwms.gwt.client;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerDetails;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
@@ -25,11 +26,17 @@ import com.google.gwt.user.client.ui.RootLayoutPanel;
 public class Godiva3 extends BaseWmsClient {
     private LayerSelectorIF layerSelector;
     private WidgetCollection widgetCollection;
+    private LayerDetails layerDetails = null;
+    private LayerState layerState;
     
     private Image logo;
     private Image loadingImage;
     
     public void init() {
+        /*
+         * Create a new layer state with default values
+         */
+        layerState = new LayerState();
         layerSelector = new LayerSelectorCombo(this);
 
         ElevationSelectorIF elevationSelector = new ElevationSelector("mainLayer", "Depth", this);
@@ -37,7 +44,7 @@ public class Godiva3 extends BaseWmsClient {
         PaletteSelectorIF paletteSelector = new PaletteSelector("mainLayer", getMapHeight(), this, wmsUrl);
         UnitsInfoIF unitsInfo = new UnitsInfo();
 
-        widgetCollection = new WidgetCollection(layerSelector, elevationSelector, timeSelector, paletteSelector, unitsInfo);
+        widgetCollection = new WidgetCollection(elevationSelector, timeSelector, paletteSelector, unitsInfo);
 
         logo = new Image("img/resc_logo.png");
 
@@ -49,9 +56,9 @@ public class Godiva3 extends BaseWmsClient {
 
         RootLayoutPanel mainWindow = RootLayoutPanel.get();
 
-//        mainWindow.add(LayoutManager.getGodivaLayout(layerSelector, unitsInfo, timeSelector,
-//                elevationSelector, paletteSelector, /*anim*/null, kmzLink, permalink, email, null,//docLink,
-//                screenshot, logo, mapArea, loadingImage));
+        mainWindow.add(LayoutManager.getGodiva3Layout(layerSelector, unitsInfo, timeSelector,
+                elevationSelector, paletteSelector, kmzLink, permalink, email,
+                screenshot, logo, mapArea, loadingImage));
 
         timeSelector.setEnabled(false);
         elevationSelector.setEnabled(false);
@@ -71,60 +78,15 @@ public class Godiva3 extends BaseWmsClient {
 
         Window.setTitle(menuTree.getTitle());
         
-        requestLayerDetails(layerSelector.getSelectedId(), null, null, true);
-//        if (permalinking) {
-//            String currentLayer = permalinkParamsMap.get("layer");
-//            if (currentLayer != null) {
-//                layerSelectorCombo.setSelectedLayer(currentLayer);
-//                requestLayerDetails(layerSelectorCombo.getSelectedId(), currentTime, false);
-//            }
-//        }
+        requestLayerDetails(layerSelector.getSelectedId(), null, true);
     }
     
     public void layerDetailsLoaded(LayerDetails layerDetails, boolean autoUpdate) {
+        this.layerDetails = layerDetails;
+        if(layerDetails.getSupportedStyles().size() > 0){
+            layerState.setStyle(layerDetails.getSupportedStyles().get(0));
+        }
         populateWidgets(layerDetails, widgetCollection, autoUpdate);
-
-//        if (permalinking) {
-//            String scaleRange = permalinkParamsMap.get("scaleRange");
-//            if (scaleRange != null) {
-//                this.scaleRange = scaleRange;
-//                paletteSelector.setScaleRange(scaleRange);
-//            }
-//
-//            String numColorBands = permalinkParamsMap.get("numColorBands");
-//            if (numColorBands != null) {
-//                this.nColorBands = Integer.parseInt(numColorBands);
-//                paletteSelector.setNumColorBands(this.nColorBands);
-//            }
-//
-//            String logScale = permalinkParamsMap.get("logScale");
-//            if (logScale != null) {
-//                this.logScale = Boolean.parseBoolean(logScale);
-//                paletteSelector.setLogScale(this.logScale);
-//            }
-//
-//            String currentElevation = permalinkParamsMap.get("elevation");
-//            if (currentElevation != null) {
-//                this.currentElevation = currentElevation;
-//                elevationSelector.setSelectedElevation(this.currentElevation);
-//            }
-//
-//            String currentPalette = permalinkParamsMap.get("palette");
-//            if (currentPalette != null) {
-//                this.currentPalette = currentPalette;
-//                paletteSelector.selectPalette(currentPalette);
-//            }
-//        } else {
-        
-
-//        currentElevation = elevationSelector.getSelectedElevation();
-//        }
-
-        // Not currently used.
-        // moreInfo = getMoreInfo();
-        // copyright = getCopyright();
-
-
     }
     
     public void loadingStarted() {
@@ -133,5 +95,58 @@ public class Godiva3 extends BaseWmsClient {
 
     public void loadingFinished() {
         loadingImage.setVisible(false);
+    }
+    
+    @Override
+    public void enableWidgets() {
+        layerSelector.setEnabled(true);
+        widgetCollection.getTimeSelector().setEnabled(true);
+        widgetCollection.getElevationSelector().setEnabled(true);
+        widgetCollection.getPaletteSelector().setEnabled(true);
+        widgetCollection.getUnitsInfo().setEnabled(true);
+    }
+    
+    @Override
+    public void disableWidgets() {
+        layerSelector.setEnabled(false);
+        widgetCollection.getTimeSelector().setEnabled(false);
+        widgetCollection.getElevationSelector().setEnabled(false);
+        widgetCollection.getPaletteSelector().setEnabled(false);
+        widgetCollection.getUnitsInfo().setEnabled(false);
+    }
+
+    @Override
+    public void availableTimesLoaded(String layerId, List<String> availableTimes, String nearestTime) {
+        widgetCollection.getTimeSelector().populateTimes(availableTimes);
+//        System.out.println("nearestTime (Godiva3 122):"+nearestTime);
+        if (nearestTime != null){
+            widgetCollection.getTimeSelector().selectTime(nearestTime); 
+        }
+    }
+    
+    public void rangeLoaded(double min, double max) {
+        // TODO Auto-generated method stub
+        String scaleRange = min + "," + max;
+        layerState.setScaleRange(scaleRange);
+        widgetCollection.getPaletteSelector().setScaleRange(scaleRange);
+    }
+
+    @Override
+    public LayerState getLayerState(String layerId) {
+        /*
+         * TODO this isn't very nice...
+         */
+        layerState.setCurrentTime(widgetCollection.getTimeSelector().getSelectedDateTime());
+        layerState.setCurrentElevation(widgetCollection.getElevationSelector().getSelectedElevation());
+        layerState.setLogScale(widgetCollection.getPaletteSelector().isLogScale());
+        layerState.setNColorBands(widgetCollection.getPaletteSelector().getNumColorBands());
+        layerState.setPalette(widgetCollection.getPaletteSelector().getSelectedPalette());
+        layerState.setScaleRange(widgetCollection.getPaletteSelector().getScaleRange());
+        return layerState;
+    }
+
+    @Override
+    public String getLayerId() {
+        return layerSelector.getSelectedId();
     }
 }

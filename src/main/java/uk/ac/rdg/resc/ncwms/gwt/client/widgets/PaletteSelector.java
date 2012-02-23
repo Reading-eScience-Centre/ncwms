@@ -25,7 +25,7 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.ToggleButton;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
-public class PaletteSelector extends HorizontalPanel{
+public class PaletteSelector extends HorizontalPanel implements PaletteSelectorIF {
 	private TextBox minScale;
 	private TextBox maxScale;
 	private ListBox nColorBands;
@@ -49,9 +49,12 @@ public class PaletteSelector extends HorizontalPanel{
 	
 	private boolean enabled;
 	
-	public PaletteSelector(int mapHeight, 
+	private String id;
+	
+	public PaletteSelector(String id, int mapHeight, 
 	                       final PaletteSelectionHandler handler,
 	                       String baseUrl) {
+	    this.id = id;
 		this.baseUrl = baseUrl;
 		this.mapHeight = mapHeight;
 		this.paletteHandler = handler;
@@ -72,7 +75,7 @@ public class PaletteSelector extends HorizontalPanel{
         paletteImage.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                if(enabled)
+                if(enabled && !isLocked())
                     popupPaletteSelector();
             }
         });
@@ -87,7 +90,7 @@ public class PaletteSelector extends HorizontalPanel{
         ChangeHandler scaleChangeHandler = new ChangeHandler() {
             @Override
             public void onChange(ChangeEvent event) {
-                handler.scaleRangeChanged(getScaleRange());
+                handler.scaleRangeChanged(PaletteSelector.this.id, getScaleRange());
                 setScaleLabels();
             }
         };
@@ -110,7 +113,7 @@ public class PaletteSelector extends HorizontalPanel{
                     ErrorBox.popupErrorMessage("Cannot use a negative or zero value for logarithmic scale");
                 } else {
                     setScaleLabels();
-                    handler.logScaleChanged(isLogScale());
+                    handler.logScaleChanged(PaletteSelector.this.id, isLogScale());
                 }
             }
         });
@@ -127,7 +130,7 @@ public class PaletteSelector extends HorizontalPanel{
 		autoButton.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                handler.autoAdjustPalette();
+                handler.autoAdjustPalette(PaletteSelector.this.id);
             }
         });
 		autoButton.setTitle("Auto-adjust the colour range");
@@ -207,7 +210,7 @@ public class PaletteSelector extends HorizontalPanel{
             @Override
             public void onClose(CloseEvent<PopupPanel> event) {
                 selectPalette(currentPalette);
-                paletteHandler.paletteChanged(currentPalette, getNumColorBands());
+                paletteHandler.paletteChanged(id, currentPalette, getNumColorBands());
             }
         });
         popup.center();
@@ -244,6 +247,11 @@ public class PaletteSelector extends HorizontalPanel{
 	    return URL.encode(baseUrl+url);
 	}
 
+    @Override
+    public void setId(String id) {
+        this.id = id;
+    }
+    
     public void populatePalettes(List<String> availablePalettes){
 	    this.availablePalettes = availablePalettes;
 	    setEnabled(true);
