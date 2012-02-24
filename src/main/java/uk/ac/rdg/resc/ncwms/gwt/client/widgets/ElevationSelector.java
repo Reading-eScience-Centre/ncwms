@@ -39,7 +39,8 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
 	    this.id = id;
     }
 
-    public void populateVariables(List<String> availableElevations, String currentElevation){
+    public void populateVariables(List<String> availableElevations){
+        String currentElevation = getSelectedElevation();
 		elevations.clear();
 		if(availableElevations == null || availableElevations.size()==0){
 			label.setStylePrimaryName("inactiveLabelStyle");
@@ -52,7 +53,7 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
 			    String formattedElevationStr = format.format(elevation); 
 				elevations.addItem(formattedElevationStr);
 				formattedValuesToRealValues.put(formattedElevationStr, elevationStr);
-				if(elevation.equals(currentElevation)){
+				if(elevationStr.equals(currentElevation)){
 				    elevations.setSelectedIndex(i);
 				}
 				i++;

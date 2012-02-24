@@ -57,9 +57,13 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
 /**
- * Entry point classes define <code>onModuleLoad()</code>.
+ * This class has been superceded by Godiva3, which uses BaseWmsClient to
+ * provide the main functionality. This class is being kept around as it works
+ * and has been tested. It is still not yet fully functional.
+ * 
+ * @author Guy Griffiths
+ * 
  */
-
 public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, ElevationSelectionHandler, PaletteSelectionHandler, TimeDateSelectionHandler, GodivaActionsHandler  {
 
     private String baseUrl;
@@ -440,7 +444,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
 
                     zUnits = layerDetails.getZUnits();
                     elevationSelector.setUnitsAndDirection(zUnits, layerDetails.isZPositive());
-                    elevationSelector.populateVariables(layerDetails.getAvailableZs(), currentElevation);
+                    elevationSelector.populateVariables(layerDetails.getAvailableZs());
 
                     paletteSelector.populatePalettes(layerDetails.getAvailablePalettes());
 
@@ -691,7 +695,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
             if(supportedStyles.size() > 0){
                 currentStyle = supportedStyles.get(0);
             }
-            mapArea.changeLayer(currentLayer, currentTime, currentElevation, currentStyle, currentPalette, scaleRange, nColorBands,
+            mapArea.addLayer("singleLayer", currentLayer, currentTime, currentElevation, currentStyle, currentPalette, scaleRange, nColorBands,
                     logScale);
             updateLinksEtc();
         }
