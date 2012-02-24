@@ -1,5 +1,8 @@
 package uk.ac.rdg.resc.ncwms.gwt.client.widgets;
 
+import java.util.HashMap;
+import java.util.Iterator;
+
 import org.gwtopenmaps.openlayers.client.Bounds;
 import org.gwtopenmaps.openlayers.client.LonLat;
 import org.gwtopenmaps.openlayers.client.Map;
@@ -42,13 +45,25 @@ import com.google.gwt.xml.client.XMLParser;
 public class MapArea extends MapWidget {
 
     private static final Projection EPSG4326 = new Projection("EPSG:4326");
+    private final class WmsParameterPair {
+        private final WMS wms;
+        private final WMSParams params;
+        public WmsParameterPair(WMS wms, WMSParams wmsParameters) {
+            if(wms == null || wmsParameters == null)
+                throw new IllegalArgumentException("Cannot provide null parameters");
+            this.wms = wms;
+            this.params = wmsParameters;
+        }
+    }
 
     private Map map;
-    private WMS wmsLayer;
+    private java.util.Map<String, WmsParameterPair> wmsLayers;
     private Image animLayer;
     private String currentProjection;
     private String baseUrl;
 
+    private String transectLayer = null;
+    
     private WMSOptions wmsPolarOptions;
     private WMSOptions wmsStandardOptions;
 
@@ -58,18 +73,19 @@ public class MapArea extends MapWidget {
 
     private GodivaActionsHandler widgetDisabler;
 
-    private WMSParams params = null;
-
     private String baseUrlForExport;
 
-    private boolean singleTile = false;
-    private boolean lastMapWasSingleTile = false;
+//    private boolean singleTile = false;
+//    private boolean lastMapWasSingleTile = false;
 
     private WMSGetFeatureInfo getFeatureInfo;
 
     public MapArea(String baseUrl, int width, int height,
             final GodivaActionsHandler godivaListener) {
         super(width + "px", height + "px", getDefaultMapOptions());
+        
+        wmsLayers = new HashMap<String, WmsParameterPair>();
+        
         this.baseUrl = baseUrl;
         loadStartListener = new LayerLoadStartListener() {
             @Override
@@ -126,8 +142,9 @@ public class MapArea extends MapWidget {
         animLayer.addLayerLoadEndListener(loadEndListener);
         animLayer.setIsBaseLayer(false);
         animLayer.setDisplayInLayerSwitcher(false);
-        if (wmsLayer != null)
-            wmsLayer.setIsVisible(false);
+        for(WmsParameterPair wmsLayerAndParams : wmsLayers.values()){
+            wmsLayerAndParams.wms.setIsVisible(false);
+        }
         map.addLayer(animLayer);
         widgetDisabler.disableWidgets();
     }
@@ -139,49 +156,64 @@ public class MapArea extends MapWidget {
             map.removeLayer(animLayer);
             animLayer = null;
         }
-        wmsLayer.setIsVisible(true);
+        for(WmsParameterPair wmsLayerAndParams : wmsLayers.values()){
+            wmsLayerAndParams.wms.setIsVisible(true);
+        }
     }
-
-    public void changeLayer(String layerId, String currentTime, String currentElevation,
-            String style, String palette, String scaleRange, int nColorBands, boolean logScale) {
+    
+    public void addLayer(String internalLayerId, String wmsLayerName, String time, String elevation, String style,
+            String palette, String scaleRange, int nColourBands, boolean logScale) {
         JSObject vendorParams = JSObject.createJSObject();
-
-        params = new WMSParams();
+        
+        WMSParams params = new WMSParams();
         params.setFormat("image/png");
         params.setTransparent(true);
         params.setStyles(style + "/" + palette);
-        params.setLayers(layerId);
-        if (currentTime != null) {
-            params.setParameter("TIME", currentTime);
-            vendorParams.setProperty("TIME", currentTime);
+        params.setLayers(wmsLayerName);
+        if (time != null) {
+            params.setParameter("TIME", time);
+            vendorParams.setProperty("TIME", time);
         }
-        if (currentElevation != null) {
-            params.setParameter("ELEVATION", currentElevation);
-            vendorParams.setProperty("ELEVATION", currentElevation);
+        if (elevation != null) {
+            params.setParameter("ELEVATION", elevation);
+            vendorParams.setProperty("ELEVATION", elevation);
         }
         if (scaleRange != null)
             params.setParameter("COLORSCALERANGE", scaleRange);
-        if (nColorBands > 0)
-            params.setParameter("NUMCOLORBANDS", nColorBands + "");
+        if (nColourBands > 0)
+            params.setParameter("NUMCOLORBANDS", nColourBands + "");
         params.setParameter("LOGSCALE", logScale + "");
 
-        singleTile = (style != null && style.equalsIgnoreCase("vector"));
-        if (singleTile != lastMapWasSingleTile && wmsLayer != null) {
-            map.removeLayer(wmsLayer);
-            wmsLayer = null;
-        }
-        lastMapWasSingleTile = singleTile;
+        // TODO I have a creeping feeling that this is necessary...
+//        if (singleTile != lastMapWasSingleTile && wmsLayer != null) {
+//            map.removeLayer(wmsLayer);
+//            wmsLayer = null;
+//        }
+//        lastMapWasSingleTile = singleTile;
+        
 
         WMSOptions options = getOptionsForCurrentProjection();
-        changeLayer(params, options);
+        boolean singleTile = (style != null && style.equalsIgnoreCase("vector"));
+        options.setSingleTile(singleTile);
+        
+        doAddingOfLayer(internalLayerId, params, options);
 
         WMSGetFeatureInfoOptions getFeatureInfoOptions = new WMSGetFeatureInfoOptions();
         getFeatureInfoOptions.setQueryVisible(true);
         getFeatureInfoOptions.setInfoFormat("text/xml");
 
-        WMS[] layers = new WMS[] { wmsLayer };
+        WMS[] layers = new WMS[wmsLayers.size()];
+        Iterator<WmsParameterPair> it = wmsLayers.values().iterator();
+        int i=0;
+        while(it.hasNext()){
+            layers[i] = it.next().wms;
+            i++;
+        }
         getFeatureInfoOptions.setLayers(layers);
 
+        /*
+         * TODO We need to add options for profile and time series plots
+         */
         if (getFeatureInfo == null) {
             getFeatureInfo = new WMSGetFeatureInfo(getFeatureInfoOptions);
             getFeatureInfo.addGetFeatureListener(new GetFeatureInfoListener() {
@@ -205,9 +237,11 @@ public class MapArea extends MapWidget {
         }
         getFeatureInfo.getJSObject().setProperty("vendorParams", vendorParams);
     }
-
-    private void changeLayer(WMSParams params, WMSOptions options) {
-        if (wmsLayer == null) {
+    
+    private void doAddingOfLayer(String internalLayerId, WMSParams params, WMSOptions options) {
+        WmsParameterPair wmsAndParams = wmsLayers.get(internalLayerId);
+        WMS wmsLayer;
+        if (wmsAndParams == null) {
             wmsLayer = new WMS("WMS Layer", baseUrl, params, options);
             wmsLayer.addLayerLoadStartListener(loadStartListener);
             wmsLayer.addLayerLoadCancelListener(loadCancelListener);
@@ -216,8 +250,11 @@ public class MapArea extends MapWidget {
             if (animLayer != null)
                 animLayer.setIsVisible(false);
             map.addLayer(wmsLayer);
+            WmsParameterPair newWmsAndParams = new WmsParameterPair(wmsLayer, params);
+            wmsLayers.put(internalLayerId, newWmsAndParams);
             // addGetFeatureInfoLayer();
         } else {
+            wmsLayer = wmsLayers.get(internalLayerId).wms;
             wmsLayer.getParams().setParameter("ELEVATION", "");
             wmsLayer.getParams().setParameter("TIME", "");
             wmsLayer.mergeNewParams(params);
@@ -227,6 +264,99 @@ public class MapArea extends MapWidget {
             wmsLayer.redraw();
         }
     }
+    
+    public void removeLayer(String layerId){
+        if(wmsLayers.containsKey(layerId)){
+            map.removeLayer(wmsLayers.get(layerId).wms);
+            wmsLayers.remove(layerId);
+        }
+    }
+
+//    public void changeLayer(String layerId, String currentTime, String currentElevation,
+//            String style, String palette, String scaleRange, int nColorBands, boolean logScale) {
+//        JSObject vendorParams = JSObject.createJSObject();
+//
+//        params = new WMSParams();
+//        params.setFormat("image/png");
+//        params.setTransparent(true);
+//        params.setStyles(style + "/" + palette);
+//        params.setLayers(layerId);
+//        if (currentTime != null) {
+//            params.setParameter("TIME", currentTime);
+//            vendorParams.setProperty("TIME", currentTime);
+//        }
+//        if (currentElevation != null) {
+//            params.setParameter("ELEVATION", currentElevation);
+//            vendorParams.setProperty("ELEVATION", currentElevation);
+//        }
+//        if (scaleRange != null)
+//            params.setParameter("COLORSCALERANGE", scaleRange);
+//        if (nColorBands > 0)
+//            params.setParameter("NUMCOLORBANDS", nColorBands + "");
+//        params.setParameter("LOGSCALE", logScale + "");
+//
+//        singleTile = (style != null && style.equalsIgnoreCase("vector"));
+//        if (singleTile != lastMapWasSingleTile && wmsLayer != null) {
+//            map.removeLayer(wmsLayer);
+//            wmsLayer = null;
+//        }
+//        lastMapWasSingleTile = singleTile;
+//
+//        WMSOptions options = getOptionsForCurrentProjection();
+//        changeLayer(params, options);
+//
+//        WMSGetFeatureInfoOptions getFeatureInfoOptions = new WMSGetFeatureInfoOptions();
+//        getFeatureInfoOptions.setQueryVisible(true);
+//        getFeatureInfoOptions.setInfoFormat("text/xml");
+//
+//        WMS[] layers = new WMS[] { wmsLayer };
+//        getFeatureInfoOptions.setLayers(layers);
+//
+//        if (getFeatureInfo == null) {
+//            getFeatureInfo = new WMSGetFeatureInfo(getFeatureInfoOptions);
+//            getFeatureInfo.addGetFeatureListener(new GetFeatureInfoListener() {
+//                @Override
+//                public void onGetFeatureInfo(GetFeatureInfoEvent eventObject) {
+//                    String pixels[] = eventObject.getJSObject().getProperty("xy").toString()
+//                            .split(",");
+//                    LonLat lonLat = MapArea.this.map.getLonLatFromPixel(new Pixel(Integer
+//                            .parseInt(pixels[0].substring(2)), Integer.parseInt(pixels[1]
+//                            .substring(2))));
+//                    String message = processFeatureInfo(eventObject.getText());
+//                    Popup popup = new Popup("info_popup", lonLat, null, message, true);
+//                    popup.setAutoSize(true);
+//                    popup.setBackgroundColor("cornsilk");
+//                    popup.setBorder("1px solid");
+//                    MapArea.this.map.addPopupExclusive(popup);
+//                }
+//            });
+//            getFeatureInfo.setAutoActivate(true);
+//            map.addControl(getFeatureInfo);
+//        }
+//        getFeatureInfo.getJSObject().setProperty("vendorParams", vendorParams);
+//    }
+//
+//    private void changeLayer(WMSParams params, WMSOptions options) {
+//        if (wmsLayer == null) {
+//            wmsLayer = new WMS("WMS Layer", baseUrl, params, options);
+//            wmsLayer.addLayerLoadStartListener(loadStartListener);
+//            wmsLayer.addLayerLoadCancelListener(loadCancelListener);
+//            wmsLayer.addLayerLoadEndListener(loadEndListener);
+//            // wmsLayer.setDisplayInLayerSwitcher(false);
+//            if (animLayer != null)
+//                animLayer.setIsVisible(false);
+//            map.addLayer(wmsLayer);
+//            // addGetFeatureInfoLayer();
+//        } else {
+//            wmsLayer.getParams().setParameter("ELEVATION", "");
+//            wmsLayer.getParams().setParameter("TIME", "");
+//            wmsLayer.mergeNewParams(params);
+//            wmsLayer.addOptions(options);
+//            if (animLayer != null)
+//                animLayer.setIsVisible(false);
+//            wmsLayer.redraw();
+//        }
+//    }
 
     public void zoomToExtents(String extents) throws Exception {
         if (currentProjection.equalsIgnoreCase("EPSG:32661")
@@ -254,8 +384,9 @@ public class MapArea extends MapWidget {
 
     public String getKMZUrl() {
         String url;
-        if (params != null && wmsLayer != null) {
-            url = wmsLayer.getFullRequestString(params, null);
+        WmsParameterPair wmsAndParams = wmsLayers.get(getTransectLayerId());
+        if (wmsAndParams != null) {
+            url = wmsAndParams.wms.getFullRequestString(wmsAndParams.params, null);
             url = url + "&height=" + (int) map.getSize().getHeight() + "&width="
                     + (int) map.getSize().getWidth() + "&bbox=" + map.getExtent().toBBox(6);
             url = url.replaceAll("image/png", "application/vnd.google-earth.kmz");
@@ -289,8 +420,10 @@ public class MapArea extends MapWidget {
         map.setMaxExtent(new Bounds(-180, -360, 180, 360));
     }
 
-    public void setOpacity(float opacity) {
-        wmsLayer.setOpacity(opacity);
+    public void setOpacity(String layerId, float opacity) {
+        if(wmsLayers.containsKey(layerId)){
+            wmsLayers.get(layerId).wms.setOpacity(opacity);
+        }
     }
 
     public String getBaseLayerUrl() {
@@ -402,12 +535,13 @@ public class MapArea extends MapWidget {
                         + URL.encode(layers);
                 if (!map.getProjection().equals(currentProjection)) {
                     currentProjection = map.getProjection();
-                    if (wmsLayer != null) {
-                        map.removeLayer(wmsLayer);
-                        wmsLayer = null;
+                    for(String internalLayerId : wmsLayers.keySet()){
+                        WmsParameterPair wmsAndParams = wmsLayers.get(internalLayerId);
+                        if (wmsAndParams != null) {
+                            removeLayer(internalLayerId);
+                            doAddingOfLayer(internalLayerId, wmsAndParams.params, getOptionsForCurrentProjection());
+                        }
                     }
-                    if (params != null)
-                        changeLayer(params, getOptionsForCurrentProjection());
                     map.zoomToMaxExtent();
                 }
             }
@@ -418,10 +552,10 @@ public class MapArea extends MapWidget {
     private WMSOptions getOptionsForCurrentProjection() {
         if (currentProjection.equalsIgnoreCase("EPSG:32661")
                 || currentProjection.equalsIgnoreCase("EPSG:32761")) {
-            wmsPolarOptions.setSingleTile(singleTile);
+//            wmsPolarOptions.setSingleTile(singleTile);
             return wmsPolarOptions;
         } else {
-            wmsStandardOptions.setSingleTile(singleTile);
+//            wmsStandardOptions.setSingleTile(singleTile);
             return wmsStandardOptions;
         }
     }
@@ -446,49 +580,70 @@ public class MapArea extends MapWidget {
         drawingLayer.getEvents().register("featureadded", drawingLayer, new EventHandler() {
             @Override
             public void onHandle(EventObject eventObject) {
-                JSObject featureJs = eventObject.getJSObject().getProperty("feature");
-                JSObject lineStringJs = VectorFeature.narrowToVectorFeature(featureJs)
-                        .getGeometry().getJSObject();
-                LineString line = LineString.narrowToLineString(lineStringJs);
-                Point[] points = line.getComponents();
-                StringBuilder lineStringBuilder = new StringBuilder();
-                for (int i = 0; i < points.length - 1; i++) {
-                    lineStringBuilder.append(points[i].getX() + " " + points[i].getY() + ", ");
+                WmsParameterPair wmsAndParams = wmsLayers.get(getTransectLayerId());
+                if(wmsAndParams != null){
+                    WMS wmsLayer = wmsAndParams.wms;
+                    JSObject featureJs = eventObject.getJSObject().getProperty("feature");
+                    JSObject lineStringJs = VectorFeature.narrowToVectorFeature(featureJs)
+                            .getGeometry().getJSObject();
+                    LineString line = LineString.narrowToLineString(lineStringJs);
+                    Point[] points = line.getComponents();
+                    StringBuilder lineStringBuilder = new StringBuilder();
+                    for (int i = 0; i < points.length - 1; i++) {
+                        lineStringBuilder.append(points[i].getX() + " " + points[i].getY() + ", ");
+                    }
+                    lineStringBuilder.append(points[points.length - 1].getX() + " "
+                            + points[points.length - 1].getY());
+                    String transectUrl = "wms" + "?REQUEST=GetTransect" + "&LAYER="
+                            + wmsLayer.getParams().getLayers() + "&CRS=" + currentProjection
+                            + "&LINESTRING=" + lineStringBuilder + "&FORMAT=image/png";
+                    String elevation = wmsLayer.getParams().getJSObject()
+                            .getPropertyAsString("ELEVATION");
+                    String time = wmsLayer.getParams().getJSObject().getPropertyAsString("TIME");
+                    String height;
+                    if (elevation != null && !elevation.equals("")) {
+                        transectUrl += "&ELEVATION=" + elevation;
+                        height = "620";
+                    } else {
+                        height = "320";
+                    }
+                    if (time != null && !time.equals("")) {
+                        transectUrl += "&TIME=" + time;
+                    }
+                    /*
+                     * Yes, this is peculiar. Yes, it is also necessary.
+                     * 
+                     * Without this, the GetFeatureInfo functionality stops working
+                     * after a transect graph has been plotted.
+                     * 
+                     * Please feel free to play with it for hours trying to get it
+                     * to work another way - and Good Luck!
+                     */
+                    if (getFeatureInfo != null) {
+                        getFeatureInfo.deactivate();
+                        getFeatureInfo.activate();
+                    }
+                    Window.open(transectUrl, "_blank", "enabled,width=420,height=" + height);
                 }
-                lineStringBuilder.append(points[points.length - 1].getX() + " "
-                        + points[points.length - 1].getY());
-                String transectUrl = "wms" + "?REQUEST=GetTransect" + "&LAYER="
-                        + wmsLayer.getParams().getLayers() + "&CRS=" + currentProjection
-                        + "&LINESTRING=" + lineStringBuilder + "&FORMAT=image/png";
-                String elevation = wmsLayer.getParams().getJSObject()
-                        .getPropertyAsString("ELEVATION");
-                String time = wmsLayer.getParams().getJSObject().getPropertyAsString("TIME");
-                String height;
-                if (elevation != null && !elevation.equals("")) {
-                    transectUrl += "&ELEVATION=" + elevation;
-                    height = "620";
-                } else {
-                    height = "320";
-                }
-                if (time != null && !time.equals("")) {
-                    transectUrl += "&TIME=" + time;
-                }
-                /*
-                 * Yes, this is peculiar. Yes, it is also necessary.
-                 * 
-                 * Without this, the GetFeatureInfo functionality stops working
-                 * after a transect graph has been plotted.
-                 * 
-                 * Please feel free to play with it for hours trying to get it
-                 * to work another way - and Good Luck!
-                 */
-                if (getFeatureInfo != null) {
-                    getFeatureInfo.deactivate();
-                    getFeatureInfo.activate();
-                }
-                Window.open(transectUrl, "_blank", "enabled,width=420,height=" + height);
             }
         });
         map.addControl(new EditingToolbar(drawingLayer));
+    }
+    
+    /*
+     * Gets the ID of the layer to be used for transects + KML
+     * 
+     * If it hasn't been set, pick a random layer.  Failing that, return null
+     */
+    private String getTransectLayerId(){
+        if(transectLayer != null){
+            return transectLayer;
+        } else {
+            return wmsLayers.keySet().isEmpty() ? null : wmsLayers.keySet().iterator().next();
+        }
+    }
+    
+    public void setTransectLayerId(String tranectLayer){
+        this.transectLayer = tranectLayer;
     }
 }

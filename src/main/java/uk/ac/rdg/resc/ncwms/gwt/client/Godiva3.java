@@ -1,42 +1,40 @@
 package uk.ac.rdg.resc.ncwms.gwt.client;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerDetails;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
-import uk.ac.rdg.resc.ncwms.gwt.client.widgets.AnimationButton;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelectorIF;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.GodivaWidgets;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerSelectorCombo;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerSelectorIF;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.MapArea;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.PaletteSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.PaletteSelectorIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.TimeSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.TimeSelectorIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.UnitsInfo;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.UnitsInfoIF;
-import uk.ac.rdg.resc.ncwms.gwt.client.widgets.WidgetCollection;
 
 import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.RootLayoutPanel;
 
 public class Godiva3 extends BaseWmsClient {
+    private static final String WMS_LAYER_ID = "singleLayer";
+    
     private LayerSelectorIF layerSelector;
-    private WidgetCollection widgetCollection;
-    private LayerDetails layerDetails = null;
-    private LayerState layerState;
+    private GodivaWidgets widgetCollection;
+    private String style;
     
     private Image logo;
     private Image loadingImage;
     
+    @Override
     public void init() {
-        /*
-         * Create a new layer state with default values
-         */
-        layerState = new LayerState();
+        mapArea.setTransectLayerId(WMS_LAYER_ID);
+        
         layerSelector = new LayerSelectorCombo(this);
 
         ElevationSelectorIF elevationSelector = new ElevationSelector("mainLayer", "Depth", this);
@@ -44,7 +42,7 @@ public class Godiva3 extends BaseWmsClient {
         PaletteSelectorIF paletteSelector = new PaletteSelector("mainLayer", getMapHeight(), this, wmsUrl);
         UnitsInfoIF unitsInfo = new UnitsInfo();
 
-        widgetCollection = new WidgetCollection(elevationSelector, timeSelector, paletteSelector, unitsInfo);
+        widgetCollection = new GodivaWidgets(elevationSelector, timeSelector, paletteSelector, unitsInfo);
 
         logo = new Image("img/resc_logo.png");
 
@@ -66,6 +64,7 @@ public class Godiva3 extends BaseWmsClient {
         unitsInfo.setEnabled(false);
     }
     
+    @Override
     public void menuLoaded(LayerMenuItem menuTree) {
         layerSelector.populateLayers(menuTree);
         
@@ -77,22 +76,29 @@ public class Godiva3 extends BaseWmsClient {
         }
 
         Window.setTitle(menuTree.getTitle());
-        
-        requestLayerDetails(layerSelector.getSelectedId(), null, true);
     }
     
+    @Override
     public void layerDetailsLoaded(LayerDetails layerDetails, boolean autoUpdate) {
-        this.layerDetails = layerDetails;
         if(layerDetails.getSupportedStyles().size() > 0){
-            layerState.setStyle(layerDetails.getSupportedStyles().get(0));
+            style = layerDetails.getSupportedStyles().get(0);
         }
-        populateWidgets(layerDetails, widgetCollection, autoUpdate);
+        /*
+         * We populate our widgets here, but in a multi-layer system, we may
+         * want to create new widgets here
+         */
+        populateWidgets(layerDetails, widgetCollection);
+        if(autoUpdate){
+            widgetCollection.getPaletteSelector().selectPalette(layerDetails.getSelectedPalette());
+        }
     }
     
+    @Override
     public void loadingStarted() {
         loadingImage.setVisible(true);
     }
 
+    @Override
     public void loadingFinished() {
         loadingImage.setVisible(false);
     }
@@ -118,35 +124,30 @@ public class Godiva3 extends BaseWmsClient {
     @Override
     public void availableTimesLoaded(String layerId, List<String> availableTimes, String nearestTime) {
         widgetCollection.getTimeSelector().populateTimes(availableTimes);
-//        System.out.println("nearestTime (Godiva3 122):"+nearestTime);
         if (nearestTime != null){
             widgetCollection.getTimeSelector().selectTime(nearestTime); 
         }
     }
     
+    @Override
     public void rangeLoaded(double min, double max) {
-        // TODO Auto-generated method stub
-        String scaleRange = min + "," + max;
-        layerState.setScaleRange(scaleRange);
-        widgetCollection.getPaletteSelector().setScaleRange(scaleRange);
+        widgetCollection.getPaletteSelector().setScaleRange(min + "," + max);
     }
 
     @Override
-    public LayerState getLayerState(String layerId) {
-        /*
-         * TODO this isn't very nice...
-         */
-        layerState.setCurrentTime(widgetCollection.getTimeSelector().getSelectedDateTime());
-        layerState.setCurrentElevation(widgetCollection.getElevationSelector().getSelectedElevation());
-        layerState.setLogScale(widgetCollection.getPaletteSelector().isLogScale());
-        layerState.setNColorBands(widgetCollection.getPaletteSelector().getNumColorBands());
-        layerState.setPalette(widgetCollection.getPaletteSelector().getSelectedPalette());
-        layerState.setScaleRange(widgetCollection.getPaletteSelector().getScaleRange());
-        return layerState;
+    public GodivaWidgets getWidgetCollection(String layerId){
+        return widgetCollection;
     }
 
     @Override
-    public String getLayerId() {
-        return layerSelector.getSelectedId();
+    public void updateMap(MapArea mapArea) {
+        String currentTime = widgetCollection.getTimeSelector().getSelectedDateTime();
+        String currentElevation = widgetCollection.getElevationSelector().getSelectedElevation();
+        String currentPalette = widgetCollection.getPaletteSelector().getSelectedPalette();
+        String currentScaleRange = widgetCollection.getPaletteSelector().getScaleRange();
+        int nColourBands = widgetCollection.getPaletteSelector().getNumColorBands();
+        boolean logScale = widgetCollection.getPaletteSelector().isLogScale();
+        mapArea.addLayer(WMS_LAYER_ID, layerSelector.getSelectedId(), currentTime, currentElevation, style,
+                currentPalette, currentScaleRange, nColourBands, logScale);
     }
 }

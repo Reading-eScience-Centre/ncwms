@@ -130,7 +130,8 @@ public class PaletteSelector extends HorizontalPanel implements PaletteSelectorI
 		autoButton.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                handler.autoAdjustPalette(PaletteSelector.this.id);
+                if(!isLocked())
+                    handler.autoAdjustPalette(PaletteSelector.this.id);
             }
         });
 		autoButton.setTitle("Auto-adjust the colour range");

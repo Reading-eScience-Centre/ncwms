@@ -113,6 +113,15 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
             /*
              * We have a leaf node
              */
+            if(parentNode == null){
+                /*
+                 * This is an empty dataset (probably it is still loading)
+                 */
+                String nodeLabel = item.getTitle();
+                TreeItem nextNode = new TreeItem(nodeLabel);
+                tree.addItem(nextNode);
+            }
+            
             final String parentName = parentNode.getText();
             final String label = item.getTitle();
             final String id = item.getId();

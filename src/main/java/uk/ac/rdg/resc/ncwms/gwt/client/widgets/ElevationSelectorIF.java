@@ -6,7 +6,7 @@ import com.google.gwt.user.client.ui.IsWidget;
 
 public interface ElevationSelectorIF extends IsWidget {
     public void setId(String id);
-    public void populateVariables(List<String> availableElevations, String currentElevation);
+    public void populateVariables(List<String> availableElevations);
     public void setUnitsAndDirection(String units, boolean positive);
     public String getSelectedElevation();
     public void setSelectedElevation(String currentElevation);
