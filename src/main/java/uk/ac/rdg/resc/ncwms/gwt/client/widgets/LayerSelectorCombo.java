@@ -1,5 +1,6 @@
 package uk.ac.rdg.resc.ncwms.gwt.client.widgets;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,21 +83,6 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
         popup.add(vPanel);
     }
 
-    /**
-     * Populates the layer tree from a JSON object
-     * 
-     * @param json
-     */
-    public void populateLayers(JSONObject json) {
-        tree.clear();
-        String nodeLabel = json.get("label").isString().stringValue();
-        JSONValue children = json.get("children");
-        setHTML("<big>" + nodeLabel + "</big>");
-        JSONArray childrenArray = children.isArray();
-        for (int i = 0; i < childrenArray.size(); i++) {
-            addNode(childrenArray.get(i).isObject(), null);
-        }
-    }
     
     public void populateLayers(LayerMenuItem topItem){
         tree.clear();
@@ -152,46 +138,10 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
         }
     }
 
-    private void addNode(JSONObject json, final TreeItem parentNode) {
-        // The JSONObject is an array of leaf nodes
-        JSONValue children = json.get("children");
-        if (children == null) {
-            /*
-             * We have a leaf node
-             */
-            final String parentName = parentNode.getText();
-            final String label = json.get("label").isString().stringValue();
-            final String id = json.get("id").isString().stringValue();
-            layerIdToTitle.put(id, "<big>" + parentName + "</big> > " + label);
-            Label leaf = new Label(label);
-            leaf.addClickHandler(new ClickHandler() {
-                @Override
-                public void onClick(ClickEvent event) {
-                    setSelectedLayer(id);
-                    layerSelectionHandler.layerSelected(id);
-                }
-            });
-            parentNode.addItem(leaf);
-        } else {
-            /*
-             * We have a branch node
-             */
-            String nodeLabel = json.get("label").isString().stringValue();
-            TreeItem nextNode = new TreeItem(nodeLabel);
-            if (parentNode == null) {
-                tree.addItem(nextNode);
-            } else {
-                parentNode.addItem(nextNode);
-            }
-            JSONArray childrenArray = children.isArray();
-            for (int i = 0; i < childrenArray.size(); i++) {
-                addNode(childrenArray.get(i).isObject(), nextNode);
-            }
-        }
-    }
-
-    public String getSelectedId() {
-        return selectedLayer;
+    public List<String> getSelectedIds() {
+        List<String> ret = new ArrayList<String>();
+        ret.add(selectedLayer);
+        return ret;
     }
 
     public void setSelectedLayer(String id) {

@@ -83,8 +83,8 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
      * Map widget and state information
      */
     protected MapArea mapArea;
-    private int zoom = 1;
-    private LonLat centre = new LonLat(0.0, 0.0);
+//    private int zoom = 1;
+//    private LonLat centre = new LonLat(0.0, 0.0);
     
     // The link to the Google Earth KMZ
     protected Anchor kmzLink;
@@ -352,7 +352,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
      *            palette. Note that this will only auto-adjust the palette if
      *            the conditions are right
      */
-    protected void requestLayerDetails(String layerId, String currentTime, final boolean autoZoomAndPalette){
+    protected void requestLayerDetails(final String layerId, String currentTime, final boolean autoZoomAndPalette){
         if (layerId == null) {
             /*
              * We have no variables defined in the selected layer
@@ -423,7 +423,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                         minMaxDetailsLoaded = true;
                     }
                     layerDetailsLoaded = true;
-                    updateMapBase();
+                    updateMapBase(layerId);
                 } catch (Exception e) {
                     invalidJson(e);
                 } finally {
@@ -435,7 +435,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
             public void onError(Request request, Throwable e) {
                 setLoading(false);
                 layerDetailsLoaded = true;
-                updateMapBase();
+                updateMapBase(layerId);
                 handleError(e);
             }
         });
@@ -462,12 +462,16 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
      * @param force
      *            whether to perform even if a scale has been set on the server
      */
-    protected void maybeRequestAutoRange(String layerId, String elevation, String time, boolean force){
+    protected void maybeRequestAutoRange(final String layerId, String elevation, String time, boolean force){
         minMaxDetailsLoaded = false;
         /*
          * If we have default values for the scale range or force=true, then
          * continue with the request, otherwise return
          */
+//        GodivaWidgets gw = getWidgetCollection(layerId);
+//        PaletteSelectorIF ps = gw.getPaletteSelector();
+//        String sr = ps.getScaleRange();
+//        String [] srs = sr.split(",");
         String[] scaleRangeSplit = getWidgetCollection(layerId).getPaletteSelector()
                 .getScaleRange().split(",");
         if (!force
@@ -506,13 +510,13 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                         JSONObject parentObj = jsonMap.isObject();
                         double min = parentObj.get("min").isNumber().doubleValue();
                         double max = parentObj.get("max").isNumber().doubleValue();
-                        rangeLoaded(min, max);
+                        rangeLoaded(layerId, min, max);
                     } catch (Exception e){
                         invalidJson(e);
                     }
                 }
                 minMaxDetailsLoaded = true;
-                updateMapBase();
+                updateMapBase(layerId);
                 setLoading(false);
             }
 
@@ -521,7 +525,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                 // We have failed, but we still want to update the map
                 setLoading(false);
                 minMaxDetailsLoaded = true;
-                updateMapBase();
+                updateMapBase(layerId);
                 handleError(exception);
             }
         });
@@ -618,6 +622,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
      *            a collection of widgets to populated.
      */
     protected void populateWidgets(LayerDetails layerDetails, GodivaWidgets widgetCollection){
+        // TODO Deal with null case
         widgetCollection.getElevationSelector().setId(layerDetails.getId());
         widgetCollection.getTimeSelector().setId(layerDetails.getId());
         widgetCollection.getPaletteSelector().setId(layerDetails.getId());
@@ -645,7 +650,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     /**
      * Performs tasks common to each map update, then calls the subclass method
      */
-    private void updateMapBase() {
+    private void updateMapBase(String layerUpdated) {
         if (layerDetailsLoaded && dateTimeDetailsLoaded && minMaxDetailsLoaded) {
             if(permalinking) {
                 String centre = permalinkParamsMap.get("centre");
@@ -661,15 +666,15 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                 }
                 permalinking = false;
             }
-            updateMap(mapArea);
-            updateLinksEtc();
+            updateMap(mapArea, layerUpdated);
+//            updateLinksEtc();
         }
     }
     
     /**
      * Updates the links (KMZ, screenshot, email, permalink...)
      */
-    private void updateLinksEtc() {
+//    private void updateLinksEtc() {
             // TODO implement this
     //        /*
     //         * TODO Perhaps we should have a getStateInfo() method or similar here.  Then the anim button (and anything else that wanted it)
@@ -730,13 +735,19 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     //        screenshot.setHref("screenshot?"+urlParams);
     //        
     //        kmzLink.setHref(mapArea.getKMZUrl());
-        }
+//        }
 
     @Override
     public void layerSelected(String layerId) {
-        requestLayerDetails(layerId, getWidgetCollection(layerId).getTimeSelector()
-                .getSelectedDateTime(), true);
-        updateMapBase();
+        requestLayerDetails(layerId, getCurrentTime(), true);
+        updateMapBase(layerId);
+    }
+    
+    public abstract String getCurrentTime();
+    
+    @Override
+    public void layerDeselected(String layerId) {
+        mapArea.removeLayer(layerId);
     }
 
     /*
@@ -754,22 +765,22 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
 
     @Override
     public void elevationSelected(String layerId, String elevation) {
-        updateMapBase();
+        updateMapBase(layerId);
     }
 
     @Override
     public void paletteChanged(String layerId, String paletteName, int nColorBands) {
-        updateMapBase();
+        updateMapBase(layerId);
     }
 
     @Override
     public void scaleRangeChanged(String layerId, String scaleRange) {
-        updateMapBase();
+        updateMapBase(layerId);
     }
 
     @Override
     public void logScaleChanged(String layerId, boolean newIsLogScale) {
-        updateMapBase();
+        updateMapBase(layerId);
     }
 
     @Override
@@ -783,7 +794,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     public void dateSelected(final String layerId, String selectedDate) {
         if(selectedDate == null){
             dateTimeDetailsLoaded = true;
-            updateMapBase();
+            updateMapBase(layerId);
             return;
         }
         dateTimeDetailsLoaded = false;
@@ -800,7 +811,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                     timeSelected(layerId, getWidgetCollection(layerId).getTimeSelector()
                             .getSelectedDateTime());
                     dateTimeDetailsLoaded = true;
-                    updateMapBase();
+                    updateMapBase(layerId);
                 } catch (Exception e){
                     invalidJson(e);
                 } finally {
@@ -812,7 +823,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
             public void onError(Request request, Throwable exception) {
                 setLoading(false);
                 dateTimeDetailsLoaded = true;
-                updateMapBase();
+                updateMapBase(layerId);
                 handleError(exception);
             }
         });
@@ -828,22 +839,22 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     @Override
     public void timeSelected(String layerId, String selectedTime) {
         nearestTime = null;
-        updateMapBase();
+        updateMapBase(layerId);
     }
 
     @Override
     public void onMapMove(MapMoveEvent eventObject) {
-        centre = mapArea.getMap().getCenter();
-        updateLinksEtc();
+//        centre = mapArea.getMap().getCenter();
+//        updateLinksEtc();
     }
 
     @Override
     public void onMapZoom(MapZoomEvent eventObject) {
-        zoom = mapArea.getMap().getZoom();
-        updateLinksEtc();
+//        zoom = mapArea.getMap().getZoom();
+//        updateLinksEtc();
     }
 
-    public abstract void updateMap(MapArea mapArea);
+    public abstract void updateMap(MapArea mapArea, String layerUpdated);
     
     /**
      * This gets called once the page has loaded. Subclasses should use for
@@ -887,12 +898,14 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
      * This is called when an auto scale range has been loaded. It can be
      * assumed that by this point we want to update the scale
      * 
+     * @param layerId
+     *            the layer for which the scale range has been loaded
      * @param min
      *            the minimum scale value
      * @param max
      *            the maximum scale value
      */
-    public abstract void rangeLoaded(double min, double max);
+    public abstract void rangeLoaded(String layerId, double min, double max);
     
     /**
      * This is called when a loading process starts
