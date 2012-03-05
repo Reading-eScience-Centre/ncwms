@@ -482,9 +482,11 @@ public abstract class AbstractWmsController extends AbstractController {
             // Get the style type
             String styleType = styleStrEls[0];
             if (styleType.equalsIgnoreCase("boxfill")) {
-                // TODO deal with style here
+                styleDescriptor.setStyle(Style.BOXFILL);
             } else if (styleType.equalsIgnoreCase("vector")) {
-                // TODO deal with style here
+                styleDescriptor.setStyle(Style.VECTOR);
+            } else if (styleType.equalsIgnoreCase("point")) {
+                styleDescriptor.setStyle(Style.POINT);
             } else {
                 throw new StyleNotDefinedException("The style " + styles[0]
                         + " is not supported by this server");
@@ -716,6 +718,7 @@ public abstract class AbstractWmsController extends AbstractController {
 
         // Find out if we just want the colour bar with no supporting text
         String colorBarOnly = params.getString("colorbaronly", "false");
+        boolean vertical = params.getBoolean("vertical", true);
         if (colorBarOnly.equalsIgnoreCase("true")) {
             // We're only creating the colour bar so we need to know a width
             // and height
@@ -723,7 +726,7 @@ public abstract class AbstractWmsController extends AbstractController {
             int height = params.getPositiveInt("height", 200);
             // Find the requested colour palette, or use the default if not set
             ColorPalette palette = ColorPalette.get(paletteName);
-            legend = palette.createColorBar(width, height, numColourBands);
+            legend = palette.createColorBar(width, height, numColourBands, vertical);
         } else {
             // We're creating a legend with supporting text so we need to know
             // the colour scale range and the layer in question
