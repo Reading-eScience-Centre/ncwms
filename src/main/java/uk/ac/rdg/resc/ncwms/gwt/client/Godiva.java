@@ -271,7 +271,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
 
         elevationSelector = new ElevationSelector("mainLayer", "Depth", this);
         timeSelector = new TimeSelector("mainLayer", this);
-        paletteSelector = new PaletteSelector("mainLayer", mapHeight, this, baseUrl);
+        paletteSelector = new PaletteSelector("mainLayer", mapHeight, 30, this, baseUrl, true);
         unitsInfo = new UnitsInfo();
         
         
@@ -306,7 +306,8 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
         
         mapArea = new MapArea(baseUrl, mapWidth, mapHeight, this);
         
-        anim = new AnimationButton(mapArea, proxyUrl+baseUrl);
+//        anim = new AnimationButton(mapArea, proxyUrl+baseUrl);
+        anim = new AnimationButton();
         
         RootLayoutPanel mainWindow = RootLayoutPanel.get();
         
@@ -345,7 +346,9 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
                     }
                     JSONValue jsonMap = JSONParser.parseLenient(response.getText());
                     JSONObject parentObj = jsonMap.isObject();
-                    layerSelectorCombo.populateLayers(parentObj);
+                    // TODO This won't work (API changed), so it's commented
+                    // out. Should really by using Godiva3 anyway...
+//                    layerSelectorCombo.populateLayers(parentObj);
                     String dataProductTitle = parentObj.get("label").isString().stringValue();
 
                     JSONArray childArray = parentObj.get("children").isArray();
@@ -369,7 +372,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
 
                     Window.setTitle(dataProductTitle);
                     if (!permalinking) {
-                        dealWithLayerSelection(layerSelectorCombo.getSelectedId(), true);
+                        dealWithLayerSelection(layerSelectorCombo.getSelectedIds().get(0), true);
                     } else {
                         System.out.println("Permalink");
                         String currentLayer = permalinkParamsMap.get("layer");
@@ -702,7 +705,7 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
     }
     
     private void updateLinksEtc() {
-        anim.updateDetails(currentLayer, currentElevation, currentPalette, currentStyle, scaleRange, nColorBands, logScale);
+//        anim.updateDetails(currentLayer, currentElevation, currentPalette, currentStyle, scaleRange, nColorBands, logScale);
         
         String baseurl = "http://" + Window.Location.getHost() + Window.Location.getPath() + "?permalinking=true&";
 
@@ -872,5 +875,12 @@ public class Godiva implements EntryPoint, ErrorHandler, LayerSelectionHandler, 
     @Override
     public void refreshLayerList() {
         populateLayerInfo();
+    }
+
+    @Override
+    public void layerDeselected(String layerName) {
+        /*
+         * We have no concept of a deselected layer in Godiva 
+         */
     }
 }

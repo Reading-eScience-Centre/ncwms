@@ -39,7 +39,7 @@ public class Godiva3 extends BaseWmsClient {
 
         ElevationSelectorIF elevationSelector = new ElevationSelector("mainLayer", "Depth", this);
         TimeSelectorIF timeSelector = new TimeSelector("mainLayer", this);
-        PaletteSelectorIF paletteSelector = new PaletteSelector("mainLayer", getMapHeight(), this, wmsUrl);
+        PaletteSelectorIF paletteSelector = new PaletteSelector("mainLayer", getMapHeight(), 30, this, wmsUrl, true);
         UnitsInfoIF unitsInfo = new UnitsInfo();
 
         widgetCollection = new GodivaWidgets(elevationSelector, timeSelector, paletteSelector, unitsInfo);
@@ -130,7 +130,7 @@ public class Godiva3 extends BaseWmsClient {
     }
     
     @Override
-    public void rangeLoaded(double min, double max) {
+    public void rangeLoaded(String layerId, double min, double max) {
         widgetCollection.getPaletteSelector().setScaleRange(min + "," + max);
     }
 
@@ -140,14 +140,22 @@ public class Godiva3 extends BaseWmsClient {
     }
 
     @Override
-    public void updateMap(MapArea mapArea) {
+    public void updateMap(MapArea mapArea, String layerUpdated) {
         String currentTime = widgetCollection.getTimeSelector().getSelectedDateTime();
         String currentElevation = widgetCollection.getElevationSelector().getSelectedElevation();
         String currentPalette = widgetCollection.getPaletteSelector().getSelectedPalette();
         String currentScaleRange = widgetCollection.getPaletteSelector().getScaleRange();
         int nColourBands = widgetCollection.getPaletteSelector().getNumColorBands();
         boolean logScale = widgetCollection.getPaletteSelector().isLogScale();
-        mapArea.addLayer(WMS_LAYER_ID, layerSelector.getSelectedId(), currentTime, currentElevation, style,
+        mapArea.addLayer(WMS_LAYER_ID, layerSelector.getSelectedIds().get(0), currentTime, currentElevation, style,
                 currentPalette, currentScaleRange, nColourBands, logScale);
+    }
+    
+    
+
+    @Override
+    public String getCurrentTime() {
+// TODO tidy this        
+        return widgetCollection.getTimeSelector().getSelectedDateTime();
     }
 }

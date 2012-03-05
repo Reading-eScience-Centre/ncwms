@@ -58,7 +58,7 @@ public class MapArea extends MapWidget {
 
     private Map map;
     private java.util.Map<String, WmsParameterPair> wmsLayers;
-    private Image animLayer;
+//    private Image animLayer;
     private String currentProjection;
     private String baseUrl;
 
@@ -71,7 +71,7 @@ public class MapArea extends MapWidget {
     private LayerLoadCancelListener loadCancelListener;
     private LayerLoadEndListener loadEndListener;
 
-    private GodivaActionsHandler widgetDisabler;
+//    private GodivaActionsHandler widgetDisabler;
 
     private String baseUrlForExport;
 
@@ -105,7 +105,7 @@ public class MapArea extends MapWidget {
                 godivaListener.setLoading(false);
             }
         };
-        this.widgetDisabler = godivaListener;
+//        this.widgetDisabler = godivaListener;
         init();
         map.addMapMoveListener(godivaListener);
         map.addMapZoomListener(godivaListener);
@@ -114,52 +114,52 @@ public class MapArea extends MapWidget {
         wmsStandardOptions.setWrapDateLine(true);
     }
 
-    public void addAnimationLayer(String layerId, String timeList, String currentElevation,
-            String palette, String style, String scaleRange, int nColorBands, boolean logScale) {
-        StringBuilder url = new StringBuilder(baseUrl + "?service=WMS&request=GetMap&version=1.1.1");
-        url.append("&format=image/gif" + "&transparent=true" + "&styles=" + style + "/" + palette
-                + "&layers=" + layerId + "&time=" + timeList + "&logscale=" + logScale + "&srs="
-                + currentProjection + "&bbox=" + map.getExtent().toBBox(6) + "&width="
-                + ((int) map.getSize().getWidth()) + "&height=" + ((int) map.getSize().getHeight()));
-        if (scaleRange != null)
-            url.append("&colorscalerange=" + scaleRange);
-        if (currentElevation != null)
-            url.append("&elevation=" + currentElevation.toString());
-        if (nColorBands > 0)
-            url.append("&numcolorbands=" + nColorBands);
-        ImageOptions opts = new ImageOptions();
-        opts.setAlwaysInRange(true);
-        animLayer = new Image("Animation Layer", url.toString(), map.getExtent(), map.getSize(),
-                opts);
-        animLayer.addLayerLoadStartListener(loadStartListener);
-        animLayer.addLayerLoadCancelListener(new LayerLoadCancelListener() {
-            @Override
-            public void onLoadCancel(LoadCancelEvent eventObject) {
-                stopAnimation();
-                loadCancelListener.onLoadCancel(eventObject);
-            }
-        });
-        animLayer.addLayerLoadEndListener(loadEndListener);
-        animLayer.setIsBaseLayer(false);
-        animLayer.setDisplayInLayerSwitcher(false);
-        for(WmsParameterPair wmsLayerAndParams : wmsLayers.values()){
-            wmsLayerAndParams.wms.setIsVisible(false);
-        }
-        map.addLayer(animLayer);
-        widgetDisabler.disableWidgets();
-    }
-
-    public void stopAnimation() {
-        // This stops and removes the animation. We may want a pause method...
-        widgetDisabler.enableWidgets();
-        if (animLayer != null) {
-            map.removeLayer(animLayer);
-            animLayer = null;
-        }
-        for(WmsParameterPair wmsLayerAndParams : wmsLayers.values()){
-            wmsLayerAndParams.wms.setIsVisible(true);
-        }
-    }
+//    public void addAnimationLayer(String layerId, String timeList, String currentElevation,
+//            String palette, String style, String scaleRange, int nColorBands, boolean logScale) {
+//        StringBuilder url = new StringBuilder(baseUrl + "?service=WMS&request=GetMap&version=1.1.1");
+//        url.append("&format=image/gif" + "&transparent=true" + "&styles=" + style + "/" + palette
+//                + "&layers=" + layerId + "&time=" + timeList + "&logscale=" + logScale + "&srs="
+//                + currentProjection + "&bbox=" + map.getExtent().toBBox(6) + "&width="
+//                + ((int) map.getSize().getWidth()) + "&height=" + ((int) map.getSize().getHeight()));
+//        if (scaleRange != null)
+//            url.append("&colorscalerange=" + scaleRange);
+//        if (currentElevation != null)
+//            url.append("&elevation=" + currentElevation.toString());
+//        if (nColorBands > 0)
+//            url.append("&numcolorbands=" + nColorBands);
+//        ImageOptions opts = new ImageOptions();
+//        opts.setAlwaysInRange(true);
+//        animLayer = new Image("Animation Layer", url.toString(), map.getExtent(), map.getSize(),
+//                opts);
+//        animLayer.addLayerLoadStartListener(loadStartListener);
+//        animLayer.addLayerLoadCancelListener(new LayerLoadCancelListener() {
+//            @Override
+//            public void onLoadCancel(LoadCancelEvent eventObject) {
+//                stopAnimation();
+//                loadCancelListener.onLoadCancel(eventObject);
+//            }
+//        });
+//        animLayer.addLayerLoadEndListener(loadEndListener);
+//        animLayer.setIsBaseLayer(false);
+//        animLayer.setDisplayInLayerSwitcher(false);
+//        for(WmsParameterPair wmsLayerAndParams : wmsLayers.values()){
+//            wmsLayerAndParams.wms.setIsVisible(false);
+//        }
+//        map.addLayer(animLayer);
+//        widgetDisabler.disableWidgets();
+//    }
+//
+//    public void stopAnimation() {
+//        // This stops and removes the animation. We may want a pause method...
+//        widgetDisabler.enableWidgets();
+//        if (animLayer != null) {
+//            map.removeLayer(animLayer);
+//            animLayer = null;
+//        }
+//        for(WmsParameterPair wmsLayerAndParams : wmsLayers.values()){
+//            wmsLayerAndParams.wms.setIsVisible(true);
+//        }
+//    }
     
     public void addLayer(String internalLayerId, String wmsLayerName, String time, String elevation, String style,
             String palette, String scaleRange, int nColourBands, boolean logScale) {
@@ -197,7 +197,41 @@ public class MapArea extends MapWidget {
         options.setSingleTile(singleTile);
         
         doAddingOfLayer(internalLayerId, params, options);
-
+    }
+    
+    private void doAddingOfLayer(String internalLayerId, WMSParams params, WMSOptions options) {
+        WmsParameterPair wmsAndParams = wmsLayers.get(internalLayerId);
+        WMS wmsLayer;
+        if (wmsAndParams == null) {
+            wmsLayer = new WMS("WMS Layer", baseUrl, params, options);
+            wmsLayer.addLayerLoadStartListener(loadStartListener);
+            wmsLayer.addLayerLoadCancelListener(loadCancelListener);
+            wmsLayer.addLayerLoadEndListener(loadEndListener);
+            // wmsLayer.setDisplayInLayerSwitcher(false);
+            map.addLayer(wmsLayer);
+            WmsParameterPair newWmsAndParams = new WmsParameterPair(wmsLayer, params);
+            wmsLayers.put(internalLayerId, newWmsAndParams);
+            // addGetFeatureInfoLayer();
+        } else {
+            wmsLayer = wmsLayers.get(internalLayerId).wms;
+            wmsLayer.getParams().setParameter("ELEVATION", "");
+            wmsLayer.getParams().setParameter("TIME", "");
+            wmsLayer.mergeNewParams(params);
+            wmsLayer.addOptions(options);
+            wmsLayer.redraw();
+        }
+//            if (animLayer != null)
+//                animLayer.setIsVisible(false);
+    }
+    
+    public void removeLayer(String layerId){
+        if(wmsLayers.containsKey(layerId)){
+            map.removeLayer(wmsLayers.get(layerId).wms);
+            wmsLayers.remove(layerId);
+        }
+    }
+    
+    private void setGetFeatureInfoDetails(){
         WMSGetFeatureInfoOptions getFeatureInfoOptions = new WMSGetFeatureInfoOptions();
         getFeatureInfoOptions.setQueryVisible(true);
         getFeatureInfoOptions.setInfoFormat("text/xml");
@@ -214,62 +248,29 @@ public class MapArea extends MapWidget {
         /*
          * TODO We need to add options for profile and time series plots
          */
-        if (getFeatureInfo == null) {
-            getFeatureInfo = new WMSGetFeatureInfo(getFeatureInfoOptions);
-            getFeatureInfo.addGetFeatureListener(new GetFeatureInfoListener() {
-                @Override
-                public void onGetFeatureInfo(GetFeatureInfoEvent eventObject) {
-                    String pixels[] = eventObject.getJSObject().getProperty("xy").toString()
-                            .split(",");
-                    LonLat lonLat = MapArea.this.map.getLonLatFromPixel(new Pixel(Integer
-                            .parseInt(pixels[0].substring(2)), Integer.parseInt(pixels[1]
-                            .substring(2))));
-                    String message = processFeatureInfo(eventObject.getText());
-                    Popup popup = new Popup("info_popup", lonLat, null, message, true);
-                    popup.setAutoSize(true);
-                    popup.setBackgroundColor("cornsilk");
-                    popup.setBorder("1px solid");
-                    MapArea.this.map.addPopupExclusive(popup);
-                }
-            });
-            getFeatureInfo.setAutoActivate(true);
-            map.addControl(getFeatureInfo);
+        if (getFeatureInfo != null) {
         }
-        getFeatureInfo.getJSObject().setProperty("vendorParams", vendorParams);
-    }
-    
-    private void doAddingOfLayer(String internalLayerId, WMSParams params, WMSOptions options) {
-        WmsParameterPair wmsAndParams = wmsLayers.get(internalLayerId);
-        WMS wmsLayer;
-        if (wmsAndParams == null) {
-            wmsLayer = new WMS("WMS Layer", baseUrl, params, options);
-            wmsLayer.addLayerLoadStartListener(loadStartListener);
-            wmsLayer.addLayerLoadCancelListener(loadCancelListener);
-            wmsLayer.addLayerLoadEndListener(loadEndListener);
-            // wmsLayer.setDisplayInLayerSwitcher(false);
-            if (animLayer != null)
-                animLayer.setIsVisible(false);
-            map.addLayer(wmsLayer);
-            WmsParameterPair newWmsAndParams = new WmsParameterPair(wmsLayer, params);
-            wmsLayers.put(internalLayerId, newWmsAndParams);
-            // addGetFeatureInfoLayer();
-        } else {
-            wmsLayer = wmsLayers.get(internalLayerId).wms;
-            wmsLayer.getParams().setParameter("ELEVATION", "");
-            wmsLayer.getParams().setParameter("TIME", "");
-            wmsLayer.mergeNewParams(params);
-            wmsLayer.addOptions(options);
-            if (animLayer != null)
-                animLayer.setIsVisible(false);
-            wmsLayer.redraw();
-        }
-    }
-    
-    public void removeLayer(String layerId){
-        if(wmsLayers.containsKey(layerId)){
-            map.removeLayer(wmsLayers.get(layerId).wms);
-            wmsLayers.remove(layerId);
-        }
+        getFeatureInfo = new WMSGetFeatureInfo(getFeatureInfoOptions);
+        getFeatureInfo.addGetFeatureListener(new GetFeatureInfoListener() {
+            @Override
+            public void onGetFeatureInfo(GetFeatureInfoEvent eventObject) {
+                String pixels[] = eventObject.getJSObject().getProperty("xy").toString()
+                        .split(",");
+                LonLat lonLat = MapArea.this.map.getLonLatFromPixel(new Pixel(Integer
+                        .parseInt(pixels[0].substring(2)), Integer.parseInt(pixels[1]
+                        .substring(2))));
+                String message = processFeatureInfo(eventObject.getText());
+                Popup popup = new Popup("info_popup", lonLat, null, message, true);
+                popup.setAutoSize(true);
+                popup.setBackgroundColor("cornsilk");
+                popup.setBorder("1px solid");
+                MapArea.this.map.addPopupExclusive(popup);
+            }
+        });
+        getFeatureInfo.setAutoActivate(true);
+        map.addControl(getFeatureInfo);
+            
+//        getFeatureInfo.getJSObject().setProperty("vendorParams", vendorParams);
     }
 
 //    public void changeLayer(String layerId, String currentTime, String currentElevation,

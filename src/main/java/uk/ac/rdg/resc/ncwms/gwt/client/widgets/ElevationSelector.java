@@ -81,7 +81,10 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
 	
 	public String getSelectedElevation(){
 	    if(!elevations.isEnabled()) return null;
-        return formattedValuesToRealValues.get(elevations.getValue(elevations.getSelectedIndex()));
+	    int index = elevations.getSelectedIndex();
+	    if(index < 0)
+	        return null;
+        return formattedValuesToRealValues.get(elevations.getValue(index));
 	}
 
     public void setSelectedElevation(String currentElevation) {
