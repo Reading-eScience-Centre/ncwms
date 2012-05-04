@@ -80,6 +80,7 @@ import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.graphics.ImageFormat;
+import uk.ac.rdg.resc.edal.graphics.ImageProducer;
 import uk.ac.rdg.resc.edal.graphics.KmzFormat;
 import uk.ac.rdg.resc.edal.graphics.MapRenderer;
 import uk.ac.rdg.resc.edal.graphics.MapStyleDescriptor;
@@ -89,7 +90,6 @@ import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.LonLatPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
-import uk.ac.rdg.resc.edal.position.VerticalCrs;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.HorizontalPositionImpl;
@@ -1144,7 +1144,9 @@ public abstract class AbstractWmsController extends AbstractController {
             HorizontalGrid hGrid = feature.getCoverage().getDomain().getHorizontalGrid();
             Set<GridCoordinates2D> gridCoords = new HashSet<GridCoordinates2D>();
             for(HorizontalPosition pos : testPointList.getDomainObjects()){
-                gridCoords.add(hGrid.findContainingCell(pos));
+                GridCoordinates2D gridCoord = hGrid.findContainingCell(pos);
+                if(gridCoord != null)
+                    gridCoords.add(hGrid.findContainingCell(pos));
             }
 
             int numUniqueGridPointsSampled = gridCoords.size();
@@ -1296,6 +1298,7 @@ public abstract class AbstractWmsController extends AbstractController {
      *             ISO8601 string is not valid.
      */
     /*
+     * TODO - No it isn't...
      * This method is synchronized because if it isn't, it causes problems, and
      * exceptions can be thrown. If we back our time implementation with
      * Joda-time, it is possible that this error will disappear. However, it's

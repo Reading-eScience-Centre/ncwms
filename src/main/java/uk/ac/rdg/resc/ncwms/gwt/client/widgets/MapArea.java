@@ -401,7 +401,6 @@ public class MapArea extends MapWidget {
     private static MapOptions getDefaultMapOptions() {
         MapOptions mapOptions = new MapOptions();
         mapOptions.setProjection("EPSG:4326");
-        mapOptions.setUnits("m");
         mapOptions.setDisplayProjection(EPSG4326);
         return mapOptions;
     }
