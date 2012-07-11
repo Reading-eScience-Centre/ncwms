@@ -261,12 +261,9 @@ final public class Charting {
         JFreeChart chart;
         XYPlot plot;
         XYSeries series = new XYSeries("data", true);
-//        XYSeries series = new XYSeries(feature.getCoverage().getScalarMetadata(memberName)
-//                .getParameter().getStandardName(), true); 
 
         HorizontalDomain optimalTransectDomain = getOptimalTransectDomain(feature, transectDomain);
 
-        List<HorizontalPosition> positions = transectDomain.getControlPoints();
         int k = 0;
         for (HorizontalPosition pos : optimalTransectDomain.getDomainObjects()) {
             series.add(
@@ -275,12 +272,6 @@ final public class Charting {
                             memberName));
         }
 
-//        series.add(1,1);
-//        series.add(2,4);
-//        series.add(3,9);
-//        series.add(4,16);
-//        series.add(5,25);
-//        
         XYSeriesCollection xySeriesColl = new XYSeriesCollection();
         xySeriesColl.addSeries(series);
 
