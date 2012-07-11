@@ -35,20 +35,21 @@ import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
     private static final Logger logger = LoggerFactory.getLogger(Dataset.class);
 
+    // Unique ID for this dataset
     @Attribute(name = "id")
-    private String id; // Unique ID for this dataset
+    private String id;
 
+    // Location of this dataset (NcML file, OPeNDAP location etc)
     @Attribute(name = "location")
-    private String location; // Location of this dataset (NcML file, OPeNDAP
-    // location etc)
+    private String location;
 
     @Attribute(name = "queryable", required = false)
     private boolean queryable = true; // True if we want GetFeatureInfo enabled
     // for this dataset
 
+    // We'll use a default data reader unless this is overridden in the config file
     @Attribute(name = "dataReaderClass", required = false)
-    private String featureCollectionFactoryClass = ""; // We'll use a default data reader
-    // unless this is overridden in the config file
+    private String featureCollectionFactoryClass = "";
 
     @Attribute(name = "copyrightStatement", required = false)
     private String copyrightStatement = "";
@@ -56,27 +57,26 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
     @Attribute(name = "moreInfo", required = false)
     private String moreInfo = "";
 
+    // Set true to disable the dataset without removing it completely
     @Attribute(name = "disabled", required = false)
-    private boolean disabled = false; // Set true to disable the dataset without
-    // removing it completely
+    private boolean disabled = false; 
 
     @Attribute(name = "title")
     private String title;
 
+    // The update interval in minutes. -1 means "never update automatically"
     @Attribute(name = "updateInterval", required = false)
-    private int updateInterval = -1; // The update interval in minutes. -1 means
-    // "never update automatically"
+    private int updateInterval = -1;
 
-    // We don't do "private List<Variable> variable..." here because if we do,
-    // the config file will contain "<variable class="java.util.ArrayList>",
-    // presumably because the definition doesn't clarify what sort of List
-    // should
-    // be used.
-    // This allows the admin to override certain auto-detected parameters of
-    // the variables within the dataset (e.g. title, min and max values)
-    // This is a temporary store of variables that are read from the config
-    // file.
-    // The real set of all variables is in the variables Map.
+    /*
+     * We don't do "private List<Variable> variable..." here because if we do,
+     * the config file will contain "<variable class="java.util.ArrayList>",
+     * presumably because the definition doesn't clarify what sort of List
+     * should be used. This allows the admin to override certain auto-detected
+     * parameters of the variables within the dataset (e.g. title, min and max
+     * values) This is a temporary store of variables that are read from the
+     * config file. The real set of all variables is in the variables Map.
+     */
     @ElementList(name = "variables", type = FeaturePlottingMetadata.class, required = false)
     private ArrayList<FeaturePlottingMetadata> variableList = new ArrayList<FeaturePlottingMetadata>();
 
@@ -84,36 +84,37 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
 
     private State state = State.NEEDS_REFRESH; // State of this dataset.
 
-    private Exception err; // Set if there is an error loading the dataset
-    private int numErrorsInARow = 0; // The number of consecutive times we've
-    // seen an error when loading a dataset
-    private List<String> loadingProgress = new ArrayList<String>(); // Used to
-    // express
-    // progress
-    // with
-    // loading
-    // the metadata for this dataset,
-    // one line at a time
-
-    /**
+    // Set if there is an error loading the dataset
+    private Exception err; 
+    // The number of consecutive times we've seen an error when loading a dataset
+    private int numErrorsInARow = 0;
+    
+    /*
+     * Used to express progress with loading the metadata for this dataset, one
+     * line at a time
+     */
+    private List<String> loadingProgress = new ArrayList<String>(); 
+    
+     
+    /*
      * This contains the map of variable IDs to Variable objects. We use a
      * LinkedHashMap so that the order of datasets in the Map is preserved.
      */
     private Map<String, FeaturePlottingMetadata> metadata = new LinkedHashMap<String, FeaturePlottingMetadata>();
 
-    /**
+    /*
      * The time at which this dataset's stored Layers were last successfully
      * updated, or null if the Layers have not yet been loaded
      */
     private TimePosition lastSuccessfulUpdateTime = null;
 
-    /**
+    /*
      * The time at which we last got an error when updating the dataset's
      * metadata, or null if we've never seen an error
      */
     private TimePosition lastFailedUpdateTime = null;
 
-    private FeatureCollection<GridSeriesFeature<?>> features;
+    private FeatureCollection<GridSeriesFeature> features;
 
     /**
      * Checks that the data we have read are valid. Checks that there are no
@@ -122,7 +123,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
     @Validate
     public void validate() throws PersistenceException {
         List<String> varIds = new ArrayList<String>();
-        for (FeaturePlottingMetadata var : this.variableList) {
+        for (FeaturePlottingMetadata var : variableList) {
             String varId = var.getId();
             if (varIds.contains(varId)) {
                 throw new PersistenceException("Duplicate variable id %s", varId);
@@ -137,17 +138,19 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Commit
     public void build() {
-        // We already know from validate() that there are no duplicate variable
-        // IDs
-        for (FeaturePlottingMetadata var : this.variableList) {
+        /*
+         * We already know from validate() that there are no duplicate variable
+         * IDs
+         */
+        for (FeaturePlottingMetadata var : variableList) {
             var.setDataset(this);
-            this.metadata.put(var.getId(), var);
+            metadata.put(var.getId(), var);
         }
     }
 
     @Override
     public String getId() {
-        return this.id;
+        return id;
     }
 
     public void setId(String id) {
@@ -175,7 +178,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Override
     public synchronized boolean isReady() {
-        return !this.isDisabled() && (this.state == State.READY || this.state == State.UPDATING);
+        return !isDisabled() && (state == State.READY || state == State.UPDATING);
     }
 
     /**
@@ -183,7 +186,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Override
     public synchronized boolean isLoading() {
-        return !this.isDisabled() && (this.state == State.NEEDS_REFRESH || this.state == State.LOADING);
+        return !isDisabled() && (state == State.NEEDS_REFRESH || state == State.LOADING);
     }
 
     @Override
@@ -191,7 +194,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
         // Note that we don't use state == ERROR here because it's possible for
         // a dataset to be loading and have an error from a previous loading
         // attempt that an admin might want to see
-        return this.err != null;
+        return err != null;
     }
 
     /**
@@ -200,18 +203,18 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Override
     public Exception getException() {
-        return this.err;
+        return err;
     }
 
     public State getState() {
-        return this.state;
+        return state;
     }
 
     /**
      * @return true if this dataset can be queried using GetFeatureInfo
      */
     public boolean isQueryable() {
-        return this.queryable;
+        return queryable;
     }
 
     public void setQueryable(boolean queryable) {
@@ -223,7 +226,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Override
     public String getTitle() {
-        return this.title;
+        return title;
     }
 
     public void setTitle(String title) {
@@ -232,7 +235,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
 
     @Override
     public String toString() {
-        return "id: " + this.id + ", location: " + this.location;
+        return "id: " + id + ", location: " + location;
     }
 
     public String getDataReaderClass() {
@@ -240,7 +243,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
     }
 
     void setDataReaderClass(String dataReaderClass) throws Exception {
-        this.featureCollectionFactoryClass = dataReaderClass;
+        featureCollectionFactoryClass = dataReaderClass;
     }
 
     /**
@@ -263,7 +266,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Override
     public TimePosition getLastUpdateTime() {
-        return this.lastSuccessfulUpdateTime;
+        return lastSuccessfulUpdateTime;
     }
 
     /**
@@ -278,7 +281,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      *         no layer in this dataset with the given id.
      */
     @Override
-    public GridSeriesFeature<?> getFeatureById(String featureId) {
+    public GridSeriesFeature getFeatureById(String featureId) {
         if(features == null)
             return null;
         return features.getFeatureById(featureId);
@@ -288,7 +291,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      * @return a Collection of all the layers in this dataset.
      */
     @Override
-    public FeatureCollection<GridSeriesFeature<?>> getFeatureCollection() {
+    public FeatureCollection<GridSeriesFeature> getFeatureCollection() {
         return features;
     }
 
@@ -322,12 +325,12 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Override
     public String getCopyrightStatement() {
-        if (this.copyrightStatement == null || this.copyrightStatement.trim().equals("")) {
+        if (copyrightStatement == null || copyrightStatement.trim().equals("")) {
             return "";
         }
         int currentYear = new TimePositionJoda().getYear();
         // Don't forget to escape dollar signs and backslashes in the regexp
-        return this.copyrightStatement.replaceAll("\\$\\{year\\}", "" + currentYear);
+        return copyrightStatement.replaceAll("\\$\\{year\\}", "" + currentYear);
     }
 
     public void setCopyrightStatement(String copyrightStatement) {
@@ -349,29 +352,30 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      * element in the returned list is a stage in loading the dataset.
      */
     public List<String> getLoadingProgress() {
-        return this.loadingProgress;
+        return loadingProgress;
     }
 
     private void appendLoadingProgress(String loadingProgress) {
         this.loadingProgress.add(loadingProgress);
     }
 
+    @Override
     public Map<String, FeaturePlottingMetadata> getPlottingMetadataMap() {
         return metadata;
     }
 
     public void addVariable(FeaturePlottingMetadata var) {
         var.setDataset(this);
-        this.variableList.add(var);
-        this.metadata.put(var.getId(), var);
+        variableList.add(var);
+        metadata.put(var.getId(), var);
     }
 
     /**
      * Forces this dataset to be refreshed the next time it has an opportunity
      */
     void forceRefresh() {
-        this.err = null;
-        this.state = State.NEEDS_REFRESH;
+        err = null;
+        state = State.NEEDS_REFRESH;
     }
 
     /**
@@ -384,46 +388,46 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      * to synchronize anything.
      */
     void loadLayers() {
-        this.loadingProgress = new ArrayList<String>();
+        loadingProgress = new ArrayList<String>();
         // Include the id of the dataset in the thread for debugging purposes
         // Comment this out to use the default thread names (e.g.
         // "pool-2-thread-1")
-        Thread.currentThread().setName("load-metadata-" + this.id);
+        Thread.currentThread().setName("load-metadata-" + id);
 
         // Check to see if this dataset needs to have its metadata refreshed
-        if (!this.needsRefresh())
+        if (!needsRefresh())
             return;
 
         // Now load the layers and manage the state of the dataset
         try {
             // if lastUpdateTime == null, this dataset has never previously been
             // loaded.
-            this.state = this.lastSuccessfulUpdateTime == null ? State.LOADING : State.UPDATING;
+            state = lastSuccessfulUpdateTime == null ? State.LOADING : State.UPDATING;
 
-            this.doLoadLayers();
+            doLoadLayers();
 
             // Update the state of this dataset. If we've got this far there
             // were no errors.
-            this.err = null;
-            this.numErrorsInARow = 0;
-            this.state = State.READY;
-            this.lastSuccessfulUpdateTime = new TimePositionJoda();
+            err = null;
+            numErrorsInARow = 0;
+            state = State.READY;
+            lastSuccessfulUpdateTime = new TimePositionJoda();
 
-            logger.debug("Loaded metadata for {}", this.id);
+            logger.debug("Loaded metadata for {}", id);
 
             // Update the state of the config object
-            this.config.setLastUpdateTime(this.lastSuccessfulUpdateTime);
-            this.config.save();
+            config.setLastUpdateTime(lastSuccessfulUpdateTime);
+            config.save();
         } catch (Exception e) {
-            this.state = State.ERROR;
-            this.numErrorsInARow++;
-            this.lastFailedUpdateTime = new TimePositionJoda();
+            state = State.ERROR;
+            numErrorsInARow++;
+            lastFailedUpdateTime = new TimePositionJoda();
             // Reduce logging volume by only logging the error if it's a new
             // type of exception.
-            if (this.err == null || this.err.getClass() != e.getClass()) {
-                logger.error(e.getClass().getName() + " loading metadata for dataset " + this.id, e);
+            if (err == null || err.getClass() != e.getClass()) {
+                logger.error(e.getClass().getName() + " loading metadata for dataset " + id, e);
             }
-            this.err = e;
+            err = e;
         }
     }
 
@@ -434,7 +438,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
         logger.debug("Last update time for dataset {} is {}", id, lastSuccessfulUpdateTime);
         logger.debug("State of dataset {} is {}", id, state);
         logger.debug("Disabled = {}", disabled);
-        if (disabled || state == State.LOADING || this.state == State.UPDATING) {
+        if (disabled || state == State.LOADING || state == State.UPDATING) {
             return false;
         } else if (state == State.NEEDS_REFRESH) {
             return true;
@@ -484,53 +488,64 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     private void readLayerConfig() {
         for (String featureId : features.getFeatureIds()) {
-            GridSeriesFeature<?> feature = features.getFeatureById(featureId);
-            // Load the Variable object from the config file or create a new
-            // one if it doesn't exist.
-            FeaturePlottingMetadata featureMetadata = this.getPlottingMetadataMap().get(feature.getId());
-            if (featureMetadata == null) {
-                featureMetadata = new FeaturePlottingMetadata();
-                featureMetadata.setId(feature.getId());
-                this.addVariable(featureMetadata);
-            }
-
-            // If there is no title set for this layer in the config file, we
-            // use the title that was read by the DataReader.
-            if (featureMetadata.getTitle() == null)
-                featureMetadata.setTitle(feature.getName());
-
-            // Set the colour scale range. If this isn't specified in the
-            // config information, load an "educated guess" at the scale range
-            // from the source data.
-            if (featureMetadata.getColorScaleRange() == null) {
-                this.appendLoadingProgress("Reading min-max data for layer " + feature.getId());
-                Extent<Float> valueRange;
-                try {
-                    valueRange = WmsUtils.estimateValueRange(feature);
-                    if (valueRange.isEmpty()) {
-                        // We failed to get a valid range. Just guess at a scale
-                        valueRange = Extents.newExtent(-50.0f, 50.0f);
-                    } else if (valueRange.getLow().equals(valueRange.getHigh())) {
-                        // This happens occasionally if the above algorithm
-                        // happens
-                        // to hit an area of uniform data. We make sure that
-                        // the max is greater than the min.
-                        valueRange = Extents.newExtent(valueRange.getLow(), valueRange.getHigh() + 1.0f);
-                    } else {
-                        // Set the scale range of the layer, factoring in a 10%
-                        // expansion
-                        // to deal with the fact that the sample data we read
-                        // might
-                        // not be representative
-                        float diff = valueRange.getHigh() - valueRange.getLow();
-                        valueRange = Extents.newExtent(valueRange.getLow() - 0.05f * diff, valueRange.getHigh() + 0.05f
-                                * diff);
-                    }
-                } catch (Exception e) {
-                    logger.error("Error reading min-max from layer " + feature.getId() + " in dataset " + this.id, e);
-                    valueRange = Extents.newExtent(-50.0f, 50.0f);
+            GridSeriesFeature feature = features.getFeatureById(featureId);
+            /*
+             * First add all the scalar members
+             */
+            for(String member : feature.getCoverage().getScalarMemberNames()){
+                String memberId = feature.getId()+"/"+member;
+             // Load the Variable object from the config file or create a new
+                // one if it doesn't exist.
+                FeaturePlottingMetadata plottingMetadata = getPlottingMetadataMap().get(memberId);
+                
+                if (plottingMetadata == null) {
+                    plottingMetadata = new FeaturePlottingMetadata();
+                    plottingMetadata.setId(memberId);
+                    addVariable(plottingMetadata);
                 }
-                featureMetadata.setColorScaleRange(valueRange);
+                // If there is no title set for this layer in the config file, we
+                // use the title that was read by the DataReader.
+                if (plottingMetadata.getTitle() == null)
+                    plottingMetadata.setTitle(feature.getCoverage().getScalarMetadata(member).getName());
+
+                /*
+                 * 
+                 * Set the colour scale range. If this isn't specified in the
+                 * config information, load an "educated guess" at the scale
+                 * range from the source data.
+                 */
+                if (plottingMetadata.getColorScaleRange() == null) {
+                    appendLoadingProgress("Reading min-max data for layer " + memberId);
+                    Extent<Float> valueRange;
+                    try {
+                        valueRange = WmsUtils.estimateValueRange(feature, member);
+                        if (valueRange.isEmpty()) {
+                            // We failed to get a valid range. Just guess at a scale
+                            valueRange = Extents.newExtent(-50.0f, 50.0f);
+                        } else if (valueRange.getLow().equals(valueRange.getHigh())) {
+                            /*
+                             * This happens occasionally if the above algorithm
+                             * happens to hit an area of uniform data. We make sure
+                             * that the max is greater than the min.
+                             */
+                            valueRange = Extents.newExtent(valueRange.getLow(),
+                                    valueRange.getHigh() + 1.0f);
+                        } else {
+                            /*
+                             * Set the scale range of the layer, factoring in a 10%
+                             * expansion to deal with the fact that the sample data
+                             * we read might not be representative
+                             */
+                            float diff = valueRange.getHigh() - valueRange.getLow();
+                            valueRange = Extents.newExtent(valueRange.getLow() - 0.05f * diff, valueRange.getHigh() + 0.05f
+                                    * diff);
+                        }
+                    } catch (Exception e) {
+                        logger.error("Error reading min-max from layer " + feature.getId() + " in dataset " + id, e);
+                        valueRange = Extents.newExtent(-50.0f, 50.0f);
+                    }
+                    plottingMetadata.setColorScaleRange(valueRange);
+                }
             }
         }
     }

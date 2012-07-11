@@ -28,6 +28,7 @@
 package uk.ac.rdg.resc.ncwms.controller;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
@@ -73,18 +74,21 @@ import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinates2DImpl;
+import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
+import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
+import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorDirection;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
+import uk.ac.rdg.resc.edal.feature.PointSeriesFeature;
 import uk.ac.rdg.resc.edal.feature.ProfileFeature;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
-import uk.ac.rdg.resc.edal.graphics.ImageFormat;
-import uk.ac.rdg.resc.edal.graphics.ImageProducer;
-import uk.ac.rdg.resc.edal.graphics.KmzFormat;
-import uk.ac.rdg.resc.edal.graphics.MapRenderer;
+import uk.ac.rdg.resc.edal.graphics.MapPlotter;
 import uk.ac.rdg.resc.edal.graphics.MapStyleDescriptor;
-import uk.ac.rdg.resc.edal.graphics.MapStyleDescriptor.Style;
+import uk.ac.rdg.resc.edal.graphics.PlotStyle;
+import uk.ac.rdg.resc.edal.graphics.formats.ImageFormat;
+import uk.ac.rdg.resc.edal.graphics.formats.KmzFormat;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.LonLatPosition;
@@ -95,6 +99,7 @@ import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.HorizontalPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.position.impl.VerticalPositionImpl;
+import uk.ac.rdg.resc.edal.util.CollectionUtils;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.GISUtils;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
@@ -105,11 +110,8 @@ import uk.ac.rdg.resc.ncwms.exceptions.FeatureNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidDimensionValueException;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidFormatException;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidUpdateSequence;
-import uk.ac.rdg.resc.ncwms.exceptions.StyleNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.Wms1_1_1Exception;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
-import uk.ac.rdg.resc.ncwms.usagelog.UsageLogEntry;
-import uk.ac.rdg.resc.ncwms.usagelog.UsageLogger;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
 
@@ -142,28 +144,24 @@ import uk.ac.rdg.resc.ncwms.wms.Dataset;
 public abstract class AbstractWmsController extends AbstractController {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractWmsController.class);
-    /**
-     * The maximum number of layers that can be requested in a single GetMap
-     * operation
-     */
-    private static final int LAYER_LIMIT = 1;
     private static final String FEATURE_INFO_XML_FORMAT = "text/xml";
     private static final String FEATURE_INFO_PNG_FORMAT = "image/png";
 
     // These objects will be injected by Spring
     protected ServerConfig serverConfig;
-    protected UsageLogger usageLogger;
 
     /**
      * Called automatically by Spring after all the dependencies have been
      * injected.
      */
     public void init() throws Exception {
-        // We initialize the ColorPalettes. We need to do this from here
-        // because we need a way to find out the real path of the
-        // directory containing the palettes. Therefore we need a way of
-        // getting at the ServletContext object, which isn't available from
-        // the ColorPalette class.
+        /*
+         * We initialize the ColorPalettes. We need to do this from here because
+         * we need a way to find out the real path of the directory containing
+         * the palettes. Therefore we need a way of getting at the
+         * ServletContext object, which isn't available from the ColorPalette
+         * class.
+         */
         File paletteLocationDir = this.serverConfig.getPaletteFilesLocation(this.getServletContext());
         if (paletteLocationDir != null && paletteLocationDir.exists() && paletteLocationDir.isDirectory()) {
             ColorPalette.loadPalettes(paletteLocationDir);
@@ -201,8 +199,6 @@ public abstract class AbstractWmsController extends AbstractController {
     @Override
     protected ModelAndView handleRequestInternal(HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse) throws Exception {
-        UsageLogEntry usageLogEntry = new UsageLogEntry(httpServletRequest);
-        boolean logUsage = true;
 
         // Create an object that allows request parameters to be retrieved in
         // a way that is not sensitive to the case of the parameter NAMES
@@ -214,11 +210,10 @@ public abstract class AbstractWmsController extends AbstractController {
             // capabilities
             // document, a map or a FeatureInfo
             String request = params.getMandatoryString("request");
-            usageLogEntry.setWmsOperation(request);
-            return this.dispatchWmsRequest(request, params, httpServletRequest, httpServletResponse, usageLogEntry);
+            return this.dispatchWmsRequest(request, params, httpServletRequest, httpServletResponse);
         } catch (WmsException wmse) {
+            wmse.printStackTrace();
             // We don't log these errors
-            usageLogEntry.setException(wmse);
             String wmsVersion = params.getWmsVersion();
             if (wmsVersion != null && wmsVersion.equals("1.1.1")) {
                 // We create a new exception type to ensure that the correct
@@ -245,14 +240,9 @@ public abstract class AbstractWmsController extends AbstractController {
             // represent internal errors when reading data for instance).
             throw ioe;
         } catch (Exception e) {
+            e.printStackTrace();
             // An unexpected (internal) error has occurred
-            usageLogEntry.setException(e);
             throw e;
-        } finally {
-            if (logUsage && this.usageLogger != null) {
-                // Log this request to the usage log
-                this.usageLogger.logUsage(usageLogEntry);
-            }
         }
     }
 
@@ -265,7 +255,7 @@ public abstract class AbstractWmsController extends AbstractController {
          * Returns a Feature given a layer name, which is unique within a
          * Capabilities document
          */
-        public GridSeriesFeature<?> getFeature(String layerName) throws FeatureNotDefinedException;
+        public GridSeriesFeature getFeature(String layerName) throws FeatureNotDefinedException;
     }
 
     /**
@@ -279,7 +269,7 @@ public abstract class AbstractWmsController extends AbstractController {
      * @todo Use an enum instead of the request string
      */
     protected abstract ModelAndView dispatchWmsRequest(String request, RequestParams params,
-            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, UsageLogEntry usageLogEntry)
+            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
             throws Exception;
 
     /**
@@ -301,7 +291,7 @@ public abstract class AbstractWmsController extends AbstractController {
      *             underlying data store
      */
     protected ModelAndView getCapabilities(Collection<? extends Dataset> datasets, TimePosition lastUpdateTime,
-            RequestParams params, HttpServletRequest httpServletRequest, UsageLogEntry usageLogEntry)
+            RequestParams params, HttpServletRequest httpServletRequest)
             throws WmsException, IOException {
         // Check the SERVICE parameter
         String service = params.getMandatoryString("service");
@@ -311,14 +301,6 @@ public abstract class AbstractWmsController extends AbstractController {
 
         // Check the VERSION parameter (not compulsory for GetCapabilities)
         String versionStr = params.getWmsVersion();
-        usageLogEntry.setWmsVersion(versionStr);
-
-        // Check the FORMAT parameter
-        String format = params.getString("format");
-        usageLogEntry.setOutputFormat(format);
-        // The WMS 1.3.0 spec says that we can respond with the default text/xml
-        // format if the client has requested an unknown format. Hence we do
-        // nothing here.
 
         // Do UPDATESEQUENCE negotiation according to WMS 1.3.0 spec (sec
         // 7.2.3.5)
@@ -371,7 +353,7 @@ public abstract class AbstractWmsController extends AbstractController {
         };
         models.put("supportedCrsCodes", supportedCrsCodes); // */HorizontalGrid.SUPPORTED_CRS_CODES);
         models.put("supportedImageFormats", ImageFormat.getSupportedMimeTypes());
-        models.put("layerLimit", LAYER_LIMIT);
+        models.put("layerLimit", WmsUtils.LAYER_LIMIT);
         models.put("featureInfoFormats", new String[] { FEATURE_INFO_PNG_FORMAT, FEATURE_INFO_XML_FORMAT });
         models.put("legendWidth", ColorPalette.LEGEND_WIDTH);
         models.put("legendHeight", ColorPalette.LEGEND_HEIGHT);
@@ -426,11 +408,10 @@ public abstract class AbstractWmsController extends AbstractController {
      * @todo Separate Model and View code more cleanly
      */
     protected ModelAndView getMap(RequestParams params, FeatureFactory featureFactory,
-            HttpServletResponse httpServletResponse, UsageLogEntry usageLogEntry) throws WmsException, Exception {
+            HttpServletResponse httpServletResponse) throws WmsException, Exception {
         // Parse the URL parameters
         
         GetMapRequest getMapRequest = new GetMapRequest(params);
-        usageLogEntry.setGetMapRequest(getMapRequest);
 
         GetMapStyleRequest styleRequest = getMapRequest.getStyleRequest();
 
@@ -449,20 +430,16 @@ public abstract class AbstractWmsController extends AbstractController {
                     + this.serverConfig.getMaxImageWidth() + "x" + this.serverConfig.getMaxImageHeight());
         }
 
-        String layerName = getLayerName(dr);
-//        String[] layerNames = dr.getLayers();
-//        boolean usedGridLayer = false;
-//        for(String layer : layerNames){
-//            
-//        }
+        String layerName = WmsUtils.getLayerName(dr);
+        String memberName = WmsUtils.getMemberName(layerName);
         
-        GridSeriesFeature<?> feature = featureFactory.getFeature(layerName);
-        usageLogEntry.setFeature(feature);
+        GridSeriesFeature feature = featureFactory.getFeature(layerName);
 
         // Create an object that will turn data into BufferedImages
         Extent<Float> scaleRange = styleRequest.getColorScaleRange();
 
-        FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
+        FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig,
+                WmsUtils.getPlottableLayerName(feature, layerName));
 
         if (scaleRange == null)
             scaleRange = metadata.getColorScaleRange();
@@ -478,19 +455,24 @@ public abstract class AbstractWmsController extends AbstractController {
         String[] styles = styleRequest.getStyles();
         if (styles.length > 0) {
             String[] styleStrEls = styles[0].split("/");
+            
+            /*
+             * TODO ? Currently we ignore style information and plot the feature
+             * in the most usual way
+             */
 
-            // Get the style type
-            String styleType = styleStrEls[0];
-            if (styleType.equalsIgnoreCase("boxfill")) {
-                styleDescriptor.setStyle(Style.BOXFILL);
-            } else if (styleType.equalsIgnoreCase("vector")) {
-                styleDescriptor.setStyle(Style.VECTOR);
-            } else if (styleType.equalsIgnoreCase("point")) {
-                styleDescriptor.setStyle(Style.POINT);
-            } else {
-                throw new StyleNotDefinedException("The style " + styles[0]
-                        + " is not supported by this server");
-            }
+//            // Get the style type
+//            String styleType = styleStrEls[0];
+//            if (styleType.equalsIgnoreCase("boxfill")) {
+//                styleDescriptor.setStyle(Style.BOXFILL);
+//            } else if (styleType.equalsIgnoreCase("vector")) {
+//                styleDescriptor.setStyle(Style.VECTOR);
+//            } else if (styleType.equalsIgnoreCase("point")) {
+//                styleDescriptor.setStyle(Style.POINT);
+//            } else {
+//                throw new StyleNotDefinedException("The style " + styles[0]
+//                        + " is not supported by this server");
+//            }
 
             // Now get the colour palette
             String paletteName = null;
@@ -514,7 +496,8 @@ public abstract class AbstractWmsController extends AbstractController {
             throw new WmsException("The image format " + mimeType + " does not support partially-transparent pixels");
         }
         BoundingBox bbox = new BoundingBoxImpl(dr.getBbox(), WmsUtils.getCrs(dr.getCrsCode()));
-        MapRenderer mapRenderer = new MapRenderer(styleDescriptor, dr.getWidth(), dr.getHeight(), bbox);
+        MapPlotter mapPlotter = new MapPlotter(styleDescriptor, dr.getWidth(), dr.getHeight(), bbox);
+        
         VerticalPosition zValue = getElevationValue(dr.getElevationString(), feature);
 
         // Cycle through all the provided timesteps, extracting data for each
@@ -524,30 +507,40 @@ public abstract class AbstractWmsController extends AbstractController {
         if (timeValues.size() > 1 && !imageFormat.supportsMultipleFrames()) {
             throw new WmsException("The image format " + mimeType + " does not support multiple frames");
         }
-        usageLogEntry.setNumTimeSteps(timeValues.size());
-        long beforeExtractData = System.currentTimeMillis();
         // Use a single null time value if the layer has no time axis
         if (timeValues.isEmpty())
             timeValues = Arrays.asList((TimePosition) null);
         for (TimePosition timeValue : timeValues) {
             // Only add a label if this is part of an animation
-            String tValueStr = "";
+            String tValueStr = null;
             if (timeValues.size() > 1 && timeValue != null) {
                 tValueStr = TimeUtils.dateTimeToISO8601(timeValue);
             }
             tValueStrings.add(tValueStr);
             
-            mapRenderer.addData(feature, timeValue, zValue, tValueStr);
-//            /*
-//             * TODO Cache this...
-//             */
-//            imageProducer.addFrame(feature, timeValue, zValue, tValueStr);
+            /*
+             * We plot using boxfill style for scalar fields, and vector style for Vector directions
+             */
+            PlotStyle plotStyle = PlotStyle.BOXFILL;
+            try{
+                ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(memberName);
+                if (scalarMetadata instanceof VectorComponent
+                        && ((VectorComponent) scalarMetadata).getDirection() == VectorDirection.DIRECTION) {
+                    plotStyle = PlotStyle.VECTOR;
+                }
+            } catch (IllegalArgumentException iae){
+                /*
+                 * We are plotting a non-scalar member. That's fine, because the
+                 * plot style should be overridden anyway (it will likely be a
+                 * composite field)
+                 */
+            }
+            mapPlotter.addToFrame(feature, memberName, zValue, timeValue, tValueStr, plotStyle);
         }
-        long timeToExtractData = System.currentTimeMillis() - beforeExtractData;
-        usageLogEntry.setTimeToExtractDataMs(timeToExtractData);
         // We only create a legend object if the image format requires it
-        BufferedImage legend = imageFormat.requiresLegend() ? styleDescriptor.getLegend(feature.getName(), feature
-                .getCoverage().getRangeMetadata(null).getUnits().getUnitString()) : null;
+        BufferedImage legend = imageFormat.requiresLegend() ? styleDescriptor.getLegend(
+                feature.getName(), feature.getCoverage().getScalarMetadata(memberName).getUnits()
+                        .getUnitString()) : null;
 
         // Write the image to the client.
         // First we set the HTTP headers
@@ -559,30 +552,11 @@ public abstract class AbstractWmsController extends AbstractController {
                     + feature.getId() + ".kmz");
         }
         // Render the images and write to the output stream
-        imageFormat.writeImage(mapRenderer.getRenderedFrames(), httpServletResponse.getOutputStream(), feature, dr.getBbox(),
+        imageFormat.writeImage(mapPlotter.getRenderedFrames(), httpServletResponse.getOutputStream(), feature, dr.getBbox(),
                 tValueStrings, dr.getElevationString(), legend);
 
         return null;
     }
-
-    /**
-     * Utility method for getting the layer name (unique within a Capabilities
-     * document) from the given GetMapRequest, checking that there is only one
-     * layer in the request
-     */
-    private static String getLayerName(GetMapDataRequest getMapDataRequest) throws WmsException {
-        // Find which layer the user is requesting
-        String[] layers = getMapDataRequest.getLayers();
-        if (layers.length == 0) {
-            throw new WmsException("Must provide a value for the LAYERS parameter");
-        }
-        // TODO: support more than one layer (superimposition, difference, mask)
-        if (layers.length > LAYER_LIMIT) {
-            throw new WmsException("You may only create a map from " + LAYER_LIMIT + " layer(s) at a time");
-        }
-        return layers[0];
-    }
-
     /**
      * Executes the GetFeatureInfo operation
      * 
@@ -592,12 +566,11 @@ public abstract class AbstractWmsController extends AbstractController {
      *             if an internal error occurs
      * @todo Separate Model and View code more cleanly
      */
-    @SuppressWarnings("unchecked")
     protected ModelAndView getFeatureInfo(RequestParams params, FeatureFactory featureFactory,
-            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, UsageLogEntry usageLogEntry)
+            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
             throws WmsException, Exception {
+        
         GetFeatureInfoRequest request = new GetFeatureInfoRequest(params);
-        usageLogEntry.setGetFeatureInfoRequest(request);
 
         GetFeatureInfoDataRequest dr = request.getDataRequest();
 
@@ -608,10 +581,17 @@ public abstract class AbstractWmsController extends AbstractController {
                     + " is not valid for GetFeatureInfo");
         }
 
-        String layerName = getLayerName(dr);
-        GridSeriesFeature<?> feature = featureFactory.getFeature(layerName);
-        usageLogEntry.setFeature(feature);
-
+        String layerName = WmsUtils.getLayerName(dr);
+        String memberName = WmsUtils.getMemberName(layerName);
+        
+        
+        GridSeriesFeature feature = featureFactory.getFeature(layerName);
+        /*
+         * TODO check that this is definitely what we want. i.e. test some GFI
+         * and see...
+         */
+        memberName = WmsUtils.getPlottableMemberName(feature, memberName);
+        
         // Get the grid onto which the data is being projected
         RegularGrid grid = WmsUtils.getImageGrid(dr);
         // Get the real-world coordinate values of the point of interest
@@ -621,83 +601,84 @@ public abstract class AbstractWmsController extends AbstractController {
 
         // Transform these coordinates into lon-lat
         LonLatPosition lonLat = GISUtils.transformToWgs84LonLat(pos);
-
-        // Find out the i,j coordinates of this point in the source grid (could
-        // be null)
-        HorizontalGrid horizGrid = feature.getCoverage().getDomain().getHorizontalGrid();
-        GridCell2D gridCell = horizGrid.getGridCell(horizGrid.findContainingCell(pos));
-        LonLatPosition gridCellCentre = null;
-        if (gridCell != null) {
-            // Get the location of the centre of the grid cell
-            HorizontalPosition gridCellCentrePos = gridCell.getCentre();
-            gridCellCentre = GISUtils.transformToWgs84LonLat(gridCellCentrePos);
-        }
-
+        
         // Get the elevation value requested
         VerticalPosition zValue = getElevationValue(dr.getElevationString(), feature);
-
-        // Get the requested timesteps. If the layer doesn't have
-        // a time axis then this will return a single-element List with value
-        // null.
-        List<TimePosition> tValues = getTimeValues(dr.getTimeString(), feature);
-        usageLogEntry.setNumTimeSteps(tValues.size());
-
-        // First we read the timeseries data. If the layer doesn't have a time
-        // axis we'll use ScalarLayer.readSinglePoint() instead.
-        List<Float> tsData;
-        if(tValues.isEmpty()){
-            GridSeriesCoverage<?> cov = feature.getCoverage();
-            Object val = cov.evaluate(new GeoPositionImpl(pos, zValue, null));
-            if(cov.getRangeMetadata(null).getValueType() == Float.class){
-                tsData = Arrays.asList((Float) val);
-            } else if(cov.getRangeMetadata(null).getValueType() == Vector2D.class){
-                tsData = Arrays.asList(((Vector2D<Float>) val).getMagnitude());
-            } else {
-                throw new IllegalStateException("Unrecognized layer type");
-            }
-        } else {
-            tsData = new ArrayList<Float>();
-            for(TimePosition time : tValues){
-                GridSeriesCoverage<?> cov = feature.getCoverage();
-                Object val = cov.evaluate(new GeoPositionImpl(pos, zValue, time));
-                if(cov.getRangeMetadata(null).getValueType() == Float.class){
-                    tsData.add((Float) val);
-                } else if(cov.getRangeMetadata(null).getValueType() == Vector2D.class){
-                    tsData.add(((Vector2D<Float>) val).getMagnitude());
-                } else {
-                    throw new IllegalStateException("Unrecognized layer type");
-                }
-            }
-        }
-
-        // Internal consistency check: arrays should be the same length
-        if (!tValues.isEmpty() && tValues.size() != tsData.size()) {
-            throw new IllegalStateException("Internal error: timeseries length inconsistency");
-        }
-
-        // Now we map date-times to data values
-        // The map is kept in order of ascending time
-        Map<TimePosition, Float> featureData = new LinkedHashMap<TimePosition, Float>();
-        if (tValues.isEmpty()) {
-            featureData.put(null, tsData.get(0));
-        } else {
-            for (int i = 0; i < tValues.size(); i++) {
-                featureData.put(tValues.get(i), tsData.get(i));
-            }
-        }
-
+        
+        String timeString = dr.getTimeString();
+        
         if (request.getOutputFormat().equals(FEATURE_INFO_XML_FORMAT)) {
             Map<String, Object> models = new HashMap<String, Object>();
             models.put("longitude", lonLat.getLongitude());
             models.put("latitude", lonLat.getLatitude());
+            
+            /*
+             * Find out the i,j coordinates of this point in the source grid (could
+             * be null)
+             */
+            HorizontalGrid horizGrid = feature.getCoverage().getDomain().getHorizontalGrid();
+            GridCell2D gridCell = horizGrid.getGridCell(horizGrid.findContainingCell(pos));
             models.put("gridCoords", gridCell.getGridCoordinates());
+            
+            LonLatPosition gridCellCentre = null;
+            if (gridCell != null) {
+                // Get the location of the centre of the grid cell
+                HorizontalPosition gridCellCentrePos = gridCell.getCentre();
+                gridCellCentre = GISUtils.transformToWgs84LonLat(gridCellCentrePos);
+            }
             models.put("gridCentre", gridCellCentre);
+
+            /*
+             * Get the requested timesteps. If the layer doesn't have a time
+             * axis then this will return a single-element List with value null.
+             */
+            List<TimePosition> tValues = getTimeValues(timeString, feature);
+
+            // First we read the timeseries data. If the layer doesn't have a time
+            // axis we'll use ScalarLayer.readSinglePoint() instead.
+            List<Float> tsData;
+            if(tValues.isEmpty()){
+                GridSeriesCoverage cov = feature.getCoverage();
+                Object val = cov.evaluate(new GeoPositionImpl(pos, zValue, null), memberName);
+                if(Number.class.isAssignableFrom(cov.getScalarMetadata(memberName).getValueType())){
+                    tsData = Arrays.asList(((Number) val).floatValue());
+                } else {
+                    throw new UnsupportedOperationException("Cannot plot non-numerical field");
+                }
+            } else {
+                GridSeriesCoverage cov = feature.getCoverage();
+                if(!Number.class.isAssignableFrom(cov.getScalarMetadata(memberName).getValueType())){
+                    throw new UnsupportedOperationException("Cannot plot non-numerical field");
+                } else {
+                    tsData = new ArrayList<Float>();
+                    for(TimePosition time : tValues){
+                        Object val = cov.evaluate(new GeoPositionImpl(pos, zValue, time), memberName);
+                        tsData.add(((Number) val).floatValue());
+                    }
+                }
+            }
+            // Internal consistency check: arrays should be the same length
+            if (!tValues.isEmpty() && tValues.size() != tsData.size()) {
+                throw new IllegalStateException("Internal error: timeseries length inconsistency");
+            }
+
+            // Now we map date-times to data values
+            // The map is kept in order of ascending time
+            Map<TimePosition, Float> featureData = new LinkedHashMap<TimePosition, Float>();
+            if (tValues.isEmpty()) {
+                featureData.put(null, tsData.get(0));
+            } else {
+                for (int i = 0; i < tValues.size(); i++) {
+                    featureData.put(tValues.get(i), tsData.get(i));
+                }
+            }
             models.put("data", featureData);
             return new ModelAndView("showFeatureInfo_xml", models);
         } else {
+            PointSeriesFeature pointSeriesFeature = feature.extractPointSeriesFeature(lonLat, zValue, getTimeRange(timeString, feature),
+                    CollectionUtils.setOf(memberName));
             // Must be PNG format: prepare and output the JFreeChart
-            JFreeChart chart = Charting.createTimeseriesPlot(feature, lonLat, featureData);
-            httpServletResponse.setContentType("image/png");
+            JFreeChart chart = Charting.createTimeseriesPlot(pointSeriesFeature, memberName);
             ChartUtilities.writeChartAsPNG(httpServletResponse.getOutputStream(), chart, 400, 300);
             return null;
         }
@@ -730,9 +711,17 @@ public abstract class AbstractWmsController extends AbstractController {
         } else {
             // We're creating a legend with supporting text so we need to know
             // the colour scale range and the layer in question
-            String layerName = params.getMandatoryString("layer");
+            GetFeatureInfoRequest request = new GetFeatureInfoRequest(params);
+            GetFeatureInfoDataRequest dr = request.getDataRequest();
 
-            FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
+            String layerName = WmsUtils.getLayerName(dr);
+            GridSeriesFeature feature = featureFactory.getFeature(layerName);
+
+            String plottableMemberName = WmsUtils.getPlottableMemberName(feature,
+                    WmsUtils.getMemberName(layerName));
+            String plottableLayerName = WmsUtils.getPlottableLayerName(feature, layerName);
+
+            FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, plottableLayerName);
 
             // Layer layer = layerFactory.getLayer(layerName);
 
@@ -756,11 +745,11 @@ public abstract class AbstractWmsController extends AbstractController {
                         + "the scale extremes explicitly.");
             }
 
-            GridSeriesFeature<?> feature = featureFactory.getFeature(layerName);
 
             // Now create the legend image
-            legend = palette.createLegend(numColourBands, feature.getName(), feature.getCoverage().getRangeMetadata(
-                    null).getUnits().getUnitString(), logarithmic, colorScaleRange);
+            legend = palette.createLegend(numColourBands, feature.getName(), feature.getCoverage()
+                    .getScalarMetadata(plottableMemberName).getUnits().getUnitString(), logarithmic,
+                    colorScaleRange);
         }
         httpServletResponse.setContentType("image/png");
         ImageIO.write(legend, "png", httpServletResponse.getOutputStream());
@@ -773,12 +762,17 @@ public abstract class AbstractWmsController extends AbstractController {
      * XML format.
      */
     protected ModelAndView getTransect(RequestParams params, FeatureFactory featureFactory,
-            HttpServletResponse response, UsageLogEntry usageLogEntry) throws Exception {
+            HttpServletResponse response) throws Exception {
         // Parse the request parameters
-        String layerStr = params.getMandatoryString("layer");
-        GridSeriesFeature<?> feature = featureFactory.getFeature(layerStr);
-
-        Class<?> valueType = feature.getCoverage().getRangeMetadata(null).getValueType();
+        String layerName = params.getMandatoryString("layer");
+        String memberName = WmsUtils.getMemberName(layerName);
+        
+        GridSeriesFeature feature = featureFactory.getFeature(layerName);
+        /*
+         * At no point do we want the non-plottable member name, so replace it
+         * with a guaranteed plottable member
+         */
+        memberName = WmsUtils.getPlottableMemberName(feature, memberName);
 
         String crsCode = params.getMandatoryString("crs");
         String lineString = params.getMandatoryString("linestring");
@@ -791,10 +785,6 @@ public abstract class AbstractWmsController extends AbstractController {
             throw new InvalidFormatException(outputFormat);
         }
 
-        usageLogEntry.setFeature(feature);
-        usageLogEntry.setOutputFormat(outputFormat);
-        usageLogEntry.setWmsOperation("GetTransect");
-
         // Parse the line string, which is in the form "x1 y1, x2 y2, x3 y3"
         final LineString transect = new LineString(lineString, WmsUtils.getCrs(crsCode), params.getWmsVersion());
         log.debug("Got {} control points", transect.getControlPoints().size());
@@ -803,35 +793,12 @@ public abstract class AbstractWmsController extends AbstractController {
         HorizontalDomain transectDomain = getOptimalTransectDomain(feature, transect);
         log.debug("Using transect consisting of {} points", transectDomain.getDomainObjects().size());
 
-        // Read the data from the data source, without using the tile cache
-        List<Float> transectData = new ArrayList<Float>();
-        List<HorizontalPosition> positions = transectDomain.getDomainObjects();
-        if(valueType == Float.class){
-            @SuppressWarnings("unchecked")
-            GridSeriesCoverage<Float> coverage = (GridSeriesCoverage<Float>) feature.getCoverage();
-            for(HorizontalPosition pos : positions){
-                transectData.add(coverage.evaluate(new GeoPositionImpl(pos,
-                        zValue, tValue)));
-            }
-        } else if(valueType == Vector2D.class){
-            @SuppressWarnings("unchecked")
-            GridSeriesCoverage<Vector2D<Float>> coverage = (GridSeriesCoverage<Vector2D<Float>>) feature.getCoverage();
-            for(HorizontalPosition pos : positions){
-                transectData.add(coverage.evaluate(new GeoPositionImpl(pos,
-                        zValue, tValue)).getMagnitude());
-            }
-        } else {
-            throw new IllegalStateException("Unrecognized layer type");
-        }
-        log.debug("Transect: Got {} dataValues", transectData.size());
-
         // Now output the data in the selected format
         response.setContentType(outputFormat);
         if (outputFormat.equals(FEATURE_INFO_PNG_FORMAT)) {
-            int slashIndex = layerStr.lastIndexOf("/");
-            String datasetId = layerStr.substring(0, slashIndex);
+            String datasetId = WmsUtils.getDatasetId(layerName);
             String copyright = ((Config) serverConfig).getDatasetById(datasetId).getCopyrightStatement();
-            JFreeChart chart = Charting.createTransectPlot(feature, transect, transectData, copyright);
+            JFreeChart chart = Charting.createTransectPlot(feature, memberName, transect, zValue, tValue, copyright);
             int width = 400;
             int height = 300;
 
@@ -851,8 +818,15 @@ public abstract class AbstractWmsController extends AbstractController {
                 plot.add(chart.getXYPlot(), 1);
                 plot.add(verticalSectionChart.getXYPlot(), 1);
                 plot.setOrientation(PlotOrientation.VERTICAL);
-                String title = WmsUtils.removeDuplicatedWhiteSpace(feature.getName()) + " (" + feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString()
-                        + ")" + " at " + zValue + feature.getCoverage().getDomain().getVerticalCrs().getUnits().getUnitString();
+                String title = WmsUtils.removeDuplicatedWhiteSpace(feature.getName())
+                        + " ("
+                        + feature.getCoverage().getScalarMetadata(memberName).getUnits()
+                                .getUnitString()
+                        + ")"
+                        + " at "
+                        + zValue
+                        + feature.getCoverage().getDomain().getVerticalCrs().getUnits()
+                                .getUnitString();
                 chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, false);
 
                 // set left margin to 10 to avoid number wrap at color bar
@@ -867,6 +841,18 @@ public abstract class AbstractWmsController extends AbstractController {
 
             ChartUtilities.writeChartAsPNG(response.getOutputStream(), chart, width, height);
         } else if (outputFormat.equals(FEATURE_INFO_XML_FORMAT)) {
+            // Read the data from the data source, without using the tile cache
+            if(!Number.class.isAssignableFrom(feature.getCoverage().getScalarMetadata(memberName).getValueType())){
+                throw new IllegalArgumentException("The member "+memberName+" contains non-numerical data");
+            }
+            List<Float> transectData = new ArrayList<Float>();
+            List<HorizontalPosition> positions = transectDomain.getDomainObjects();
+            GridSeriesCoverage coverage = feature.getCoverage();
+            for(HorizontalPosition pos : positions){
+                transectData.add(((Number) coverage.evaluate(new GeoPositionImpl(pos, zValue,
+                        tValue), memberName)).floatValue());
+            }
+            
             // Output data as XML using a template
             // First create an ordered map of ProjectionPoints to data values
             Map<HorizontalPosition, Float> dataPoints = new LinkedHashMap<HorizontalPosition, Float>();
@@ -889,10 +875,15 @@ public abstract class AbstractWmsController extends AbstractController {
      * Outputs a vertical profile plot in PNG format.
      */
     protected ModelAndView getVerticalProfile(RequestParams params, FeatureFactory featureFactory,
-            HttpServletResponse response, UsageLogEntry usageLogEntry) throws WmsException, IOException {
+            HttpServletResponse response) throws WmsException, IOException {
         // Parse the request parameters
-        String layerStr = params.getMandatoryString("layer");
-        GridSeriesFeature<?> feature = featureFactory.getFeature(layerStr);
+        GetFeatureInfoRequest request = new GetFeatureInfoRequest(params);
+        GetFeatureInfoDataRequest dr = request.getDataRequest();
+
+        String layerName = WmsUtils.getLayerName(dr);
+
+        GridSeriesFeature feature = featureFactory.getFeature(layerName);
+        final String memberName = WmsUtils.getPlottableMemberName(feature, WmsUtils.getMemberName(layerName));
 
         String crsCode = params.getMandatoryString("crs");
         String point = params.getMandatoryString("point");
@@ -904,10 +895,6 @@ public abstract class AbstractWmsController extends AbstractController {
                 && !"image/jpg".equals(outputFormat)) {
             throw new InvalidFormatException(outputFormat + " is not a valid output format");
         }
-
-        usageLogEntry.setFeature(feature);
-        usageLogEntry.setOutputFormat(outputFormat);
-        usageLogEntry.setWmsOperation("GetVerticalProfile");
 
         // Get the required coordinate reference system, forcing longitude-first
         // axis order.
@@ -940,29 +927,9 @@ public abstract class AbstractWmsController extends AbstractController {
         // Read data from each elevation in the source grid
         // We reuse the readVerticalSection code: a profile is essentially a
         // one-element vertical section
-        final ProfileFeature<?> profileFeature = feature.extractProfileFeature(pos, tValue);
-        List<Double> zValues = profileFeature.getCoverage().getDomain().getZValues();
-        List<Float> profileData = new AbstractList<Float>() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public Float get(int index) {
-                if(profileFeature.getCoverage().getRangeMetadata(null).getValueType() == Float.class){
-                    return (Float) profileFeature.getCoverage().getValues().get(index);
-                } else if(profileFeature.getCoverage().getRangeMetadata(null).getValueType() == Vector2D.class){
-                    return ((Vector2D<Float>) profileFeature.getCoverage().getValues().get(index)).getMagnitude();
-                } else {
-                    throw new UnsupportedOperationException("Unsupported layer type");
-                }
-            }
-
-            @Override
-            public int size() {
-                return (int) profileFeature.getCoverage().size();
-            }
-        };
-        
+        final ProfileFeature profileFeature = feature.extractProfileFeature(pos, tValue, CollectionUtils.setOf(memberName));
         // Now create the vertical profile plot
-        JFreeChart chart = Charting.createVerticalProfilePlot(feature, pos, zValues, profileData, tValue);
+        JFreeChart chart = Charting.createVerticalProfilePlot(profileFeature, memberName);
 
         response.setContentType(outputFormat);
         int width = 500;
@@ -977,15 +944,21 @@ public abstract class AbstractWmsController extends AbstractController {
         return null;
     }
 
-    private JFreeChart createVerticalSectionChart(RequestParams params, GridSeriesFeature<?> feature, TimePosition tValue,
+    private JFreeChart createVerticalSectionChart(RequestParams params, GridSeriesFeature feature, TimePosition tValue,
             LineString lineString, HorizontalDomain transectDomain) throws WmsException,
             InvalidDimensionValueException, IOException {
         // Look for styling parameters in the URL
         int numColourBands = GetMapStyleRequest.getNumColourBands(params);
         Extent<Float> scaleRange = GetMapStyleRequest.getColorScaleRange(params);
+        
+        // Parse the request parameters
+        GetFeatureInfoRequest request = new GetFeatureInfoRequest(params);
+        GetFeatureInfoDataRequest dr = request.getDataRequest();
 
-        String layerStr = params.getMandatoryString("layer");
-        FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerStr);
+        String layerName = WmsUtils.getLayerName(dr);
+        String memberName = WmsUtils.getPlottableMemberName(feature, WmsUtils.getMemberName(layerName));
+
+        FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
         if (scaleRange == null)
             scaleRange = metadata.getColorScaleRange();
         // TODO: deal with auto scale ranges - look at actual values extracted
@@ -1000,11 +973,10 @@ public abstract class AbstractWmsController extends AbstractController {
         ColorPalette palette = ColorPalette.get(paletteName);
 
         // Read data from each elevation in the source grid
-        List<Double> zValues = feature.getCoverage().getDomain().getVerticalAxis().getCoordinateValues();
         List<List<Float>> sectionData = new ArrayList<List<Float>>();
         for(HorizontalPosition pos : transectDomain.getDomainObjects()){
-            final ProfileCoverage<?> pCoverage = feature.extractProfileFeature(pos, tValue).getCoverage();
-            final Class<?> clazz = pCoverage.getRangeMetadata(null).getValueType();
+            final ProfileCoverage pCoverage = feature.extractProfileFeature(pos, tValue, CollectionUtils.setOf(memberName)).getCoverage();
+            final Class<?> clazz = pCoverage.getScalarMetadata(memberName).getValueType();
             List<Float> pointProfile = new AbstractList<Float>() {
                 @Override
                 @SuppressWarnings("unchecked")
@@ -1047,26 +1019,25 @@ public abstract class AbstractWmsController extends AbstractController {
 
         VerticalPosition zValue = getElevationValue(params.getString("elevation"), feature);
 
-        return Charting.createVerticalSectionChart(feature, lineString, zValues, sectionData, scaleRange, palette,
-                numColourBands, logScale, zValue);
+        return Charting.createVerticalSectionChart(feature, memberName, lineString, scaleRange,
+                palette, numColourBands, logScale, zValue, tValue);
     }
 
     /**
      * Generate the vertical section JfreeChart object
      */
     protected ModelAndView getVerticalSection(RequestParams params, FeatureFactory featureFactory,
-            HttpServletResponse response, UsageLogEntry usageLogEntry) throws Exception {
+            HttpServletResponse response) throws Exception {
 
         // Parse the request parameters
         // TODO repeats code from getTransect()
         String layerStr = params.getMandatoryString("layer");
-        GridSeriesFeature<?> feature = featureFactory.getFeature(layerStr);
+        GridSeriesFeature feature = featureFactory.getFeature(layerStr);
 
         String crsCode = params.getMandatoryString("crs");
         String lineStr = params.getMandatoryString("linestring");
         List<TimePosition> tValues = getTimeValues(params.getString("time"), feature);
         TimePosition tValue = tValues.isEmpty() ? null : tValues.get(0);
-        usageLogEntry.setFeature(feature);
 
         // Parse the parameters connected with styling
         // TODO repeats code from GetMap and GetLegendGraphic
@@ -1075,8 +1046,6 @@ public abstract class AbstractWmsController extends AbstractController {
                 && !"image/jpg".equals(outputFormat)) {
             throw new InvalidFormatException(outputFormat + " is not a valid output format");
         }
-        usageLogEntry.setOutputFormat(outputFormat);
-        usageLogEntry.setWmsOperation("GetVerticalSection");
 
         // Get the required coordinate reference system, forcing longitude-first
         // axis order.
@@ -1118,7 +1087,7 @@ public abstract class AbstractWmsController extends AbstractController {
      * @return a HorizontalDomain that contains (near) the minimum necessary
      *         number of points to sample a layer's source grid of data.
      */
-    private static HorizontalDomain getOptimalTransectDomain(GridSeriesFeature<?> feature, LineString transect) throws Exception {
+    private static HorizontalDomain getOptimalTransectDomain(GridSeriesFeature feature, LineString transect) throws Exception {
         // We need to work out how many points we need to include in order to
         // completely sample the data grid (i.e. we need the resolution of the
         // points to be higher than that of the data grid). It's hard to work
@@ -1190,7 +1159,7 @@ public abstract class AbstractWmsController extends AbstractController {
      *             is null and the layer does not support a default elevation
      *             value
      */
-    static VerticalPosition getElevationValue(String zValue, GridSeriesFeature<?> feature) throws InvalidDimensionValueException {
+    static VerticalPosition getElevationValue(String zValue, GridSeriesFeature feature) throws InvalidDimensionValueException {
         if (feature.getCoverage().getDomain().getVerticalAxis() == null || 
                 feature.getCoverage().getDomain().getVerticalAxis().size() == 0) {
             return new VerticalPositionImpl(Double.NaN, null);
@@ -1222,6 +1191,32 @@ public abstract class AbstractWmsController extends AbstractController {
         }
     }
 
+    private static Extent<TimePosition> getTimeRange(String timeString, GridSeriesFeature feature)
+            throws InvalidDimensionValueException {
+        TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
+        // If the layer does not have a time axis return an extent
+        if (tAxis == null)
+            throw new IllegalArgumentException("Cannot get a time range - there is no time axis");
+        
+        if(timeString == null){
+            List<TimePosition> timeValues = getTimeValues(timeString, feature);
+            TimePosition tPos = timeValues.get(0);
+            return Extents.newExtent(tPos, tPos);
+        }
+        
+        String[] startStop = timeString.split("/");
+        if (startStop.length == 1) {
+            // This is a single time value
+            TimePosition tValue = findTValue(startStop[0], tAxis);
+            return Extents.newExtent(tValue, tValue);
+        } else if (startStop.length == 2) {
+            // Use all time values from start to stop inclusive
+            return Extents.newExtent(findTValue(startStop[0], tAxis), findTValue(startStop[1], tAxis));
+        } else {
+            throw new InvalidDimensionValueException("time", timeString);
+        }
+    }
+    
     /**
      * Gets the list of time values requested by the client. If the layer does
      * not have a time axis the timeString will be ignored and an empty List
@@ -1236,7 +1231,7 @@ public abstract class AbstractWmsController extends AbstractController {
      *             if the time string cannot be parsed, or if any of the
      *             requested times are not valid times for the layer
      */
-    static List<TimePosition> getTimeValues(String timeString, GridSeriesFeature<?> feature)
+    static List<TimePosition> getTimeValues(String timeString, GridSeriesFeature feature)
             throws InvalidDimensionValueException {
 
         TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
@@ -1446,12 +1441,5 @@ public abstract class AbstractWmsController extends AbstractController {
      */
     public void setServerConfig(ServerConfig serverConfig) {
         this.serverConfig = serverConfig;
-    }
-    
-    /**
-     * Called by Spring to inject the usage logger
-     */
-    public void setUsageLogger(UsageLogger usageLogger) {
-        this.usageLogger = usageLogger;
     }
 }

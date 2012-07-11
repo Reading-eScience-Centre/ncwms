@@ -14,7 +14,7 @@
 <c:if test="${dataset.ready}">
     <menu:folder label="${title}">
         <c:forEach items="${dataset.featureCollection.features}" var="feature">
-            <menu:layer dataset="${dataset}" name="${dataset.id}/${feature.id}" label="${feature.name}"/>
+            <menu:rangemetadata metadata="${feature.coverage.rangeMetadata}" dataset="${dataset}" featureId="${feature.id}"/>
         </c:forEach>
     </menu:folder>
 </c:if>

@@ -45,7 +45,6 @@ import uk.ac.rdg.resc.ncwms.controller.RequestParams;
 import uk.ac.rdg.resc.ncwms.exceptions.FeatureNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.OperationNotSupportedException;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
-import uk.ac.rdg.resc.ncwms.usagelog.UsageLogEntry;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
 
 /**
@@ -64,17 +63,19 @@ public final class NcwmsController extends AbstractWmsController
     // Object that extracts layers from the config object, given a layer name
     private final FeatureFactory FEATURE_FACTORY = new FeatureFactory() {
         @Override
-        public GridSeriesFeature<?> getFeature(String layerName) throws FeatureNotDefinedException {
+        public GridSeriesFeature getFeature(String layerName) throws FeatureNotDefinedException {
             // Split the layer name on the slash character
-            int slashIndex = layerName.lastIndexOf("/");
-            if (slashIndex > 0) {
-                String datasetId = layerName.substring(0, slashIndex);
+//            int slashIndex = layerName.lastIndexOf("/");
+            String[] parts = layerName.split("/");
+            if (parts.length == 3) {
+                String datasetId = parts[0];
+//                String datasetId = layerName.substring(0, slashIndex);
                 Dataset ds = NcwmsController.this.getConfig().getDatasetById(datasetId);
                 if (ds == null)
                     throw new FeatureNotDefinedException(layerName);
 
-                String featureId = layerName.substring(slashIndex + 1);
-                GridSeriesFeature<?> feature = ds.getFeatureById(featureId);
+                String featureId = parts[1];//layerName.substring(slashIndex + 1);
+                GridSeriesFeature feature = ds.getFeatureById(featureId);
                 if (feature == null)
                     throw new FeatureNotDefinedException(layerName);
 
@@ -104,16 +105,15 @@ public final class NcwmsController extends AbstractWmsController
             String request,
             RequestParams params,
             HttpServletRequest httpServletRequest,
-            HttpServletResponse httpServletResponse,
-            UsageLogEntry usageLogEntry) throws Exception
+            HttpServletResponse httpServletResponse) throws Exception
     {
         if (request.equals("GetCapabilities"))
         {
-            return this.getCapabilities(params, httpServletRequest, usageLogEntry);
+            return this.getCapabilities(params, httpServletRequest);
         }
         else if (request.equals("GetMap"))
         {
-            return getMap(params, FEATURE_FACTORY, httpServletResponse, usageLogEntry);
+            return getMap(params, FEATURE_FACTORY, httpServletResponse);
         }
         else if (request.equals("GetFeatureInfo"))
         {
@@ -121,12 +121,11 @@ public final class NcwmsController extends AbstractWmsController
             String url = params.getString("url");
             if (url != null && !url.trim().equals(""))
             {
-                usageLogEntry.setRemoteServerUrl(url);
                 NcwmsMetadataController.proxyRequest(url, httpServletRequest, httpServletResponse);
                 return null;
             }
             return getFeatureInfo(params, FEATURE_FACTORY, httpServletRequest,
-                    httpServletResponse, usageLogEntry);
+                    httpServletResponse);
         }
         // The REQUESTs below are non-standard and could be refactored into
         // a different servlet endpoint
@@ -136,7 +135,7 @@ public final class NcwmsController extends AbstractWmsController
             // day be replaced by queries to Capabilities fragments, if possible.)
             // Delegate to the NcwmsMetadataController
             return this.metadataController.handleRequest(httpServletRequest,
-                    httpServletResponse, usageLogEntry);
+                    httpServletResponse);
         }
         else if (request.equals("GetLegendGraphic"))
         {
@@ -159,15 +158,15 @@ public final class NcwmsController extends AbstractWmsController
         }
         else if (request.equals("GetTransect"))
         {
-            return getTransect(params, FEATURE_FACTORY, httpServletResponse, usageLogEntry);
+            return getTransect(params, FEATURE_FACTORY, httpServletResponse);
         }
         else if (request.equals("GetVerticalProfile"))
         {
-            return getVerticalProfile(params, FEATURE_FACTORY, httpServletResponse, usageLogEntry);
+            return getVerticalProfile(params, FEATURE_FACTORY, httpServletResponse);
         }
         else if (request.equals("GetVerticalSection"))
         {
-            return getVerticalSection(params, FEATURE_FACTORY, httpServletResponse, usageLogEntry);
+            return getVerticalSection(params, FEATURE_FACTORY, httpServletResponse);
         }
         else
         {
@@ -179,7 +178,7 @@ public final class NcwmsController extends AbstractWmsController
      * Performs the GetCapabilities operation.
      */
     private ModelAndView getCapabilities(RequestParams params,
-            HttpServletRequest httpServletRequest, UsageLogEntry usageLogEntry)
+            HttpServletRequest httpServletRequest)
             throws WmsException, IOException
     {
         TimePosition lastUpdate;
@@ -230,58 +229,8 @@ public final class NcwmsController extends AbstractWmsController
         }
 
         return this.getCapabilities(datasets, lastUpdate, params,
-                httpServletRequest, usageLogEntry);
+                httpServletRequest);
     }
-
-    /**
-     * <p>This implementation uses a {@link TileCache} to store data arrays,
-     * speeding up repeat requests.</p>
-     */
-    /*
-     * TODO Remove completely - see superclass comment
-     */
-//    @Override
-//    protected List<Float> readDataGrid(ScalarLayer layer, DateTime dateTime,
-//        double elevation, RegularGrid grid, UsageLogEntry usageLogEntry)
-//        throws InvalidDimensionValueException, IOException
-//    {
-//        // We know that this Config object only returns LayerImpl objects
-//        LayerImpl layerImpl = (LayerImpl)layer;
-//        // Find which file contains this time, and which index it is within the file
-//        LayerImpl.FilenameAndTimeIndex fti = layerImpl.findAndCheckFilenameAndTimeIndex(dateTime);
-//        // Find the z index within the file
-//        int zIndex = layerImpl.findAndCheckElevationIndex(elevation);
-//
-//        // Create a key for searching the cache
-//        TileCacheKey key = new TileCacheKey(
-//            fti.filename,
-//            layer,
-//            grid,
-//            fti.tIndexInFile,
-//            zIndex
-//        );
-//
-//        List<Float> data = null;
-//        // Search the cache.  Returns null if key is not found
-//        boolean cacheEnabled = this.getConfig().getCache().isEnabled();
-//        if (cacheEnabled) data = this.tileCache.get(key);
-//
-//        // Record whether or not we got a hit in the cache
-//        usageLogEntry.setUsedCache(data != null);
-//
-//        if (data == null)
-//        {
-//            // We didn't get any data from the cache, so we have to read from
-//            // the source data.
-//            // We call layerImpl.readHorizDomain() directly to save repeating
-//            // the call to findAndCheckFilenameAndTimeIndex().
-//            data = layerImpl.readHorizontalDomain(fti, zIndex, grid);
-//            // Put the data in the tile cache
-//            if (cacheEnabled) this.tileCache.put(key, data);
-//        }
-//
-//        return data;
-//    }
 
     /**
      * Called by Spring to shut down the controller.  This shuts down the tile

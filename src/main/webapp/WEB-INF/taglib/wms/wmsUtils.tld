@@ -27,7 +27,7 @@
     <description>Returns true if the given layer is a vector layer</description>
     <name>isVectorLayer</name>
     <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
-    <function-signature>boolean isVectorLayer(uk.ac.rdg.resc.edal.coverage.Coverage)</function-signature>
+    <function-signature>boolean isVectorLayer(uk.ac.rdg.resc.edal.coverage.Coverage, java.lang.String)</function-signature>
   </function>
   <function>
     <description>Returns exception name</description>
@@ -70,6 +70,19 @@
     <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
     <function-signature>uk.ac.rdg.resc.edal.geometry.BoundingBox getWmsBoundingBox(uk.ac.rdg.resc.edal.feature.GridSeriesFeature)</function-signature>
   </function>
-  
+
+  <function>
+    <description>Sets the bounding box to conform with GIS standards</description>
+    <name>memberIsScalar</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>boolean memberIsScalar(uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata, java.lang.String)</function-signature>
+  </function>
+
+  <function>
+    <description>Sets the bounding box to conform with GIS standards</description>
+    <name>getChildMetadata</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata getChildMetadata(uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata, java.lang.String)</function-signature>
+  </function>
   
 </taglib>

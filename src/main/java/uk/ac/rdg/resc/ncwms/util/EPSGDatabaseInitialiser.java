@@ -26,7 +26,7 @@ public class EPSGDatabaseInitialiser {
     public EPSGDatabaseInitialiser() {
         try {
             String databasePath = new File("epsgcodes.db").getCanonicalPath();
-//            Class.forName("org.h2.Driver");
+            Class.forName("org.h2.Driver");
             conn = DriverManager.getConnection("jdbc:h2:" + databasePath);
             conn.setAutoCommit(true);
             dataSource = new SingleConnectionDataSource(conn, true);
@@ -46,6 +46,9 @@ public class EPSGDatabaseInitialiser {
             // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (FactoryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
