@@ -68,7 +68,6 @@ import uk.ac.rdg.resc.edal.coverage.GridSeriesCoverage;
 import uk.ac.rdg.resc.edal.coverage.ProfileCoverage;
 import uk.ac.rdg.resc.edal.coverage.domain.impl.HorizontalDomain;
 import uk.ac.rdg.resc.edal.coverage.grid.GridCell2D;
-import uk.ac.rdg.resc.edal.coverage.grid.GridCoordinates2D;
 import uk.ac.rdg.resc.edal.coverage.grid.HorizontalGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
@@ -618,7 +617,7 @@ public abstract class AbstractWmsController extends AbstractController {
              * be null)
              */
             HorizontalGrid horizGrid = feature.getCoverage().getDomain().getHorizontalGrid();
-            GridCell2D gridCell = horizGrid.getGridCell(horizGrid.findContainingCell(pos));
+            GridCell2D gridCell = horizGrid.findContainingCell(pos);
             models.put("gridCoords", gridCell.getGridCoordinates());
             
             LonLatPosition gridCellCentre = null;
@@ -1105,9 +1104,9 @@ public abstract class AbstractWmsController extends AbstractController {
              * GridCoordinates
              */
             HorizontalGrid hGrid = feature.getCoverage().getDomain().getHorizontalGrid();
-            Set<GridCoordinates2D> gridCoords = new HashSet<GridCoordinates2D>();
+            Set<GridCell2D> gridCoords = new HashSet<GridCell2D>();
             for(HorizontalPosition pos : testPointList.getDomainObjects()){
-                GridCoordinates2D gridCoord = hGrid.findContainingCell(pos);
+                GridCell2D gridCoord = hGrid.findContainingCell(pos);
                 if(gridCoord != null)
                     gridCoords.add(hGrid.findContainingCell(pos));
             }
