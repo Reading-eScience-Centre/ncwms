@@ -36,7 +36,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.geotoolkit.referencing.CRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -96,9 +95,6 @@ public class WmsUtils
      * operation
      */
     public static final int LAYER_LIMIT = 1;
-
-    // Patterns are immutable and therefore thread-safe.
-    private static final Pattern MULTIPLE_WHITESPACE = Pattern.compile("\\s+");
 
     static
     {
@@ -278,14 +274,6 @@ public class WmsUtils
     }
 
     /**
-     * Replaces instances of duplicated whitespace with a single space.
-     */
-    public static String removeDuplicatedWhiteSpace(String theString)
-    {
-        return MULTIPLE_WHITESPACE.matcher(theString).replaceAll(" ");
-    }
-
-    /**
      * Returns the RuntimeException name. This used in 'displayDefaultException.jsp'
      * to show the exception name, to go around the use of '${exception.class.name}' where 
      * the word 'class' is deemed as Java keyword by Tomcat 7.0 
@@ -400,7 +388,6 @@ public class WmsUtils
         String memberId = layerParts[2];
         
         Dataset dataset = serverConfig.getDatasetById(datasetId);
-        Feature feature = dataset.getFeatureById(featureId);
         
         String featureAndVarId = featureId+"/"+memberId;
         return dataset.getPlottingMetadataMap().get(featureAndVarId);

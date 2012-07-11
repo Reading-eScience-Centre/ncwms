@@ -86,7 +86,8 @@ public class Midas extends BaseWmsClient {
         int nColourBands = widgetCollection.getPaletteSelector().getNumColorBands();
         boolean logScale = widgetCollection.getPaletteSelector().isLogScale();
         mapArea.addLayer(layerUpdated, layerUpdated, currentTime, currentElevation, "boxfill",
-                currentPalette, currentScaleRange, nColourBands, logScale);
+                currentPalette, currentScaleRange, nColourBands, logScale, widgetCollection
+                        .getElevationSelector().getNElevations() > 1);
     }
 
     @Override
