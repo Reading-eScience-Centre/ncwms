@@ -43,7 +43,6 @@ import uk.ac.rdg.resc.edal.feature.FeatureCollection;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
-import uk.ac.rdg.resc.ncwms.usagelog.h2.H2UsageLogger;
 
 /**
  * Displays the administrative pages of the ncWMS application (i.e. /admin/*)
@@ -53,7 +52,6 @@ import uk.ac.rdg.resc.ncwms.usagelog.h2.H2UsageLogger;
 public class AdminController extends MultiActionController {
     // These will be injected by Spring
     private Config config;
-    private H2UsageLogger usageLogger;
 
     /**
      * Displays the administrative web page
@@ -98,23 +96,6 @@ public class AdminController extends MultiActionController {
             throw new Exception("There is no dataset with id " + datasetId);
         }
         return dataset;
-    }
-
-    /**
-     * Displays the page showing usage statistics
-     */
-    public ModelAndView displayUsagePage(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        return new ModelAndView("admin_usage", "usageLogger", this.usageLogger);
-    }
-
-    /**
-     * Converts the usage log into CSV format and sends it to the client for
-     * opening in Excel
-     */
-    public void downloadUsageLog(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        response.setContentType("application/excel");
-        response.setHeader("Content-Disposition", "inline; filename=usageLog.csv");
-        this.usageLogger.writeCsv(response.getOutputStream());
     }
 
     /**
@@ -288,18 +269,21 @@ public class AdminController extends MultiActionController {
         // We only take action if the user pressed "save"
         if (request.getParameter("save") != null) {
             Dataset ds = this.config.getAllDatasets().get(request.getParameter("dataset.id"));
-            FeatureCollection<GridSeriesFeature<?>> features = ds.getFeatureCollection();
+            FeatureCollection<GridSeriesFeature> features = ds.getFeatureCollection();
             for (String fId : features.getFeatureIds()) {
-                GridSeriesFeature<?> feature = features.getFeatureById(fId);
+                GridSeriesFeature feature = features.getFeatureById(fId);
                 String newTitle = request.getParameter(feature.getId() + ".title").trim();
                 // Find the min and max colour scale range for this variable
                 // TODO: nicer error handling
                 float min = Float.parseFloat(request.getParameter(feature.getId() + ".scaleMin").trim());
-                float max = Float.parseFloat(request.getParameter(feature.getId() + ".scaleMax").trim());
-                // Get the variable config info. This should not be null,
-                // as we will have created it in
-                // MetadataLoader.checkAttributeOverrides()
-                // if it wasn't in the config file itself.
+                float max = Float.parseFloat(request.getParameter(feature.getId() + ".scaleMax")
+                        .trim());
+                /*
+                 * Get the variable config info. This should not be null, as we
+                 * will have created it in
+                 * MetadataLoader.checkAttributeOverrides() if it wasn't in the
+                 * config file itself.
+                 */
                 FeaturePlottingMetadata var = ds.getPlottingMetadataMap().get(feature.getId());
                 var.setTitle(newTitle);
                 var.setColorScaleRange(Extents.newExtent(min, max));
@@ -310,11 +294,14 @@ public class AdminController extends MultiActionController {
             // Saves the new configuration information to disk
             this.config.save();
         }
-        // This causes a client-side redirect, meaning that the user can safely
-        // press refresh in their browser without resubmitting the new config
-        // information.
-        // TODO: ... although it probably doesn't really matter if they do. Does
-        // it?
+        /*
+         * This causes a client-side redirect, meaning that the user can safely
+         * press refresh in their browser without resubmitting the new config
+         * information.
+         * 
+         * TODO: ... although it probably doesn't really matter if
+         * they do. Does it?
+         */
         response.sendRedirect("index.jsp");
     }
 
@@ -325,12 +312,4 @@ public class AdminController extends MultiActionController {
     public void setConfig(Config config) {
         this.config = config;
     }
-
-    /**
-     * Called by Spring to inject the usage logger
-     */
-    public void setUsageLogger(H2UsageLogger usageLogger) {
-        this.usageLogger = usageLogger;
-    }
-
 }

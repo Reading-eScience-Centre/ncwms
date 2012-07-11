@@ -34,13 +34,15 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.web.servlet.ModelAndView;
+
 import uk.ac.rdg.resc.ncwms.controller.AbstractMetadataController;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.FeatureFactory;
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
-import uk.ac.rdg.resc.ncwms.usagelog.UsageLogEntry;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
 
 /**
@@ -59,7 +61,7 @@ class NcwmsMetadataController extends AbstractMetadataController
 
     @Override
     public ModelAndView handleRequest(HttpServletRequest request,
-        HttpServletResponse response, UsageLogEntry usageLogEntry)
+        HttpServletResponse response)
         throws MetadataException
     {
         try
@@ -69,7 +71,6 @@ class NcwmsMetadataController extends AbstractMetadataController
             String url = request.getParameter("url");
             if (url != null && !url.trim().equals(""))
             {
-                usageLogEntry.setRemoteServerUrl(url);
                 proxyRequest(url, request, response);
                 return null; // proxyRequest writes directly to the response object
             }
@@ -80,7 +81,7 @@ class NcwmsMetadataController extends AbstractMetadataController
             // displayed via displayMetadataException.jsp, in JSON format
             throw new MetadataException(e);
         }
-        return super.handleRequest(request, response, usageLogEntry);
+        return super.handleRequest(request, response);
     }
     
     /**
@@ -139,7 +140,7 @@ class NcwmsMetadataController extends AbstractMetadataController
      * hierarchy.
      */
     @Override
-    protected ModelAndView showMenu(HttpServletRequest request, UsageLogEntry usageLogEntry)
+    protected ModelAndView showMenu(HttpServletRequest request)
         throws Exception
     {
         Map<String, ? extends Dataset> allDatasets = super.config.getAllDatasets();
@@ -151,7 +152,6 @@ class NcwmsMetadataController extends AbstractMetadataController
         {
             menu = menuFromRequest.toLowerCase();
         }
-        usageLogEntry.setMenu(menu);
         Map<String, Object> models = new HashMap<String, Object>();
         models.put("serverTitle", super.config.getTitle());
         models.put("datasets", allDatasets);

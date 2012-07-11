@@ -36,10 +36,10 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 
 import org.geotoolkit.referencing.crs.DefaultGeographicCRS;
 import org.jfree.chart.ChartFactory;
@@ -71,17 +71,22 @@ import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.TextAnchor;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.coverage.domain.impl.HorizontalDomain;
+import uk.ac.rdg.resc.edal.coverage.grid.GridCoordinates2D;
+import uk.ac.rdg.resc.edal.coverage.grid.HorizontalGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
-import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
+import uk.ac.rdg.resc.edal.feature.PointSeriesFeature;
+import uk.ac.rdg.resc.edal.feature.ProfileFeature;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
-import uk.ac.rdg.resc.edal.position.LonLatPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.VerticalCrs;
 import uk.ac.rdg.resc.edal.position.VerticalCrs.PositiveDirection;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
+import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
+import uk.ac.rdg.resc.edal.util.CollectionUtils;
 import uk.ac.rdg.resc.edal.util.GISUtils;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
@@ -93,23 +98,34 @@ import uk.ac.rdg.resc.ncwms.util.WmsUtils;
  * @author Jon Blower
  * @author Kevin X. Yang
  */
-final class Charting {
+final public class Charting {
     private static final Locale US_LOCALE = new Locale("us", "US");
     private static final Color TRANSPARENT = new Color(0, 0, 0, 0);
 
-    public static JFreeChart createTimeseriesPlot(Feature feature, LonLatPosition lonLat,
-            Map<TimePosition, Float> tsData) {
+    public static JFreeChart createTimeseriesPlot(PointSeriesFeature feature, String memberName) {
         TimeSeries ts = new TimeSeries("Data", Millisecond.class);
-        for (Entry<TimePosition, Float> entry : tsData.entrySet()) {
-            ts.add(new Millisecond(new Date(entry.getKey().getValue())), entry.getValue());
+        List<TimePosition> times = feature.getCoverage().getDomain().getTimes();
+        List<?> values = feature.getCoverage().getValues(memberName);
+        if (!Number.class.isAssignableFrom(feature.getCoverage().getScalarMetadata(memberName)
+                .getValueType())) {
+            throw new IllegalArgumentException("Cannot plot a timeseries of a non-numerical member");
+        }
+        if (times.size() != values.size()) {
+            throw new IllegalStateException("Number of times does not equal number of values");
+        }
+
+        for (int i = 0; i < times.size(); i++) {
+            ts.add(new Millisecond(new Date(times.get(i).getValue())), (Number) values.get(i));
         }
         TimeSeriesCollection xydataset = new TimeSeriesCollection();
         xydataset.addSeries(ts);
 
+        HorizontalPosition lonLat = feature.getHorizontalPosition();
         // Create a chart with no legend, tooltips or URLs
-        String title = "Lon: " + lonLat.getLongitude() + ", Lat: " + lonLat.getLatitude();
+        String title = "Lon: " + lonLat.getX() + ", Lat: " + lonLat.getY();
         String yLabel = feature.getName() + " ("
-                + feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString() + ")";
+                + feature.getCoverage().getScalarMetadata(memberName).getUnits().getUnitString()
+                + ")";
         JFreeChart chart = ChartFactory.createTimeSeriesChart(title, "Date / time", yLabel,
                 xydataset, false, false, false);
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
@@ -122,25 +138,78 @@ final class Charting {
         return chart;
     }
 
-    public static JFreeChart createVerticalProfilePlot(GridSeriesFeature<?> feature,
-            HorizontalPosition pos, List<Double> elevationValues, List<Float> dataValues,
-            TimePosition dateTime) {
-        if (elevationValues.size() != dataValues.size()) {
-            throw new IllegalArgumentException("Z values and data values not of same length");
+    public static JFreeChart createVerticalProfilePlot(ProfileFeature feature, String memberName) {
+        if (!Number.class.isAssignableFrom(feature.getCoverage().getScalarMetadata(memberName)
+                .getValueType())) {
+            throw new IllegalArgumentException("Cannot plot member " + memberName
+                    + " since it cannot be converted to a number");
         }
 
-        ZAxisAndValues zAxisAndValues = getZAxisAndValues(feature, elevationValues);
-        // The elevation values might have been reversed
-        elevationValues = zAxisAndValues.zValues;
-        NumberAxis elevationAxis = zAxisAndValues.zAxis;
+        List<Double> elevationValues = feature.getCoverage().getDomain().getZValues();
+
+        /*
+         * We can do this conversion, because we have already thrown an
+         * exception if it's invalid
+         */
+        @SuppressWarnings("unchecked")
+        List<Number> dataValues = (List<Number>) feature.getCoverage().getValues(memberName);
+        TimePosition dateTime = feature.getTime();
+        HorizontalPosition pos = feature.getHorizontalPosition();
+
+        /*
+         * TODO Factor this out into a new getZAxisAndValues method
+         */
+        VerticalCrs vCrs = feature.getCoverage().getDomain().getVerticalCrs();
+        final String zAxisLabel;
+        final boolean invertYAxis;
+        if (vCrs.getPositiveDirection() == PositiveDirection.UP) {
+            zAxisLabel = "Height";
+            invertYAxis = false;
+        } else if (vCrs.isPressure()) {
+            zAxisLabel = "Pressure";
+            invertYAxis = true;
+        } else {
+            zAxisLabel = "Depth";
+            /*
+             * 
+             * If this is a depth axis, all the values in elevationValues will
+             * be negative, so we must reverse this (see CdmUtils.getZValues())
+             */
+            List<Double> newElValues = new ArrayList<Double>(elevationValues.size());
+            for (Double zVal : elevationValues) {
+                newElValues.add(-zVal);
+            }
+            elevationValues = newElValues;
+            invertYAxis = true;
+        }
+
+        NumberAxis elevationAxis = new NumberAxis(zAxisLabel + " ("
+                + vCrs.getUnits().getUnitString() + ")");
+        elevationAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
+        if (invertYAxis)
+            elevationAxis.setInverted(true);
+        /*
+         * End of Factoring out
+         */
+
         elevationAxis.setAutoRangeIncludesZero(false);
 
-        NumberAxis valueAxis = new NumberAxis(getAxisLabel(feature));
+        String axisName = WmsUtils.removeDuplicatedWhiteSpace(feature.getName()) + " ("
+                + feature.getCoverage().getScalarMetadata(memberName).getUnits().getUnitString()
+                + ")";
+        NumberAxis valueAxis = new NumberAxis(axisName);
         valueAxis.setAutoRangeIncludesZero(false);
 
-        XYSeries series = new XYSeries("data", true); // TODO: more meaningful
-        // title
+        // TODO: more meaningful title
+        XYSeries series = new XYSeries("data", true);
         for (int i = 0; i < elevationValues.size(); i++) {
+            Number val = dataValues.get(i);
+            if (val.equals(Float.NaN) || val.equals(Double.NaN)) {
+                /*
+                 * Don't add NaNs to the series
+                 */
+                continue;
+            }
             series.add(elevationValues.get(i), dataValues.get(i));
         }
         XYSeriesCollection xySeriesColl = new XYSeriesCollection();
@@ -168,36 +237,63 @@ final class Charting {
             title += " at " + TimeUtils.dateTimeToISO8601(dateTime);
         }
 
-        // Use default font and don't create a legend
+        /*
+         * Use default font and don't create a legend
+         */
         return new JFreeChart(title, null, plot, false);
     }
 
-    private static String getAxisLabel(GridSeriesFeature<?> feature) {
+    private static String getAxisLabel(GridSeriesFeature feature, String memberName) {
         return WmsUtils.removeDuplicatedWhiteSpace(feature.getName()) + " ("
-                + feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString() + ")";
+                + feature.getCoverage().getScalarMetadata(memberName).getUnits().getUnitString()
+                + ")";
     }
 
-    public static JFreeChart createTransectPlot(GridSeriesFeature<?> feature,
-            LineString transectDomain, List<Float> transectData, String copyrightStatement) {
+    public static JFreeChart createTransectPlot(GridSeriesFeature feature, String memberName,
+            LineString transectDomain, VerticalPosition zPos, TimePosition tPos,
+            String copyrightStatement) {
+
+        if (!Number.class.isAssignableFrom(feature.getCoverage().getScalarMetadata(memberName)
+                .getValueType())) {
+            throw new IllegalArgumentException("Cannot plot a transect for a non-numerical layer");
+        }
+
         JFreeChart chart;
         XYPlot plot;
-        XYSeries series = new XYSeries("data", true); // TODO: more meaningful
-        // title
-        for (int i = 0; i < transectData.size(); i++) {
-            series.add(i, transectData.get(i));
+        XYSeries series = new XYSeries("data", true);
+//        XYSeries series = new XYSeries(feature.getCoverage().getScalarMetadata(memberName)
+//                .getParameter().getStandardName(), true); 
+
+        HorizontalDomain optimalTransectDomain = getOptimalTransectDomain(feature, transectDomain);
+
+        List<HorizontalPosition> positions = transectDomain.getControlPoints();
+        int k = 0;
+        for (HorizontalPosition pos : optimalTransectDomain.getDomainObjects()) {
+            series.add(
+                    k++,
+                    (Number) feature.getCoverage().evaluate(new GeoPositionImpl(pos, zPos, tPos),
+                            memberName));
         }
+
+//        series.add(1,1);
+//        series.add(2,4);
+//        series.add(3,9);
+//        series.add(4,16);
+//        series.add(5,25);
+//        
         XYSeriesCollection xySeriesColl = new XYSeriesCollection();
         xySeriesColl.addSeries(series);
 
-        // If we have a layer with more than one elevation value, we create a
-        // transect chart
-        // using standard XYItem Renderer to keep the plot renderer consistent
-        // with that of vertical section plot
+        /*
+         * If we have a layer with more than one elevation value, we create a
+         * transect chart using standard XYItem Renderer to keep the plot
+         * renderer consistent with that of vertical section plot
+         */
         VerticalAxis vAxis = feature.getCoverage().getDomain().getVerticalAxis();
         if (vAxis != null && vAxis.size() > 1) {
             final XYItemRenderer renderer1 = new StandardXYItemRenderer();
-            final NumberAxis rangeAxis1 = new NumberAxis(getAxisLabel(feature));
-            plot = new XYPlot(xySeriesColl, null, rangeAxis1, renderer1);
+            final NumberAxis rangeAxis1 = new NumberAxis(getAxisLabel(feature, memberName));
+            plot = new XYPlot(xySeriesColl, new NumberAxis(), rangeAxis1, renderer1);
             plot.setRangeAxisLocation(AxisLocation.BOTTOM_OR_LEFT);
             plot.setBackgroundPaint(Color.lightGray);
             plot.setDomainGridlinesVisible(false);
@@ -206,18 +302,17 @@ final class Charting {
             plot.setOrientation(PlotOrientation.VERTICAL);
             chart = new JFreeChart(plot);
         } else {
-            // If we have a layer which only has one elevation value, we simply
-            // create XY Line chart
+            /*
+             * If we have a layer which only has one elevation value, we simply
+             * create XY Line chart
+             */
+            String xlabel = feature.getName()
+                    + " ("
+                    + feature.getCoverage().getScalarMetadata(memberName).getUnits()
+                            .getUnitString() + ")";
             chart = ChartFactory.createXYLineChart("Transect for " + feature.getName(),
-                    "distance along transect (arbitrary units)",
-                    // TODO more meaningful xaxis label
-                    feature.getName() + " ("
-                            + feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString() + ")",
-                    xySeriesColl, PlotOrientation.VERTICAL, false, // show
-                    // legend
-                    false, // show tooltips (?)
-                    false // urls (?)
-                    );
+                    "distance along transect (arbitrary units)", xlabel, xySeriesColl,
+                    PlotOrientation.VERTICAL, false, false, false);
             plot = chart.getXYPlot();
         }
         if (copyrightStatement != null) {
@@ -239,8 +334,9 @@ final class Charting {
             if (prevCtrlPointDistance != null) {
                 // determine start end end value for marker based on index of
                 // ctrl point
-                IntervalMarker target = new IntervalMarker(transectData.size()
-                        * prevCtrlPointDistance, transectData.size() * ctrlPointDistance);
+                int size = optimalTransectDomain.getDomainObjects().size();
+                IntervalMarker target = new IntervalMarker(size * prevCtrlPointDistance, size
+                        * ctrlPointDistance);
                 // TODO: printing to two d.p. not always appropriate
                 target.setLabel("["
                         + printTwoDecimals(transectDomain.getControlPoints().get(i - 1).getY())
@@ -266,6 +362,68 @@ final class Charting {
         }
 
         return chart;
+    }
+
+    /**
+     * Gets a HorizontalDomain that contains (near) the minimum necessary number
+     * of points to sample a layer's source grid of data. That is to say,
+     * creating a HorizontalDomain at higher resolution would not result in
+     * sampling significantly more points in the layer's source grid.
+     * 
+     * @param feature
+     *            The feature for which the transect will be generated
+     * @param transect
+     *            The transect as specified in the request
+     * @return a HorizontalDomain that contains (near) the minimum necessary
+     *         number of points to sample a layer's source grid of data.
+     */
+    private static HorizontalDomain getOptimalTransectDomain(GridSeriesFeature feature,
+            LineString transect) {
+        // We need to work out how many points we need to include in order to
+        // completely sample the data grid (i.e. we need the resolution of the
+        // points to be higher than that of the data grid). It's hard to work
+        // this out neatly (data grids can be irregular) but we can estimate
+        // this by creating transects at progressively higher resolution, and
+        // working out how many grid points will be sampled.
+        int numTransectPoints = 500; // a bit more than the final image width
+        int lastNumUniqueGridPointsSampled = -1;
+        HorizontalDomain pointList = null;
+        while (true) {
+            // Create a transect with the required number of points,
+            // interpolating
+            // between the control points in the line string
+            List<HorizontalPosition> points = transect.getPointsOnPath(numTransectPoints);
+            // Create a HorizontalDomain from the interpolated points
+            HorizontalDomain testPointList = new HorizontalDomain(points);
+
+            /*
+             * Work out how many grid points will be sampled by this transect
+             * Relies on equals() being implemented correctly for the
+             * GridCoordinates
+             */
+            HorizontalGrid hGrid = feature.getCoverage().getDomain().getHorizontalGrid();
+            Set<GridCoordinates2D> gridCoords = new HashSet<GridCoordinates2D>();
+            for (HorizontalPosition pos : testPointList.getDomainObjects()) {
+                GridCoordinates2D gridCoord = hGrid.findContainingCell(pos);
+                if (gridCoord != null)
+                    gridCoords.add(hGrid.findContainingCell(pos));
+            }
+
+            int numUniqueGridPointsSampled = gridCoords.size();
+
+            // If this increase in resolution results in at least 10% more
+            // points
+            // being sampled we'll go around the loop again
+            if (numUniqueGridPointsSampled > lastNumUniqueGridPointsSampled * 1.1) {
+                // We need to increase the transect resolution and try again
+                lastNumUniqueGridPointsSampled = numUniqueGridPointsSampled;
+                numTransectPoints += 500;
+                pointList = testPointList;
+            } else {
+                // We've gained little advantage by the last resolution increase
+                return pointList;
+            }
+        }
     }
 
     /**
@@ -304,7 +462,7 @@ final class Charting {
      * Creates a vertical axis for plotting the given elevation values from the
      * given layer
      */
-    private static ZAxisAndValues getZAxisAndValues(GridSeriesFeature<?> feature,
+    private static ZAxisAndValues getZAxisAndValues(GridSeriesFeature feature,
             List<Double> elevationValues) {
         /*
          * We can deal with three types of vertical axis: Height, Depth and
@@ -323,9 +481,10 @@ final class Charting {
             invertYAxis = true;
         } else {
             zAxisLabel = "Depth";
-            // If this is a depth axis, all the values in elevationValues will
-            // be
-            // negative, so we must reverse this (see CdmUtils.getZValues())
+            /*
+             * If this is a depth axis, all the values in elevationValues will
+             * be negative, so we must reverse this (see CdmUtils.getZValues())
+             */
             List<Double> newElValues = new ArrayList<Double>(elevationValues.size());
             for (Double zVal : elevationValues) {
                 newElValues.add(-zVal);
@@ -357,18 +516,45 @@ final class Charting {
      *            one of the elevation values.
      * @return
      */
-    public static JFreeChart createVerticalSectionChart(GridSeriesFeature<?> feature,
-            LineString horizPath, List<Double> elevationValues, List<List<Float>> sectionData,
-            Extent<Float> colourScaleRange, ColorPalette palette, int numColourBands,
-            boolean logarithmic, VerticalPosition zValue) {
-        ZAxisAndValues zAxisAndValues = getZAxisAndValues(feature, elevationValues);
+    public static JFreeChart createVerticalSectionChart(GridSeriesFeature feature,
+            String memberName, LineString horizPath, Extent<Float> colourScaleRange,
+            ColorPalette palette, int numColourBands, boolean logarithmic, VerticalPosition zValue,
+            TimePosition time) {
+
+        if (feature.getCoverage().getDomain().getVerticalAxis() == null) {
+            throw new IllegalArgumentException(
+                    "Cannot create a vertical section chart from a feature with no vertical axis");
+        }
+        if (!Number.class.isAssignableFrom(feature.getCoverage().getScalarMetadata(memberName)
+                .getValueType())) {
+            throw new IllegalArgumentException(
+                    "Cannot create a vertical section chart from a non-numeric field");
+        }
+
+        ZAxisAndValues zAxisAndValues = getZAxisAndValues(feature, feature.getCoverage()
+                .getDomain().getVerticalAxis().getCoordinateValues());
         // The elevation values might have been reversed
-        elevationValues = zAxisAndValues.zValues;
+        List<Double> elevationValues = zAxisAndValues.zValues;
 
         double minElValue = 0.0;
         double maxElValue = 1.0;
-        
-        if(elevationValues.size() > 0 && sectionData.size() > 0){
+
+        List<List<Number>> sectionData = new ArrayList<List<Number>>();
+        HorizontalDomain optimalTransectDomain = getOptimalTransectDomain(feature, horizPath);
+        List<HorizontalPosition> controlPoints = optimalTransectDomain.getDomainObjects();
+        for (HorizontalPosition pos : controlPoints) {
+            /*
+             * This cast is OK, because we have already thrown an exception if
+             * this doesn't return a number
+             */
+            @SuppressWarnings("unchecked")
+            List<Number> values = (List<Number>) feature
+                    .extractProfileFeature(pos, time, CollectionUtils.setOf(memberName))
+                    .getCoverage().getValues(memberName);
+            sectionData.add(values);
+        }
+
+        if (elevationValues.size() > 0 && controlPoints.size() > 0) {
             minElValue = elevationValues.get(0);
             maxElValue = elevationValues.get(elevationValues.size() - 1);
         }
@@ -415,7 +601,7 @@ final class Charting {
         // Iterate through control points to show segments of transect
         Double prevCtrlPointDistance = null;
         int xAxisLength = 0;
-        if(sectionData.size() > 0)
+        if (sectionData.size() > 0)
             xAxisLength = sectionData.size();
         for (int i = 0; i < horizPath.getControlPoints().size(); i++) {
             double ctrlPointDistance = horizPath.getFractionalControlPointDistance(i);
@@ -440,7 +626,7 @@ final class Charting {
         }
 
         JFreeChart chart = new JFreeChart(feature.getName() + " ("
-                + feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString() + ")",
+                + feature.getCoverage().getScalarMetadata(memberName).getUnits().getUnitString() + ")",
                 plot);
         chart.removeLegend();
         chart.addSubtitle(paintScaleLegend);
@@ -455,18 +641,18 @@ final class Charting {
     private static class VerticalSectionDataset extends AbstractXYZDataset {
         private static final long serialVersionUID = 1L;
         private final int horizPathLength;
-        private final List<List<Float>> sectionData;
+        private final List<List<Number>> sectionData;
         private final List<Double> elevationValues;
         private final double minElValue;
         private final double elevationResolution;
         private final int numElevations;
 
-        public VerticalSectionDataset(List<Double> elevationValues, List<List<Float>> sectionData,
+        public VerticalSectionDataset(List<Double> elevationValues, List<List<Number>> sectionData,
                 double minElValue, double maxElValue, int numElevations) {
             /*
              * TODO Test that this is the right way round
              */
-            if(sectionData.size() > 0)
+            if (sectionData.size() > 0)
                 this.horizPathLength = sectionData.size();
             else
                 this.horizPathLength = 0;
@@ -528,7 +714,7 @@ final class Charting {
             // for which we have data?
             // TODO: factor this out into a utility routine
             int nearestElevationIndex = -1;
-            double minDiff = Double.POSITIVE_INFINITY;
+            double minDiff = Double.MAX_VALUE;
             for (int i = 0; i < this.elevationValues.size(); i++) {
                 double el = this.elevationValues.get(i);
                 double diff = Math.abs(el - elevation);
@@ -537,7 +723,7 @@ final class Charting {
                     nearestElevationIndex = i;
                 }
             }
-            return sectionData.get(xIndex).get(nearestElevationIndex);
+            return sectionData.get(xIndex).get(nearestElevationIndex).floatValue();
         }
 
         /**
@@ -597,14 +783,13 @@ final class Charting {
                     double frac = (val - min) / (max - min);
                     // Compute and return the index of the corresponding colour
                     int index = (int) (frac * numColourBands);
-                    // For values very close to the maximum value in the range,
-                    // this
-                    // index might turn out to be equal to this.numColourBands
-                    // due to
-                    // rounding error. In this case we subtract one from the
-                    // index to
-                    // ensure that such pixels are not displayed as background
-                    // pixels.
+                    /*
+                     * For values very close to the maximum value in the range,
+                     * this index might turn out to be equal to
+                     * this.numColourBands due to rounding error. In this case
+                     * we subtract one from the index to ensure that such pixels
+                     * are not displayed as background pixels.
+                     */
                     if (index == numColourBands)
                         index--;
                     return index;

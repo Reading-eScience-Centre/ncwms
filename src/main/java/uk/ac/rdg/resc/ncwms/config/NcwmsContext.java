@@ -36,8 +36,8 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.io.Resource;
+
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
-//import org.apache.log4j.PropertyConfigurator;
 
 /**
  * Sets up the working directory for ncWMS and the logging environment.
@@ -58,7 +58,7 @@ public class NcwmsContext implements ApplicationContextAware
     
     // The default working directory is in the user's home directory and can be
     // overridden by setting a new path in WMS-servlet.xml
-    private File workingDirectory = new File(System.getProperty("user.home"), ".ncWMS");
+    private File workingDirectory = new File(System.getProperty("user.home"), ".ncWMS-edal");
     private ApplicationContext applicationContext; // Will be set by Spring
     
     /**

@@ -22,7 +22,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 
     <h1>ncWMS Admin page</h1>
 
-    <p><a href="../godiva2.html">Godiva2 interface</a></p>
+    <p><a href="../Godiva.html">Godiva3 interface</a></p>
     <c:choose>
         <c:when test="${config.allowsGlobalCapabilities}">
             <p><a href="../wms?SERVICE=WMS&amp;REQUEST=GetCapabilities&amp;VERSION=1.3.0">WMS 1.3.0 Capabilities</a></p>

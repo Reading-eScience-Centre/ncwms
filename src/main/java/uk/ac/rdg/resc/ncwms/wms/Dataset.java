@@ -82,12 +82,12 @@ public interface Dataset
      * @return The layer with the given id, or null if there is no layer with
      * the given id.
      */
-    public GridSeriesFeature<?> getFeatureById(String featureId);
+    public GridSeriesFeature getFeatureById(String featureId);
 
     /**
      * Gets the {@link FeatureCollection} that comprises this dataset
      */
-    public FeatureCollection<GridSeriesFeature<?>> getFeatureCollection();
+    public FeatureCollection<GridSeriesFeature> getFeatureCollection();
 
     /**
      * Returns true if the dataset is ready for use.  If the dataset is ready,

@@ -38,10 +38,13 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 
     <json:property name="numColorBands" value="${featureMetadata.numColorBands}"/>
 
+
     <c:set var="styles" value="boxfill"/>
-    <c:if test="${utils:isVectorLayer(feature.coverage)}">
+<%--
+    <c:if test="${utils:isVectorLayer(feature.coverage, memberName)}">
         <c:set var="styles" value="vector,boxfill"/>
     </c:if>
+ --%>
     <json:array name="supportedStyles" items="${styles}"/>
 
     <c:if test="${not empty feature.coverage.domain.verticalAxis}">

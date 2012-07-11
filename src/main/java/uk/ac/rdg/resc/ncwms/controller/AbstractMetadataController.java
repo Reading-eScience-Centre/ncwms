@@ -16,25 +16,27 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
 
 import uk.ac.rdg.resc.edal.Extent;
-import uk.ac.rdg.resc.edal.coverage.GridCoverage2D;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
+import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
+import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.TimePeriod;
 import uk.ac.rdg.resc.edal.position.TimePosition;
-import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePeriodImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
+import uk.ac.rdg.resc.edal.util.BigList;
+import uk.ac.rdg.resc.edal.util.CollectionUtils;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.config.Config;
+import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.FeatureFactory;
 import uk.ac.rdg.resc.ncwms.exceptions.FeatureNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
-import uk.ac.rdg.resc.ncwms.usagelog.UsageLogEntry;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 
 /**
@@ -57,21 +59,19 @@ public abstract class AbstractMetadataController {
         this.featureFactory = featureFactory;
     }
 
-    public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response,
-            UsageLogEntry usageLogEntry) throws MetadataException {
+    public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws MetadataException {
         try {
             String item = request.getParameter("item");
-            usageLogEntry.setWmsOperation("GetMetadata:" + item);
             if (item == null) {
                 throw new Exception("Must provide an ITEM parameter");
             } else if (item.equals("menu")) {
-                return this.showMenu(request, usageLogEntry);
+                return this.showMenu(request);
             } else if (item.equals("layerDetails")) {
-                return this.showLayerDetails(request, usageLogEntry);
+                return this.showLayerDetails(request);
             } else if (item.equals("timesteps")) {
                 return this.showTimesteps(request);
             } else if (item.equals("minmax")) {
-                return this.showMinMax(request, usageLogEntry);
+                return this.showMinMax(request);
             } else if (item.equals("animationTimesteps")) {
                 return this.showAnimationTimesteps(request);
             }
@@ -89,15 +89,18 @@ public abstract class AbstractMetadataController {
      * Shows the hierarchy of layers available from this server, or a pre-set
      * hierarchy. May differ between implementations
      */
-    protected abstract ModelAndView showMenu(HttpServletRequest request, UsageLogEntry usageLogEntry) throws Exception;
+    protected abstract ModelAndView showMenu(HttpServletRequest request) throws Exception;
 
     /**
      * Shows an JSON document containing the details of the given variable
      * (units, zvalues, tvalues etc). See showLayerDetails.jsp.
      */
-    private ModelAndView showLayerDetails(HttpServletRequest request, UsageLogEntry usageLogEntry) throws Exception {
-        GridSeriesFeature<?> feature = getFeature(request);
-        usageLogEntry.setFeature(feature);
+    private ModelAndView showLayerDetails(HttpServletRequest request) throws Exception {
+        GridSeriesFeature feature = getFeature(request);
+        
+        String layerName = request.getParameter("layerName");
+        String memberName = WmsUtils.getMemberName(layerName);
+        
         TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
         
         // Find the time the user has requested (this is the time that is
@@ -176,10 +179,20 @@ public abstract class AbstractMetadataController {
          * will have done so in the earlier getFeature call, so this point won't
          * be reached
          */
-        models.put("featureMetadata", WmsUtils.getMetadata(config, request.getParameter("layerName")));
+        String plottableLayerName = WmsUtils.getPlottableLayerName(feature, layerName);
+        FeaturePlottingMetadata plottingMetadata = WmsUtils.getMetadata(config, plottableLayerName);
+        
+        String units = "";
+        ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(
+                WmsUtils.getPlottableMemberName(feature, memberName));
+        if(scalarMetadata != null){
+            units = scalarMetadata.getUnits().getUnitString();
+        }
+        models.put("featureMetadata", plottingMetadata);
+        models.put("memberName", memberName);
         models.put("dataset", WmsUtils.getDataset(config, request.getParameter("layerName")));
         models.put("datesWithData", datesWithData);
-        models.put("units", feature.getCoverage().getRangeMetadata(null).getUnits().getUnitString());
+        models.put("units", units);
         models.put("nearestTimeIso", TimeUtils.dateTimeToISO8601(nearestDateTime));
         // The names of the palettes supported by this layer. Actually this
         // will be the same for all layers, but we can't put this in the menu
@@ -187,26 +200,22 @@ public abstract class AbstractMetadataController {
         models.put("paletteNames", ColorPalette.getAvailablePaletteNames());
         return new ModelAndView("showLayerDetails", models);
     }
-
-    /**
-     * @return the Layer that the user is requesting, throwing an Exception if
-     *         it doesn't exist or if there was a problem reading from the data
-     *         store.
-     */
-    private GridSeriesFeature<?> getFeature(HttpServletRequest request) throws FeatureNotDefinedException {
+    
+    private GridSeriesFeature getFeature(HttpServletRequest request) throws FeatureNotDefinedException{
         String layerName = request.getParameter("layerName");
         if (layerName == null) {
             throw new FeatureNotDefinedException("null");
         }
         return featureFactory.getFeature(layerName);
     }
-
+    
     /**
      * Finds all the timesteps that occur on the given date, which will be
      * provided in the form "2007-10-18".
      */
     private ModelAndView showTimesteps(HttpServletRequest request) throws Exception {
-        GridSeriesFeature<?> feature = getFeature(request);
+        GridSeriesFeature feature = getFeature(request);
+        
         TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
         if (tAxis == null || tAxis.getCoordinateValues().isEmpty())
             return null; // return no data if no time axis present
@@ -249,8 +258,7 @@ public abstract class AbstractMetadataController {
      * Shows an XML document containing the minimum and maximum values for the
      * tile given in the parameters.
      */
-    @SuppressWarnings("unchecked")
-    private ModelAndView showMinMax(HttpServletRequest request, UsageLogEntry usageLogEntry) throws Exception {
+    private ModelAndView showMinMax(HttpServletRequest request) throws Exception {
         RequestParams params = new RequestParams(request.getParameterMap());
         // We only need the bit of the GetMap request that pertains to data
         // extraction
@@ -258,9 +266,11 @@ public abstract class AbstractMetadataController {
         // GetMapDataRequest object will look for "CRS" instead of "SRS"
         GetMapDataRequest dr = new GetMapDataRequest(params, params.getWmsVersion());
 
+        String layerName = WmsUtils.getLayerName(dr);
+        String memberName = WmsUtils.getMemberName(layerName);
+        
         // Get the variable we're interested in
-        GridSeriesFeature<?> feature = featureFactory.getFeature(dr.getLayers()[0]);
-        usageLogEntry.setFeature(feature);
+        GridSeriesFeature feature = featureFactory.getFeature(layerName);
 
         // Get the grid onto which the data is being projected
         RegularGrid grid = WmsUtils.getImageGrid(dr);
@@ -268,35 +278,39 @@ public abstract class AbstractMetadataController {
         // Get the value on the z axis
         VerticalPosition zValue = AbstractWmsController.getElevationValue(dr.getElevationString(), feature);
 
-        // Get the requested timestep (taking the first only if an animation is
-        // requested)
+        /*
+         * Get the requested timestep (taking the first only if an animation is
+         * requested)
+         */
         List<TimePosition> timeValues = AbstractWmsController.getTimeValues(dr.getTimeString(), feature);
         TimePosition tValue = timeValues.isEmpty() ? null : timeValues.get(0);
 
-        // Now read the data and calculate the minimum and maximum values
-        List<Float> magnitudes;
-        final GridCoverage2D<?> hGridCoverage = feature.extractHorizontalGrid(tValue, zValue, grid);
-        Class<?> clazz = hGridCoverage.getRangeMetadata(null).getValueType();
-        if(clazz == Float.class){
-            magnitudes = (List<Float>) hGridCoverage.getValues();
-        } else if (clazz == Vector2D.class) {
-            magnitudes =  new AbstractList<Float>() {
+        GridFeature reprojectedGridFeature = feature.extractGridFeature(grid, zValue, tValue,
+                CollectionUtils.setOf(memberName));
+        
+        final BigList<?> values = reprojectedGridFeature.getCoverage().getValues(memberName);
+        Class<?> clazz = reprojectedGridFeature.getCoverage().getScalarMetadata(memberName).getValueType();
+        Extent<Float> valueRange;
+        if(Number.class.isAssignableFrom(clazz)){
+            valueRange = Extents.findMinMax(new AbstractList<Float>() {
                 @Override
                 public Float get(int index) {
-                    Object obj = hGridCoverage.getValues().get(index);
-                    return obj == null ? null : ((Vector2D<Float>)obj).getMagnitude();
+                    Number number = (Number) values.get(index);
+                    if(number != null){
+                        return number.floatValue();
+                    } else {
+                        return null;
+                    }
                 }
 
                 @Override
                 public int size() {
-                    return hGridCoverage.getValues().size();
+                    return values.size();
                 }
-            };
+            });
         } else {
-            throw new IllegalStateException("Invalid Layer type");
+            throw new IllegalArgumentException("Cannot find range for a non-numerical coverage");
         }
-        
-        Extent<Float> valueRange = Extents.findMinMax(magnitudes);
         return new ModelAndView("showMinMax", "valueRange", valueRange);
     }
 
@@ -309,7 +323,8 @@ public abstract class AbstractMetadataController {
      * @throws java.lang.Exception
      */
     private ModelAndView showAnimationTimesteps(HttpServletRequest request) throws Exception {
-        TimeAxis tAxis = getFeature(request).getCoverage().getDomain().getTimeAxis();
+        GridSeriesFeature feature = getFeature(request);
+        TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
         String startStr = request.getParameter("start");
         String endStr = request.getParameter("end");
         if (startStr == null || endStr == null) {

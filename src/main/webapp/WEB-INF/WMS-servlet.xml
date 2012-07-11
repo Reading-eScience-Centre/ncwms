@@ -65,19 +65,12 @@
         <property name="config"><ref local="config"/></property>
     </bean>
     
-    <!-- Object that handles logging of the usage of the ncWMS. -->
-    <bean id="usageLogger" class="uk.ac.rdg.resc.ncwms.usagelog.h2.H2UsageLogger"
-            init-method="init" destroy-method="close">
-        <property name="usageLogDirectory" value="${ncwms.workingDirectory}/usagelog"/>
-    </bean>
-    
     <!-- This Controller will handle all the requests to the WMS -->
     <bean id="wmsController" class="uk.ac.rdg.resc.ncwms.config.NcwmsController"
             init-method="init" destroy-method="shutdown">
         <property name="supportedMethods" value="GET"/>
         <property name="tileCache"><ref local="tileCache"/></property>
         <property name="serverConfig"><ref local="config"/></property>
-        <property name="usageLogger"><ref local="usageLogger"/></property>
     </bean>
     
     <!-- This Controller is used to display the front page of the server, which
@@ -94,7 +87,6 @@
     <bean id="adminController" class="uk.ac.rdg.resc.ncwms.config.AdminController">
         <property name="supportedMethods" value="GET,POST"/>
         <property name="config"><ref local="config"/></property>
-        <property name="usageLogger"><ref local="usageLogger"/></property>
         <property name="methodNameResolver"><ref local="adminMethodNameResolver"/></property>
     </bean>
     <!-- This maps URL patterns to the methods of the admin controller -->

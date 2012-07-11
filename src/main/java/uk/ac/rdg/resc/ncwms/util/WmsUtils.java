@@ -44,10 +44,18 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.Coverage;
 import uk.ac.rdg.resc.edal.coverage.GridCoverage2D;
+import uk.ac.rdg.resc.edal.coverage.Record;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.RegularGridImpl;
+import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
+import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
+import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
+import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorDirection;
+import uk.ac.rdg.resc.edal.coverage.metadata.VectorMetadata;
+import uk.ac.rdg.resc.edal.feature.Feature;
+import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
@@ -56,6 +64,7 @@ import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.position.impl.VerticalPositionImpl;
+import uk.ac.rdg.resc.edal.util.CollectionUtils;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.config.Config;
@@ -82,6 +91,11 @@ public class WmsUtils
      * The versions of the WMS standard that this server supports
      */
     public static final Set<String> SUPPORTED_VERSIONS = new HashSet<String>();
+    /**
+     * The maximum number of layers that can be requested in a single GetMap
+     * operation
+     */
+    public static final int LAYER_LIMIT = 1;
 
     // Patterns are immutable and therefore thread-safe.
     private static final Pattern MULTIPLE_WHITESPACE = Pattern.compile("\\s+");
@@ -232,33 +246,32 @@ public class WmsUtils
      * @return
      * @throws IOException if there was an error reading from the source data
      */
-    public static Extent<Float> estimateValueRange(GridSeriesFeature<?> feature) throws IOException
+    public static Extent<Float> estimateValueRange(GridSeriesFeature feature, String member) throws IOException
     {
-        List<Float> dataSample = readDataSample(feature);
+        List<Float> dataSample = readDataSample(feature, member);
         return Extents.findMinMax(dataSample);
     }
 
-    @SuppressWarnings("unchecked")
-    private static List<Float> readDataSample(GridSeriesFeature<?> feature) throws IOException {
+    private static List<Float> readDataSample(GridSeriesFeature feature, String member) throws IOException {
         /*
          * Read a low-resolution grid of data covering the entire spatial extent
          */
-        final GridCoverage2D<?> coverage = feature.extractHorizontalGrid(
-                getClosestToCurrentTime(feature.getCoverage().getDomain().getTimeAxis()),
-                getUppermostElevation(feature),
-                new RegularGridImpl(feature.getCoverage().getDomain().getHorizontalGrid()
-                        .getCoordinateExtent(), 100, 100));
+        GridFeature loResFeature = feature.extractGridFeature(new RegularGridImpl(feature.getCoverage().getDomain()
+                .getHorizontalGrid().getCoordinateExtent(), 100, 100),
+                getUppermostElevation(feature), getClosestToCurrentTime(feature.getCoverage()
+                        .getDomain().getTimeAxis()), CollectionUtils.setOf(member));
+        final GridCoverage2D coverage = loResFeature.getCoverage();
         List<Float> ret = new ArrayList<Float>();
-        Class<?> clazz = coverage.getRangeMetadata(null).getValueType();
-        for(Object o : coverage.getValues()){
-            if(o == null){
+        Class<?> clazz = coverage.getScalarMetadata(member).getValueType();
+        if(!Number.class.isAssignableFrom(clazz)){
+            throw new IllegalArgumentException("Cannot read a data sample from a non-numerical field");
+        }
+        for(Record r : coverage.getValues()){
+            Number num = (Number) r.getValue(member);
+            if(num == null || num.equals(Float.NaN) || num.equals(Double.NaN)){
                 ret.add(null);
-            } else if(clazz == Float.class){
-                ret.add((Float) o);
-            } else if(clazz == Vector2D.class){
-                ret.add(((Vector2D<Float>) o).getMagnitude());
             } else {
-                ret.add(null);
+                ret.add(num.floatValue());
             }
         }
         return ret;
@@ -343,7 +356,7 @@ public class WmsUtils
         return tAxis.getCoordinateValue(index);
     }
 
-    public static VerticalPosition getUppermostElevation(GridSeriesFeature<?> feature){
+    public static VerticalPosition getUppermostElevation(GridSeriesFeature feature){
         VerticalAxis vAxis = feature.getCoverage().getDomain().getVerticalAxis();
         // We must access the elevation values via the accessor method in case
         // subclasses override it.
@@ -371,28 +384,113 @@ public class WmsUtils
     }
     
     public static Dataset getDataset(Config serverConfig, String layerName){
-        int slashIndex = layerName.lastIndexOf("/");
+        int slashIndex = layerName.indexOf("/");
         String datasetId = layerName.substring(0, slashIndex);
         return serverConfig.getDatasetById(datasetId);
     }
     
-    public static FeaturePlottingMetadata getMetadata(Config serverConfig, String layerName) {
-        int slashIndex = layerName.lastIndexOf("/");
-        String datasetId = layerName.substring(0, slashIndex);
-        Dataset ds = serverConfig.getDatasetById(datasetId);
-        String featureId = layerName.substring(slashIndex + 1);
-        FeaturePlottingMetadata metadata = ds.getPlottingMetadataMap().get(featureId);
-        return metadata;
+    public static FeaturePlottingMetadata getMetadata(Config serverConfig, String layerName) throws WmsException {
+        String[] layerParts = layerName.split("/");
+        if (layerParts.length != 3) {
+            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
+        }
+        
+        String datasetId = layerParts[0];
+        String featureId = layerParts[1];
+        String memberId = layerParts[2];
+        
+        Dataset dataset = serverConfig.getDatasetById(datasetId);
+        Feature feature = dataset.getFeatureById(featureId);
+        
+        String featureAndVarId = featureId+"/"+memberId;
+        return dataset.getPlottingMetadataMap().get(featureAndVarId);
     }
     
-    public static boolean isVectorLayer(Coverage<?, ?> coverage){
-        if(coverage.getRangeMetadata(null).getValueType() == Vector2D.class){
+    /**
+     * This method returns a member of the feature which is plottable.
+     * 
+     * If the memberName is a scalar member of the feature, it is returned.
+     * Otherwise, the metadata tree is searched to find the parent metadata with
+     * the name {@code memberName}. A scalar child member of this metadata is
+     * then returned
+     * 
+     * For example, if memberName is an instance of {@link VectorMetadata}, then
+     * the name of the {@link VectorComponent} corresponding to the magnitude
+     * will be returned.
+     * 
+     * This method is the one to modify if new metadata types are added
+     * 
+     * @param feature
+     *            the feature containing the plottable member
+     * @param memberName
+     *            the name of the desired member
+     */
+    public static String getPlottableMemberName(Feature feature, String memberName){
+        if(feature.getCoverage().getScalarMemberNames().contains(memberName)){
+            return memberName;
+        } else {
+            RangeMetadata descendentMetadata = getDescendentMetadata(feature.getCoverage()
+                    .getRangeMetadata(), memberName);
+            if(descendentMetadata == null){
+                return null;
+            } else {
+                if(descendentMetadata instanceof VectorMetadata){
+                    VectorMetadata vectorMetadata = (VectorMetadata) descendentMetadata;
+                    
+                    Set<String> vectorComponentNames = vectorMetadata.getMemberNames();
+                    for(String vectorComponentName : vectorComponentNames){
+                        VectorComponent vectorComponent = vectorMetadata.getMemberMetadata(vectorComponentName);
+                        if(vectorComponent.getDirection() == VectorDirection.MAGNITUDE){
+                            return vectorComponentName;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    private static RangeMetadata getDescendentMetadata(RangeMetadata topMetadata, String memberName){
+        if(topMetadata.getMemberNames().contains(memberName)){
+            return topMetadata.getMemberMetadata(memberName);
+        } else {
+            for(String childMember : topMetadata.getMemberNames()){
+                RangeMetadata memberMetadata = topMetadata.getMemberMetadata(childMember);
+                if(!(memberMetadata instanceof ScalarMetadata)){
+                    return getDescendentMetadata(memberMetadata, memberName);
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * This method returns a layer name which is plottable.
+     * 
+     * It uses getPlottableMemberName, but checks the layer name format
+     * 
+     * @param feature
+     *            the feature containing the plottable member
+     * @param layerName
+     *            the name of the desired layer
+     * @throws WmsException 
+     */
+    public static String getPlottableLayerName(Feature feature, String layerName) throws WmsException{
+        String[] layerParts = layerName.split("/");
+        if (layerParts.length != 3) {
+            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
+        }
+        return layerParts[0]+"/"+layerParts[1]+"/"+getPlottableMemberName(feature, layerParts[2]);
+    }
+    
+    public static boolean isVectorLayer(Coverage<?> coverage, String memberName){
+        if(coverage.getScalarMetadata(memberName).getValueType() == Vector2D.class){
             return true;
         }
         return false;
     }
     
-    public static BoundingBox getWmsBoundingBox(GridSeriesFeature<?> feature){
+    public static BoundingBox getWmsBoundingBox(GridSeriesFeature feature){
         BoundingBox inBbox = feature.getCoverage().getDomain().getHorizontalGrid().getCoordinateExtent();
         // TODO: should take into account the cell bounds
         double minLon = inBbox.getMinX() % 360;
@@ -419,5 +517,56 @@ public class WmsUtils
         maxLat = Double.isNaN(maxLat) ?   90.0 : maxLat;
         double[] bbox = {minLon, minLat, maxLon, maxLat};
         return new BoundingBoxImpl(bbox, inBbox.getCoordinateReferenceSystem());
+    }
+    
+
+    /**
+     * Utility method for getting the layer name (unique within a Capabilities
+     * document) from the given GetMapRequest, checking that there is only one
+     * layer in the request
+     */
+    public static String getLayerName(GetMapDataRequest getMapDataRequest) throws WmsException {
+        // Find which layer the user is requesting
+        String[] layers = getMapDataRequest.getLayers();
+        if (layers.length == 0) {
+            throw new WmsException("Must provide a value for the LAYERS parameter");
+        }
+        // TODO: support more than one layer (superimposition, difference, mask)
+        if (layers.length > LAYER_LIMIT) {
+            throw new WmsException("You may only create a map from " + LAYER_LIMIT + " layer(s) at a time");
+        }
+        return layers[0];
+    }
+    
+    /**
+     * Utility method for getting the dataset ID from the given layer name
+     */
+    public static String getDatasetId(String layerName) throws WmsException {
+        // Find which layer the user is requesting
+        String[] layerParts = layerName.split("/");
+        if (layerParts.length != 3) {
+            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
+        }
+        return layerParts[0];
+    }
+
+    /**
+     * Utility method for getting the member name from the given layer name
+     */
+    public static String getMemberName(String layerName) throws WmsException {
+        // Find which layer the user is requesting
+        String[] layerParts = layerName.split("/");
+        if (layerParts.length != 3) {
+            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
+        }
+        return layerParts[2];
+    }
+    
+    public static boolean memberIsScalar(RangeMetadata metadata, String memberName){
+        return metadata.getMemberMetadata(memberName) instanceof ScalarMetadata;
+    }
+    
+    public static RangeMetadata getChildMetadata(RangeMetadata metadata, String memberName){
+        return metadata.getMemberMetadata(memberName);
     }
 }
