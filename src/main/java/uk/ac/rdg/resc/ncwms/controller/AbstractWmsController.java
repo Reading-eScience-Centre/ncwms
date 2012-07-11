@@ -83,6 +83,7 @@ import uk.ac.rdg.resc.edal.feature.ProfileFeature;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.geometry.impl.LineString;
+import uk.ac.rdg.resc.edal.graphics.Charting;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.graphics.MapPlotter;
 import uk.ac.rdg.resc.edal.graphics.MapStyleDescriptor;
@@ -818,7 +819,7 @@ public abstract class AbstractWmsController extends AbstractController {
                 plot.add(chart.getXYPlot(), 1);
                 plot.add(verticalSectionChart.getXYPlot(), 1);
                 plot.setOrientation(PlotOrientation.VERTICAL);
-                String title = WmsUtils.removeDuplicatedWhiteSpace(feature.getName())
+                String title = feature.getName()
                         + " ("
                         + feature.getCoverage().getScalarMetadata(memberName).getUnits()
                                 .getUnitString()
