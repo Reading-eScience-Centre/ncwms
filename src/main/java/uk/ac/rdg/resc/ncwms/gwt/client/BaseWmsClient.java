@@ -564,7 +564,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
         if(e instanceof ConnectionException){
             v.add(new Label(e.getMessage()));
         } else {
-            v.add(new Label("Invalid JSON returned from server"));
+            v.add(new Label("Invalid JSON returned from server: "+e.getMessage()));
         }
         popup.setText("Error");
         Button b = new Button();
@@ -584,6 +584,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
     /**
      * Handles general exceptions.
      */
+    @Override
     public void handleError(Throwable e) {
         /*
          * TODO Handle these better?

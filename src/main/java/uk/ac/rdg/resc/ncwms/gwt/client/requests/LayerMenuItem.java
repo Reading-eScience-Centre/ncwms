@@ -67,7 +67,7 @@ public class LayerMenuItem {
         JSONValue idJson = json.get("id");
         // TODO add gridded info (but be aware that it might not be present)
         final String id;
-        if(idJson != null)
+        if(idJson != null && !idJson.toString().equals(""))
             id = idJson.isString().stringValue();
         else
             id = "branchNode";

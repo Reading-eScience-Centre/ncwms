@@ -39,6 +39,7 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
 	    this.id = id;
     }
 
+    @Override
     public void populateVariables(List<String> availableElevations){
         String currentElevation = getSelectedElevation();
 		elevations.clear();
@@ -63,7 +64,8 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
 		}
 	}
 	
-	public void setUnitsAndDirection(String units, boolean positive){
+	@Override
+    public void setUnitsAndDirection(String units, boolean positive){
 	    this.positive = positive;
 	    if(positive) {
 	        label.setText("Elevation");
@@ -79,7 +81,8 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
 	    }
 	}
 	
-	public String getSelectedElevation(){
+	@Override
+    public String getSelectedElevation(){
 	    if(!elevations.isEnabled()) return null;
 	    int index = elevations.getSelectedIndex();
 	    if(index < 0)
@@ -87,6 +90,7 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
         return formattedValuesToRealValues.get(elevations.getValue(index));
 	}
 
+    @Override
     public void setSelectedElevation(String currentElevation) {
         for(int i=0; i < elevations.getItemCount(); i++){
             String elevation = elevations.getValue(i);
@@ -97,6 +101,7 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
         }
     }
 
+    @Override
     public void setEnabled(boolean enabled) {
         if(elevations.getItemCount() > 1)
             elevations.setEnabled(enabled);
@@ -108,5 +113,10 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
         } else {
             label.setStylePrimaryName("labelStyle");
         }
+    }
+
+    @Override
+    public int getNElevations() {
+        return elevations.getItemCount();
     }
 }

@@ -7,7 +7,6 @@ import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONValue;
-import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.Tree;
 import com.google.gwt.user.client.ui.TreeItem;
@@ -17,13 +16,6 @@ public class LayerTree extends Tree {
 
     public LayerTree(LayerSelectionHandler layerSelectionHandler) {
         this.layerSelectionHandler = layerSelectionHandler;
-//        TreeItem root = new TreeItem("Root");
-//        root.addItem("node1");
-//        root.addItem("node2");
-//        TreeItem node3 = new TreeItem("Node3");
-//        root.addItem(node3);
-//        
-//        addItem(root);
     }
     
     /**
