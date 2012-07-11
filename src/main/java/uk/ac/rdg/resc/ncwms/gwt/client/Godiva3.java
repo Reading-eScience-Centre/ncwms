@@ -66,14 +66,11 @@ public class Godiva3 extends BaseWmsClient {
     
     @Override
     public void menuLoaded(LayerMenuItem menuTree) {
+        if (menuTree.isLeaf()) {
+            menuTree.addChildItem(new LayerMenuItem("No georeferencing data found!", null));
+        }
         layerSelector.populateLayers(menuTree);
         
-        if (menuTree.isLeaf()) {
-            String message = "<h2>No Georeferencing Data Found</h2><br>"
-                    + "No georeferencing data could be found in the dataset \"" + menuTree.getTitle() + "\"";
-            handleCatastrophicError(message);
-            return;
-        }
 
         Window.setTitle(menuTree.getTitle());
     }
@@ -147,15 +144,13 @@ public class Godiva3 extends BaseWmsClient {
         String currentScaleRange = widgetCollection.getPaletteSelector().getScaleRange();
         int nColourBands = widgetCollection.getPaletteSelector().getNumColorBands();
         boolean logScale = widgetCollection.getPaletteSelector().isLogScale();
-        mapArea.addLayer(WMS_LAYER_ID, layerSelector.getSelectedIds().get(0), currentTime, currentElevation, style,
-                currentPalette, currentScaleRange, nColourBands, logScale);
+        mapArea.addLayer(WMS_LAYER_ID, layerSelector.getSelectedIds().get(0), currentTime,
+                currentElevation, style, currentPalette, currentScaleRange, nColourBands, logScale,
+                widgetCollection.getElevationSelector().getNElevations() > 1);
     }
     
-    
-
     @Override
     public String getCurrentTime() {
-// TODO tidy this        
         return widgetCollection.getTimeSelector().getSelectedDateTime();
     }
 }

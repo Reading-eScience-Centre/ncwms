@@ -27,6 +27,7 @@ public abstract class LayerRequestCallback implements RequestCallback {
         layerDetails = new LayerDetails(layerId);
     }
 
+    @Override
     public void onError(Request request, Throwable exception) {
         err.handleError(exception);
     }
@@ -35,6 +36,7 @@ public abstract class LayerRequestCallback implements RequestCallback {
         return layerDetails;
     }
 
+    @Override
     public void onResponseReceived(Request request, Response response) {
         JSONValue jsonMap = JSONParser.parseLenient(response.getText());
         JSONObject parentObj = jsonMap.isObject();
