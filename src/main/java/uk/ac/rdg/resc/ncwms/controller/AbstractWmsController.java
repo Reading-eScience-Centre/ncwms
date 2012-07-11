@@ -876,11 +876,7 @@ public abstract class AbstractWmsController extends AbstractController {
      */
     protected ModelAndView getVerticalProfile(RequestParams params, FeatureFactory featureFactory,
             HttpServletResponse response) throws WmsException, IOException {
-        // Parse the request parameters
-        GetFeatureInfoRequest request = new GetFeatureInfoRequest(params);
-        GetFeatureInfoDataRequest dr = request.getDataRequest();
-
-        String layerName = WmsUtils.getLayerName(dr);
+        String layerName = params.getMandatoryString("layer");
 
         GridSeriesFeature feature = featureFactory.getFeature(layerName);
         final String memberName = WmsUtils.getPlottableMemberName(feature, WmsUtils.getMemberName(layerName));
@@ -952,10 +948,7 @@ public abstract class AbstractWmsController extends AbstractController {
         Extent<Float> scaleRange = GetMapStyleRequest.getColorScaleRange(params);
         
         // Parse the request parameters
-        GetFeatureInfoRequest request = new GetFeatureInfoRequest(params);
-        GetFeatureInfoDataRequest dr = request.getDataRequest();
-
-        String layerName = WmsUtils.getLayerName(dr);
+        String layerName = params.getMandatoryString("layer");
         String memberName = WmsUtils.getPlottableMemberName(feature, WmsUtils.getMemberName(layerName));
 
         FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
