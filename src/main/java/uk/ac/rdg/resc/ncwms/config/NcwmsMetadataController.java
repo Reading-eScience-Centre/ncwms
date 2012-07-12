@@ -52,7 +52,7 @@ import uk.ac.rdg.resc.ncwms.wms.Dataset;
  *
  * @author Jon Blower
  */
-class NcwmsMetadataController extends AbstractMetadataController
+public class NcwmsMetadataController extends AbstractMetadataController
 {
     public NcwmsMetadataController(Config serverConfig, FeatureFactory layerFactory)
     {
