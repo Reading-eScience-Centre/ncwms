@@ -100,6 +100,9 @@ public class NcwmsContext implements ApplicationContextAware
      */
     public void setWorkingDirectory(File workingDirectory)
     {
+        if(workingDirectory.getPath().startsWith("$HOME")){
+            workingDirectory = new File(System.getProperty("user.home"), workingDirectory.getName());
+        }
         if (!workingDirectory.isAbsolute())
         {
             throw new IllegalArgumentException("The working directory must be" +
