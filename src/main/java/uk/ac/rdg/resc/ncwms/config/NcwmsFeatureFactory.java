@@ -1,6 +1,6 @@
 package uk.ac.rdg.resc.ncwms.config;
 
-import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
+import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.FeatureFactory;
 import uk.ac.rdg.resc.ncwms.exceptions.FeatureNotDefinedException;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
@@ -14,7 +14,7 @@ public class NcwmsFeatureFactory implements FeatureFactory {
     }
     
     @Override
-    public GridSeriesFeature getFeature(String layerName) throws FeatureNotDefinedException {
+    public Feature getFeature(String layerName) throws FeatureNotDefinedException {
         // Split the layer name on the slash character
         String[] parts = layerName.split("/");
         if (parts.length == 3) {
@@ -24,7 +24,7 @@ public class NcwmsFeatureFactory implements FeatureFactory {
                 throw new FeatureNotDefinedException(layerName);
 
             String featureId = parts[1];// layerName.substring(slashIndex + 1);
-            GridSeriesFeature feature = ds.getFeatureById(featureId);
+            Feature feature = ds.getFeatureById(featureId);
             if (feature == null)
                 throw new FeatureNotDefinedException(layerName);
 

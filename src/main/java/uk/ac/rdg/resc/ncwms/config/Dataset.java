@@ -15,9 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.rdg.resc.edal.Extent;
-import uk.ac.rdg.resc.edal.cdm.feature.GridSeriesFeatureCollectionFactory;
+import uk.ac.rdg.resc.edal.cdm.feature.FeatureCollectionFactory;
+import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
-import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.util.Extents;
@@ -114,7 +114,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     private TimePosition lastFailedUpdateTime = null;
 
-    private FeatureCollection<GridSeriesFeature> features;
+    private FeatureCollection<Feature> features;
 
     /**
      * Checks that the data we have read are valid. Checks that there are no
@@ -281,7 +281,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      *         no layer in this dataset with the given id.
      */
     @Override
-    public GridSeriesFeature getFeatureById(String featureId) {
+    public Feature getFeatureById(String featureId) {
         if(features == null)
             return null;
         return features.getFeatureById(featureId);
@@ -291,7 +291,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      * @return a Collection of all the layers in this dataset.
      */
     @Override
-    public FeatureCollection<GridSeriesFeature> getFeatureCollection() {
+    public FeatureCollection<Feature> getFeatureCollection() {
         return features;
     }
 
@@ -469,7 +469,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     private void doLoadLayers() throws Exception {
         logger.debug("Getting data reader of type {}", featureCollectionFactoryClass);
-        GridSeriesFeatureCollectionFactory fcFactory = GridSeriesFeatureCollectionFactory.forName(featureCollectionFactoryClass);
+        FeatureCollectionFactory fcFactory = FeatureCollectionFactory.forName(featureCollectionFactoryClass);
         // Look for OPeNDAP datasets and update the credentials provider
         // accordingly
         config.updateCredentialsProvider(this);
@@ -488,7 +488,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     private void readLayerConfig() {
         for (String featureId : features.getFeatureIds()) {
-            GridSeriesFeature feature = features.getFeatureById(featureId);
+            Feature feature = features.getFeatureById(featureId);
             /*
              * First add all the scalar members
              */

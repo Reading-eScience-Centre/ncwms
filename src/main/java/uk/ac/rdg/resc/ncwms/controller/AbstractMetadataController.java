@@ -16,11 +16,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.coverage.domain.PointSeriesDomain;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
+import uk.ac.rdg.resc.edal.coverage.grid.impl.TimeAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
+import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
+import uk.ac.rdg.resc.edal.feature.PointSeriesFeature;
+import uk.ac.rdg.resc.edal.feature.ProfileFeature;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.TimePeriod;
@@ -37,6 +42,7 @@ import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.FeatureFactory;
 import uk.ac.rdg.resc.ncwms.exceptions.FeatureNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
+import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 
 /**
@@ -59,7 +65,8 @@ public abstract class AbstractMetadataController {
         this.featureFactory = featureFactory;
     }
 
-    public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws MetadataException {
+    public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response)
+            throws MetadataException {
         try {
             String item = request.getParameter("item");
             if (item == null) {
@@ -96,18 +103,22 @@ public abstract class AbstractMetadataController {
      * (units, zvalues, tvalues etc). See showLayerDetails.jsp.
      */
     private ModelAndView showLayerDetails(HttpServletRequest request) throws Exception {
-        GridSeriesFeature feature = getFeature(request);
-        
+        Feature feature = getFeature(request);
+
         String layerName = request.getParameter("layerName");
         String memberName = WmsUtils.getMemberName(layerName);
-        
-        TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
-        
+
+        TimeAxis tAxis = null;
+
+        if (feature instanceof GridSeriesFeature) {
+            tAxis = ((GridSeriesFeature) feature).getCoverage().getDomain().getTimeAxis();
+        }
+
         // Find the time the user has requested (this is the time that is
         // currently displayed on the Godiva2 site). If no time has been
         // specified we use the current time
         CalendarSystem calendarSystem = null;
-        if(tAxis != null){
+        if (tAxis != null) {
             calendarSystem = tAxis.getCalendarSystem();
         }
         TimePosition targetDateTime = new TimePositionJoda(calendarSystem);
@@ -124,11 +135,12 @@ public abstract class AbstractMetadataController {
 
         Map<Integer, Map<Integer, List<Integer>>> datesWithData = new LinkedHashMap<Integer, Map<Integer, List<Integer>>>();
         List<TimePosition> timeValues;
-        if(tAxis != null)
+        if (tAxis != null)
             timeValues = tAxis.getCoordinateValues();
         else
             timeValues = Collections.emptyList();
-        TimePosition nearestDateTime = timeValues.isEmpty() ? new TimePositionJoda() : timeValues.get(0);
+        TimePosition nearestDateTime = timeValues.isEmpty() ? new TimePositionJoda() : timeValues
+                .get(0);
 
         /*
          * Takes an array of time values for a layer and turns it into a Map of
@@ -144,7 +156,7 @@ public abstract class AbstractMetadataController {
              */
             // TODO deal with this UTC issue
 //            dateTime = dateTime.withZone(DateTimeZone.UTC);
-            
+
             // See whether this dateTime is closer to the target dateTime than
             // the current closest value
             long d1 = dateTime.differenceInMillis(targetDateTime);
@@ -181,11 +193,11 @@ public abstract class AbstractMetadataController {
          */
         String plottableLayerName = WmsUtils.getPlottableLayerName(feature, layerName);
         FeaturePlottingMetadata plottingMetadata = WmsUtils.getMetadata(config, plottableLayerName);
-        
+
         String units = "";
         ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(
                 WmsUtils.getPlottableMemberName(feature, memberName));
-        if(scalarMetadata != null){
+        if (scalarMetadata != null) {
             units = scalarMetadata.getUnits().getUnitString();
         }
         models.put("featureMetadata", plottingMetadata);
@@ -200,23 +212,26 @@ public abstract class AbstractMetadataController {
         models.put("paletteNames", ColorPalette.getAvailablePaletteNames());
         return new ModelAndView("showLayerDetails", models);
     }
-    
-    private GridSeriesFeature getFeature(HttpServletRequest request) throws FeatureNotDefinedException{
+
+    private Feature getFeature(HttpServletRequest request) throws FeatureNotDefinedException {
         String layerName = request.getParameter("layerName");
         if (layerName == null) {
             throw new FeatureNotDefinedException("null");
         }
         return featureFactory.getFeature(layerName);
     }
-    
+
     /**
      * Finds all the timesteps that occur on the given date, which will be
      * provided in the form "2007-10-18".
      */
     private ModelAndView showTimesteps(HttpServletRequest request) throws Exception {
-        GridSeriesFeature feature = getFeature(request);
-        
-        TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
+        Feature feature = getFeature(request);
+
+        TimeAxis tAxis = null;
+        if (feature instanceof GridSeriesFeature) {
+            tAxis = ((GridSeriesFeature) feature).getCoverage().getDomain().getTimeAxis();
+        }
         if (tAxis == null || tAxis.getCoordinateValues().isEmpty())
             return null; // return no data if no time axis present
 
@@ -248,7 +263,8 @@ public abstract class AbstractMetadataController {
         // TODO re-implement this check somehow
         // dt1 = dt1.withZone(DateTimeZone.UTC);
         // dt2 = dt2.withZone(DateTimeZone.UTC);
-        boolean onSameDay = dt1.getYear() == dt2.getYear() && dt1.getMonthOfYear() == dt2.getMonthOfYear()
+        boolean onSameDay = dt1.getYear() == dt2.getYear()
+                && dt1.getMonthOfYear() == dt2.getMonthOfYear()
                 && dt1.getDayOfMonth() == dt2.getDayOfMonth();
         log.debug("onSameDay({}, {}) = {}", new Object[] { dt1, dt2, onSameDay });
         return onSameDay;
@@ -262,54 +278,98 @@ public abstract class AbstractMetadataController {
         RequestParams params = new RequestParams(request.getParameterMap());
         // We only need the bit of the GetMap request that pertains to data
         // extraction
-        // TODO: the hard-coded "1.3.0" is ugly: it basically means that the
-        // GetMapDataRequest object will look for "CRS" instead of "SRS"
         GetMapDataRequest dr = new GetMapDataRequest(params, params.getWmsVersion());
 
         String layerName = WmsUtils.getLayerName(dr);
-        String memberName = WmsUtils.getMemberName(layerName);
-        
+        final String memberName = WmsUtils.getMemberName(layerName);
+
         // Get the variable we're interested in
-        GridSeriesFeature feature = featureFactory.getFeature(layerName);
+        Feature feature = featureFactory.getFeature(layerName);
+        GridFeature gridFeature = null;
+        Extent<Float> valueRange = null;
+        if (feature instanceof GridFeature) {
+            gridFeature = (GridFeature) feature;
+        } else if (feature instanceof GridSeriesFeature) {
 
-        // Get the grid onto which the data is being projected
-        RegularGrid grid = WmsUtils.getImageGrid(dr);
+            // Get the grid onto which the data is being projected
+            RegularGrid grid = WmsUtils.getImageGrid(dr);
 
-        // Get the value on the z axis
-        VerticalPosition zValue = AbstractWmsController.getElevationValue(dr.getElevationString(), feature);
+            // Get the value on the z axis
+            VerticalPosition zValue = AbstractWmsController.getElevationValue(
+                    dr.getElevationString(), feature);
 
-        /*
-         * Get the requested timestep (taking the first only if an animation is
-         * requested)
-         */
-        List<TimePosition> timeValues = AbstractWmsController.getTimeValues(dr.getTimeString(), feature);
-        TimePosition tValue = timeValues.isEmpty() ? null : timeValues.get(0);
+            /*
+             * Get the requested timestep (taking the first only if an animation
+             * is requested)
+             */
+            List<TimePosition> timeValues = AbstractWmsController.getTimeValues(dr.getTimeString(),
+                    feature);
+            TimePosition tValue = timeValues.isEmpty() ? null : timeValues.get(0);
 
-        GridFeature reprojectedGridFeature = feature.extractGridFeature(grid, zValue, tValue,
-                CollectionUtils.setOf(memberName));
-        
-        final BigList<?> values = reprojectedGridFeature.getCoverage().getValues(memberName);
-        Class<?> clazz = reprojectedGridFeature.getCoverage().getScalarMetadata(memberName).getValueType();
-        Extent<Float> valueRange;
-        if(Number.class.isAssignableFrom(clazz)){
-            valueRange = Extents.findMinMax(new AbstractList<Float>() {
-                @Override
-                public Float get(int index) {
-                    Number number = (Number) values.get(index);
-                    if(number != null){
-                        return number.floatValue();
-                    } else {
-                        return null;
+            gridFeature = ((GridSeriesFeature) feature).extractGridFeature(grid, zValue, tValue,
+                    CollectionUtils.setOf(memberName));
+        } else if (feature instanceof ProfileFeature) {
+            ProfileFeature profileFeature = (ProfileFeature) feature;
+            // Get the value on the z axis
+            VerticalPosition zValue = AbstractWmsController.getElevationValue(
+                    dr.getElevationString(), feature);
+            Class<?> clazz = profileFeature.getCoverage().getScalarMetadata(memberName)
+                    .getValueType();
+            if (Number.class.isAssignableFrom(clazz)) {
+                float floatValue = ((Number) profileFeature.getCoverage().evaluate(zValue,
+                        memberName)).floatValue();
+                valueRange = Extents.newExtent(floatValue, floatValue);
+            } else {
+                throw new IllegalArgumentException("Cannot find range for a non-numerical coverage");
+            }
+        } else if (feature instanceof PointSeriesFeature) {
+            final PointSeriesFeature pointSeriesFeature = (PointSeriesFeature) feature;
+            final List<TimePosition> timeValues = AbstractWmsController.getTimeValues(
+                    dr.getTimeString(), feature);
+            Class<?> clazz = pointSeriesFeature.getCoverage().getScalarMetadata(memberName)
+                    .getValueType();
+
+            if (Number.class.isAssignableFrom(clazz)) {
+                valueRange = Extents.findMinMax(new AbstractList<Float>() {
+                    @Override
+                    public Float get(int index) {
+                        return ((Number) pointSeriesFeature.getCoverage().evaluate(
+                                timeValues.get(index), memberName)).floatValue();
                     }
-                }
 
-                @Override
-                public int size() {
-                    return values.size();
-                }
-            });
-        } else {
-            throw new IllegalArgumentException("Cannot find range for a non-numerical coverage");
+                    @Override
+                    public int size() {
+                        return timeValues.size();
+                    }
+                });
+            } else {
+                throw new IllegalArgumentException("Cannot find range for a non-numerical coverage");
+            }
+        }
+
+        if (gridFeature != null) {
+            final BigList<?> values = gridFeature.getCoverage().getValues(memberName);
+            Class<?> clazz = gridFeature.getCoverage().getScalarMetadata(memberName).getValueType();
+            if (Number.class.isAssignableFrom(clazz)) {
+                valueRange = Extents.findMinMax(new AbstractList<Float>() {
+                    @Override
+                    public Float get(int index) {
+                        Number number = (Number) values.get(index);
+                        if (number != null) {
+                            return number.floatValue();
+                        } else {
+                            return null;
+                        }
+                    }
+
+                    @Override
+                    public int size() {
+                        return values.size();
+                    }
+                });
+            } else {
+                throw new IllegalArgumentException("Cannot find range for a non-numerical coverage");
+            }
         }
         return new ModelAndView("showMinMax", "valueRange", valueRange);
     }
@@ -322,13 +382,22 @@ public abstract class AbstractMetadataController {
      * @return
      * @throws java.lang.Exception
      */
-    private ModelAndView showAnimationTimesteps(HttpServletRequest request) throws Exception {
-        GridSeriesFeature feature = getFeature(request);
-        TimeAxis tAxis = feature.getCoverage().getDomain().getTimeAxis();
+    private ModelAndView showAnimationTimesteps(HttpServletRequest request) throws WmsException {
+        Feature feature = getFeature(request);
+        TimeAxis tAxis = null;
+        if (feature instanceof GridSeriesFeature) {
+            tAxis = ((GridSeriesFeature) feature).getCoverage().getDomain().getTimeAxis();
+        } else if (feature instanceof PointSeriesFeature) {
+            PointSeriesDomain domain = ((PointSeriesFeature) feature).getCoverage().getDomain();
+            tAxis = new TimeAxisImpl("time", domain.getDomainObjects());
+        } else {
+            throw new WmsException("This feature does not have a time axis");
+        }
+
         String startStr = request.getParameter("start");
         String endStr = request.getParameter("end");
         if (startStr == null || endStr == null) {
-            throw new Exception("Must provide values for start and end");
+            throw new WmsException("Must provide values for start and end");
         }
 
         // Find the start and end indices along the time axis
@@ -344,20 +413,28 @@ public abstract class AbstractMetadataController {
         // }
         Map<String, String> timeStrings = new LinkedHashMap<String, String>();
 
-        timeStrings.put("Full (" + (endIndex - startIndex + 1) + " frames)", startStr + "/" + endStr);
-        addTimeString("Daily", timeStrings, tValues, startIndex, endIndex, new TimePeriodImpl().withDays(1));
-        addTimeString("Weekly", timeStrings, tValues, startIndex, endIndex, new TimePeriodImpl().withWeeks(1));
-        addTimeString("Monthly", timeStrings, tValues, startIndex, endIndex, new TimePeriodImpl().withMonths(1));
-        addTimeString("Bi-monthly", timeStrings, tValues, startIndex, endIndex, new TimePeriodImpl().withMonths(2));
-        addTimeString("Twice-yearly", timeStrings, tValues, startIndex, endIndex, new TimePeriodImpl().withMonths(6));
-        addTimeString("Yearly", timeStrings, tValues, startIndex, endIndex, new TimePeriodImpl().withYears(1));
+        timeStrings.put("Full (" + (endIndex - startIndex + 1) + " frames)", startStr + "/"
+                + endStr);
+        addTimeString("Daily", timeStrings, tValues, startIndex, endIndex,
+                new TimePeriodImpl().withDays(1));
+        addTimeString("Weekly", timeStrings, tValues, startIndex, endIndex,
+                new TimePeriodImpl().withWeeks(1));
+        addTimeString("Monthly", timeStrings, tValues, startIndex, endIndex,
+                new TimePeriodImpl().withMonths(1));
+        addTimeString("Bi-monthly", timeStrings, tValues, startIndex, endIndex,
+                new TimePeriodImpl().withMonths(2));
+        addTimeString("Twice-yearly", timeStrings, tValues, startIndex, endIndex,
+                new TimePeriodImpl().withMonths(6));
+        addTimeString("Yearly", timeStrings, tValues, startIndex, endIndex,
+                new TimePeriodImpl().withYears(1));
 
         return new ModelAndView("showAnimationTimesteps", "timeStrings", timeStrings);
     }
 
-    private static void addTimeString(String label, Map<String, String> timeStrings, List<TimePosition> tValues,
-            int startIndex, int endIndex, TimePeriod resolution) {
-        List<TimePosition> timesteps = getAnimationTimesteps(tValues, startIndex, endIndex, resolution);
+    private static void addTimeString(String label, Map<String, String> timeStrings,
+            List<TimePosition> tValues, int startIndex, int endIndex, TimePeriod resolution) {
+        List<TimePosition> timesteps = getAnimationTimesteps(tValues, startIndex, endIndex,
+                resolution);
         // We filter out all the animations with less than one timestep
         if (timesteps.size() > 1) {
             String timeString = getTimeString(timesteps);
@@ -365,8 +442,8 @@ public abstract class AbstractMetadataController {
         }
     }
 
-    private static List<TimePosition> getAnimationTimesteps(List<TimePosition> tValues, int startIndex, int endIndex,
-            TimePeriod resolution) {
+    private static List<TimePosition> getAnimationTimesteps(List<TimePosition> tValues,
+            int startIndex, int endIndex, TimePeriod resolution) {
         List<TimePosition> times = new ArrayList<TimePosition>();
         times.add(tValues.get(startIndex));
         for (int i = startIndex + 1; i <= endIndex; i++) {
