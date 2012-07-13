@@ -38,6 +38,15 @@
     <servlet-name>WMS</servlet-name>
     <url-pattern>/admin/*</url-pattern>
 </servlet-mapping>
+<!-- 
+This allows us to create new webapps without having to redefine web.xml
+
+Custom requests will be of the form /vendor/whatever
+-->
+<servlet-mapping>
+    <servlet-name>WMS</servlet-name>
+    <url-pattern>/vendor/*</url-pattern>
+</servlet-mapping>
 <session-config>
     <session-timeout>
         30
