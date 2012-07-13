@@ -39,8 +39,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.multiaction.MultiActionController;
 
+import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
-import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
 
@@ -269,9 +269,9 @@ public class AdminController extends MultiActionController {
         // We only take action if the user pressed "save"
         if (request.getParameter("save") != null) {
             Dataset ds = this.config.getAllDatasets().get(request.getParameter("dataset.id"));
-            FeatureCollection<GridSeriesFeature> features = ds.getFeatureCollection();
+            FeatureCollection<Feature> features = ds.getFeatureCollection();
             for (String fId : features.getFeatureIds()) {
-                GridSeriesFeature feature = features.getFeatureById(fId);
+                Feature feature = features.getFeatureById(fId);
                 String newTitle = request.getParameter(feature.getId() + ".title").trim();
                 // Find the min and max colour scale range for this variable
                 // TODO: nicer error handling

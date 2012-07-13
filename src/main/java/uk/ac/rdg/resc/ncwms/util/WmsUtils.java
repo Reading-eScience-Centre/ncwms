@@ -42,8 +42,6 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.Coverage;
-import uk.ac.rdg.resc.edal.coverage.GridCoverage2D;
-import uk.ac.rdg.resc.edal.coverage.Record;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
@@ -56,6 +54,8 @@ import uk.ac.rdg.resc.edal.coverage.metadata.VectorMetadata;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
+import uk.ac.rdg.resc.edal.feature.PointSeriesFeature;
+import uk.ac.rdg.resc.edal.feature.ProfileFeature;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.position.TimePosition;
@@ -242,28 +242,47 @@ public class WmsUtils
      * @return
      * @throws IOException if there was an error reading from the source data
      */
-    public static Extent<Float> estimateValueRange(GridSeriesFeature feature, String member) throws IOException
+    public static Extent<Float> estimateValueRange(Feature feature, String member) throws IOException
     {
         List<Float> dataSample = readDataSample(feature, member);
         return Extents.findMinMax(dataSample);
     }
 
-    private static List<Float> readDataSample(GridSeriesFeature feature, String member) throws IOException {
+    private static List<Float> readDataSample(Feature feature, String member) throws IOException {
         /*
-         * Read a low-resolution grid of data covering the entire spatial extent
+         * TODO FIX.  This is easy.  Just check the type of feature and act appropriately
          */
-        GridFeature loResFeature = feature.extractGridFeature(new RegularGridImpl(feature.getCoverage().getDomain()
-                .getHorizontalGrid().getCoordinateExtent(), 100, 100),
-                getUppermostElevation(feature), getClosestToCurrentTime(feature.getCoverage()
-                        .getDomain().getTimeAxis()), CollectionUtils.setOf(member));
-        final GridCoverage2D coverage = loResFeature.getCoverage();
-        List<Float> ret = new ArrayList<Float>();
-        Class<?> clazz = coverage.getScalarMetadata(member).getValueType();
+        Class<?> clazz = feature.getCoverage().getScalarMetadata(member).getValueType();
         if(!Number.class.isAssignableFrom(clazz)){
             throw new IllegalArgumentException("Cannot read a data sample from a non-numerical field");
         }
-        for(Record r : coverage.getValues()){
-            Number num = (Number) r.getValue(member);
+        /*
+         * Read a low-resolution grid of data covering the entire spatial extent
+         */
+        List<?> values = null;
+        List<Float> ret = new ArrayList<Float>();
+        if(feature instanceof GridFeature){
+            GridFeature gridFeature = (GridFeature) feature;
+            GridFeature loResFeature = gridFeature.extractGridFeature(new RegularGridImpl(gridFeature.getCoverage()
+                    .getDomain().getCoordinateExtent(), 100, 100), CollectionUtils.setOf(member));
+            values = loResFeature.getCoverage().getValues(member);
+        } else if (feature instanceof GridSeriesFeature){
+            GridSeriesFeature gridSeriesFeature = (GridSeriesFeature) feature;
+            GridFeature loResFeature = gridSeriesFeature.extractGridFeature(new RegularGridImpl(
+                    gridSeriesFeature.getCoverage().getDomain().getHorizontalGrid()
+                            .getCoordinateExtent(), 100, 100),
+                    getUppermostElevation(gridSeriesFeature),
+                    getClosestToCurrentTime(gridSeriesFeature.getCoverage().getDomain()
+                            .getTimeAxis()), CollectionUtils.setOf(member));
+            values = loResFeature.getCoverage().getValues(member);
+        } else if (feature instanceof PointSeriesFeature){
+            values = ((PointSeriesFeature) feature).getCoverage().getValues(member);
+        } else if (feature instanceof ProfileFeature){
+            ProfileFeature profileFeature = (ProfileFeature) feature;
+            values = profileFeature.getCoverage().getValues(member);
+        }
+        for(Object r : values){
+            Number num = (Number) r;
             if(num == null || num.equals(Float.NaN) || num.equals(Double.NaN)){
                 ret.add(null);
             } else {

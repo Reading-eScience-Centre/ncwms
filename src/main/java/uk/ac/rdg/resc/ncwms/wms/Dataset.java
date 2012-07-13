@@ -32,7 +32,6 @@ import java.util.Map;
 
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
-import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
 
@@ -77,17 +76,17 @@ public interface Dataset
     public TimePosition getLastUpdateTime();
 
     /**
-     * Gets the {@link GridSeriesFeature} with the given {@link Feature#getId() id}.  The id
+     * Gets the {@link Feature} with the given {@link Feature#getId() id}.  The id
      * is unique within the dataset, not necessarily on the whole server.
      * @return The layer with the given id, or null if there is no layer with
      * the given id.
      */
-    public GridSeriesFeature getFeatureById(String featureId);
+    public Feature getFeatureById(String featureId);
 
     /**
      * Gets the {@link FeatureCollection} that comprises this dataset
      */
-    public FeatureCollection<GridSeriesFeature> getFeatureCollection();
+    public FeatureCollection<Feature> getFeatureCollection();
 
     /**
      * Returns true if the dataset is ready for use.  If the dataset is ready,
