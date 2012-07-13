@@ -149,7 +149,7 @@
     <!-- This mapping ensures that all requests to "/wms" are mapped to the WmsController
          and "index.jsp" results in the display of the front page -->
     <!-- no 'id' required, HandlerMapping beans are automatically detected by the DispatcherServlet -->
-    <bean class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+    <bean class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping" id="urlMapper">
         <property name="alwaysUseFullPath" value="true"/>
         <property name="mappings">
             <value>
