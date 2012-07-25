@@ -24,12 +24,14 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
     <json:property name="units" value="${units}"/>
 
     <c:set var="bbox" value="${utils:getWmsBoundingBox(feature)}"/>
-    <json:array name="bbox">
-        <json:property>${bbox.minX}</json:property>
-        <json:property>${bbox.minY}</json:property>
-        <json:property>${bbox.maxX}</json:property>
-        <json:property>${bbox.maxY}</json:property>
-    </json:array>
+    <c:if test="${not empty bbox}">
+	    <json:array name="bbox">
+	        <json:property>${bbox.minX}</json:property>
+	        <json:property>${bbox.minY}</json:property>
+	        <json:property>${bbox.maxX}</json:property>
+	        <json:property>${bbox.maxY}</json:property>
+	    </json:array>
+    </c:if>
 
     <json:array name="scaleRange">
         <json:property>${featureMetadata.colorScaleRange.low}</json:property>
@@ -47,15 +49,17 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
  --%>
     <json:array name="supportedStyles" items="${styles}"/>
 
-    <c:if test="${not empty feature.coverage.domain.verticalAxis}">
+    <c:set var="vaxis" value="${utils:getVerticalAxis(feature)}"/>
+    <c:if test="${not empty vaxis}">
         <json:object name="zaxis">
-            <json:property name="units" value="${feature.coverage.domain.verticalAxis.verticalCrs.units.unitString}"/>
-            <json:property name="positive" value="${feature.coverage.domain.verticalAxis.verticalCrs.positiveDirection.positive}"/>
-            <json:array name="values" items="${feature.coverage.domain.verticalAxis.coordinateValues}"/>
+            <json:property name="units" value="${vaxis.verticalCrs.units.unitString}"/>
+            <json:property name="positive" value="${vaxis.verticalCrs.positiveDirection.positive}"/>
+            <json:array name="values" items="${vaxis.coordinateValues}"/>
         </json:object>
     </c:if>
 
-    <c:if test="${not empty feature.coverage.domain.timeAxis}">
+    <c:set var="taxis" value="${utils:getTimeAxis(feature)}"/>
+    <c:if test="${not empty taxis}">
         <json:object name="datesWithData">
             <c:forEach var="year" items="${datesWithData}">
                 <json:object name="${year.key}">
@@ -70,7 +74,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
         <json:property name="nearestTimeIso" value="${nearestTimeIso}"/>
         <%-- The time axis units: "ISO8601" for "normal" axes, "360_day" for
              axes that use the 360-day calendar, etc. --%>
-        <json:property name="timeAxisUnits" value="${utils:getTimeAxisUnits(feature.coverage.domain.timeAxis.calendarSystem)}"/>
+        <json:property name="timeAxisUnits" value="${utils:getTimeAxisUnits(taxis.calendarSystem)}"/>
     </c:if>
     
     <json:property name="moreInfo" value="${dataset.moreInfoUrl}"/>

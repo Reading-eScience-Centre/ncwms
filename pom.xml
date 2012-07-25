@@ -1,171 +1,182 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- POM for core module -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <artifactId>edal</artifactId>
-        <groupId>uk.ac.rdg.resc</groupId>
-        <version>0.2.0-SNAPSHOT</version>
-        <relativePath>..</relativePath>
-    </parent>
-    <artifactId>edal-ncwms</artifactId>
-    <packaging>war</packaging>
-    <name>ncWMS implementation using the EDAL libraries</name>
-    <dependencies>
-        <dependency>
-            <groupId>uk.ac.rdg.resc</groupId>
-            <artifactId>edal-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>uk.ac.rdg.resc</groupId>
-            <artifactId>edal-impl</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>uk.ac.rdg.resc</groupId>
-            <artifactId>edal-graphics</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>uk.ac.rdg.resc</groupId>
-            <artifactId>edal-cdm</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>edal</artifactId>
+		<groupId>uk.ac.rdg.resc</groupId>
+		<version>0.2.0-SNAPSHOT</version>
+		<relativePath>..</relativePath>
+	</parent>
+	<artifactId>edal-ncwms</artifactId>
+	<packaging>war</packaging>
+	<name>ncWMS implementation using the EDAL libraries</name>
+	<dependencies>
+		<dependency>
+			<groupId>uk.ac.rdg.resc</groupId>
+			<artifactId>edal-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>uk.ac.rdg.resc</groupId>
+			<artifactId>edal-impl</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>uk.ac.rdg.resc</groupId>
+			<artifactId>edal-graphics</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>uk.ac.rdg.resc</groupId>
+			<artifactId>edal-cdm</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>commons-httpclient</groupId>
 			<artifactId>commons-httpclient</artifactId>
 			<version>3.1</version>
 		</dependency>
-        <dependency>
-        	<groupId>org.springframework</groupId>
-        	<artifactId>spring-webmvc</artifactId>
-            <version>2.5.6</version>
-        </dependency>
 		<dependency>
-		    <groupId>org.springframework</groupId>
-		    <artifactId>spring-dao</artifactId>
-		    <version>2.0.8</version>
-		</dependency>
-        <dependency>
-        	<groupId>javax.servlet</groupId>
-        	<artifactId>servlet-api</artifactId>
-            <version>2.5</version>
-        </dependency>
-		<dependency>
-		    <groupId>net.sf.ehcache</groupId>
-		    <artifactId>ehcache-core</artifactId>
-		    <version>1.7.2</version>
-		</dependency>   
-        <dependency>
-		    <groupId>org.simpleframework</groupId>
-		    <artifactId>simple-xml</artifactId>
-		    <version>2.6.1</version>
-        </dependency>
-		<dependency>
-            <groupId>org.acegisecurity</groupId>
-            <artifactId>acegi-security</artifactId>
-            <version>1.0.7</version>
-            <exclusions>
-            	<exclusion>
-            		<artifactId>spring-core</artifactId>
-            		<groupId>org.springframework</groupId>
-            	</exclusion>
-            	<exclusion>
-            		<artifactId>spring-support</artifactId>
-            		<groupId>org.springframework</groupId>
-            	</exclusion>
-            	<exclusion>
-            		<artifactId>spring-remoting</artifactId>
-            		<groupId>org.springframework</groupId>
-            	</exclusion>
-            </exclusions>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+			<version>2.5.6</version>
 		</dependency>
 		<dependency>
-		    <groupId>com.h2database</groupId>
-		    <artifactId>h2</artifactId>
-		    <version>1.3.159</version>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-dao</artifactId>
+			<version>2.0.8</version>
 		</dependency>
 		<dependency>
-		    <groupId>jstl</groupId>
-		    <artifactId>jstl</artifactId>
-		    <version>1.2</version>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
 		</dependency>
-	    <dependency>
+		<dependency>
+			<groupId>net.sf.ehcache</groupId>
+			<artifactId>ehcache-core</artifactId>
+			<version>1.7.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.simpleframework</groupId>
+			<artifactId>simple-xml</artifactId>
+			<version>2.6.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.acegisecurity</groupId>
+			<artifactId>acegi-security</artifactId>
+			<version>1.0.7</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>spring-core</artifactId>
+					<groupId>org.springframework</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>spring-support</artifactId>
+					<groupId>org.springframework</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>spring-remoting</artifactId>
+					<groupId>org.springframework</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>spring-jdbc</artifactId>
+					<groupId>org.springframework</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>2.5.6</version>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.3.159</version>
+		</dependency>
+		<dependency>
+			<groupId>jstl</groupId>
+			<artifactId>jstl</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
 			<groupId>json-taglib</groupId>
 			<artifactId>json-taglib</artifactId>
 			<version>0.4.1</version>
 		</dependency>
-	    <dependency>
-	      <groupId>com.google.gwt</groupId>
-	      <artifactId>gwt-user</artifactId>
-	      <version>2.4.0</version>
-	      <scope>provided</scope>
-	    </dependency>
 		<dependency>
-		    <groupId>org.gwtopenmaps.openlayers</groupId>
-		    <artifactId>gwt-openlayers-client</artifactId>
-		    <version>0.7</version>
+			<groupId>com.google.gwt</groupId>
+			<artifactId>gwt-user</artifactId>
+			<version>2.4.0</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
-		    <groupId>org.geotoolkit</groupId>
-		    <artifactId>geotk-epsg</artifactId>
-		    <version>3.18-geoapi-3.0</version>
+			<groupId>org.gwtopenmaps.openlayers</groupId>
+			<artifactId>gwt-openlayers-client</artifactId>
+			<version>0.7</version>
 		</dependency>
 		<dependency>
-		    <groupId>javax.validation</groupId>
-		    <artifactId>validation-api</artifactId>
-		    <version>1.0.0.GA</version>
+			<groupId>org.geotoolkit</groupId>
+			<artifactId>geotk-epsg</artifactId>
+			<version>3.18-geoapi-3.0</version>
 		</dependency>
-        <dependency>
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+			<version>1.0.0.GA</version>
+		</dependency>
+		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>1.2.16</version>
 		</dependency>
-    </dependencies>
+	</dependencies>
 	<build>
-	  <plugins>
-	    <plugin>
-	      <groupId>org.codehaus.mojo</groupId>
-	      <artifactId>gwt-maven-plugin</artifactId>
-	      <version>2.4.0</version>
-	      <executions>
-	        <execution>
-	          <goals>
-	            <goal>compile</goal>
-	          </goals>
-	        </execution>
-	      </executions>
-          <configuration>
-            <inplace>true</inplace>
-          </configuration>
-	    </plugin>
-        <plugin>
-          <artifactId>maven-war-plugin</artifactId>
-          <version>2.2</version>
-          <configuration>
-              <attachClasses>true</attachClasses>
-          </configuration>
-        </plugin>
-	  </plugins>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>gwt-maven-plugin</artifactId>
+				<version>2.4.0</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<inplace>true</inplace>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.2</version>
+				<configuration>
+					<attachClasses>true</attachClasses>
+				</configuration>
+			</plugin>
+		</plugins>
 	</build>
-    <repositories>
-        <repository>
-            <id>EDAL</id>
-            <name>EDAL's repository of JARs</name>
-            <url>http://edal-java.googlecode.com/hg/repository/</url>
-        </repository>
-        <repository>
-<!--         	This is for the newest gwt-openlayers stuff (i.e. SNAPSHOT, which is needed for our app) -->
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>http://oss.sonatype.org/content/repositories/snapshots</url>
-        </repository>
-        <repository>
-<!--         	This has the JSON taglib in it -->
-            <id>mvnsearch</id>
-            <name>Mvnsearch.org</name>
-            <url>http://www.mvnsearch.org/maven2/</url>
-        </repository>
-    </repositories>
+	<repositories>
+		<repository>
+			<id>EDAL</id>
+			<name>EDAL's repository of JARs</name>
+			<url>http://edal-java.googlecode.com/hg/repository/</url>
+		</repository>
+		<repository>
+			<!-- This is for the newest gwt-openlayers stuff (i.e. SNAPSHOT, which 
+				is needed for our app) -->
+			<id>sonatype-nexus-snapshots</id>
+			<name>Sonatype Nexus Snapshots</name>
+			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
+		</repository>
+		<repository>
+			<!-- This has the JSON taglib in it -->
+			<id>mvnsearch</id>
+			<name>Mvnsearch.org</name>
+			<url>http://www.mvnsearch.org/maven2/</url>
+		</repository>
+	</repositories>
 </project>

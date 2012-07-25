@@ -16,10 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
 
 import uk.ac.rdg.resc.edal.Extent;
-import uk.ac.rdg.resc.edal.coverage.domain.PointSeriesDomain;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
-import uk.ac.rdg.resc.edal.coverage.grid.impl.TimeAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridFeature;
@@ -108,11 +106,7 @@ public abstract class AbstractMetadataController {
         String layerName = request.getParameter("layerName");
         String memberName = WmsUtils.getMemberName(layerName);
 
-        TimeAxis tAxis = null;
-
-        if (feature instanceof GridSeriesFeature) {
-            tAxis = ((GridSeriesFeature) feature).getCoverage().getDomain().getTimeAxis();
-        }
+        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
 
         // Find the time the user has requested (this is the time that is
         // currently displayed on the Godiva2 site). If no time has been
@@ -228,10 +222,7 @@ public abstract class AbstractMetadataController {
     private ModelAndView showTimesteps(HttpServletRequest request) throws Exception {
         Feature feature = getFeature(request);
 
-        TimeAxis tAxis = null;
-        if (feature instanceof GridSeriesFeature) {
-            tAxis = ((GridSeriesFeature) feature).getCoverage().getDomain().getTimeAxis();
-        }
+        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
         if (tAxis == null || tAxis.getCoordinateValues().isEmpty())
             return null; // return no data if no time axis present
 
@@ -371,6 +362,9 @@ public abstract class AbstractMetadataController {
                 throw new IllegalArgumentException("Cannot find range for a non-numerical coverage");
             }
         }
+        if(valueRange.getLow().equals(valueRange.getHigh())){
+            valueRange = Extents.newExtent(valueRange.getLow()/1.1f, valueRange.getHigh()*1.1f);
+        }
         return new ModelAndView("showMinMax", "valueRange", valueRange);
     }
 
@@ -384,15 +378,7 @@ public abstract class AbstractMetadataController {
      */
     private ModelAndView showAnimationTimesteps(HttpServletRequest request) throws WmsException {
         Feature feature = getFeature(request);
-        TimeAxis tAxis = null;
-        if (feature instanceof GridSeriesFeature) {
-            tAxis = ((GridSeriesFeature) feature).getCoverage().getDomain().getTimeAxis();
-        } else if (feature instanceof PointSeriesFeature) {
-            PointSeriesDomain domain = ((PointSeriesFeature) feature).getCoverage().getDomain();
-            tAxis = new TimeAxisImpl("time", domain.getDomainObjects());
-        } else {
-            throw new WmsException("This feature does not have a time axis");
-        }
+        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
 
         String startStr = request.getParameter("start");
         String endStr = request.getParameter("end");

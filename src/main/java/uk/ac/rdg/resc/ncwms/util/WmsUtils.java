@@ -46,6 +46,8 @@ import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.RegularGridImpl;
+import uk.ac.rdg.resc.edal.coverage.grid.impl.TimeAxisImpl;
+import uk.ac.rdg.resc.edal.coverage.grid.impl.VerticalAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
@@ -58,6 +60,7 @@ import uk.ac.rdg.resc.edal.feature.PointSeriesFeature;
 import uk.ac.rdg.resc.edal.feature.ProfileFeature;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
+import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
@@ -496,8 +499,22 @@ public class WmsUtils
         return false;
     }
     
-    public static BoundingBox getWmsBoundingBox(GridSeriesFeature feature){
-        BoundingBox inBbox = feature.getCoverage().getDomain().getHorizontalGrid().getCoordinateExtent();
+    public static BoundingBox getWmsBoundingBox(Feature feature){
+        BoundingBox inBbox;
+        if (feature instanceof GridSeriesFeature) {
+            inBbox = ((GridSeriesFeature) feature).getCoverage().getDomain().getHorizontalGrid()
+                    .getCoordinateExtent();
+        } else if (feature instanceof GridFeature) {
+            inBbox = ((GridFeature) feature).getCoverage().getDomain().getCoordinateExtent();
+        } else if (feature instanceof PointSeriesFeature) {
+            HorizontalPosition pos = ((PointSeriesFeature) feature).getHorizontalPosition();
+            return getBoundingBoxForSinglePosition(pos);
+        } else if (feature instanceof ProfileFeature) {
+            HorizontalPosition pos = ((ProfileFeature) feature).getHorizontalPosition();
+            return getBoundingBoxForSinglePosition(pos);
+        } else {
+            throw new IllegalArgumentException("Unknown feature type");
+        }
         // TODO: should take into account the cell bounds
         double minLon = inBbox.getMinX() % 360;
         double maxLon = inBbox.getMaxX() % 360;
@@ -525,6 +542,10 @@ public class WmsUtils
         return new BoundingBoxImpl(bbox, inBbox.getCoordinateReferenceSystem());
     }
     
+    private static BoundingBox getBoundingBoxForSinglePosition(HorizontalPosition pos){
+        return new BoundingBoxImpl(new double[] { pos.getX()-1.0, pos.getY()-1.0, pos.getX()+1.0,
+                pos.getY()+1.0 }, pos.getCoordinateReferenceSystem());
+    }
 
     /**
      * Utility method for getting the layer name (unique within a Capabilities
@@ -567,12 +588,65 @@ public class WmsUtils
         }
         return layerParts[2];
     }
-    
-    public static boolean memberIsScalar(RangeMetadata metadata, String memberName){
+
+    /**
+     * Utility method to check if a particular child member of a metadata is
+     * scalar
+     * 
+     * @param metadata
+     *            the parent metadata object
+     * @param memberName
+     *            the member to check
+     * @return true if the child member is an instance of {@link ScalarMetadata}
+     */
+    public static boolean memberIsScalar(RangeMetadata metadata, String memberName) {
         return metadata.getMemberMetadata(memberName) instanceof ScalarMetadata;
     }
-    
-    public static RangeMetadata getChildMetadata(RangeMetadata metadata, String memberName){
+
+    /**
+     * Utility method to return the child metadata of a {@link RangeMetadata}
+     * object
+     * 
+     * @param metadata
+     *            the parent metadata object
+     * @param memberName
+     *            the desired child member id
+     * @return the child {@link RangeMetadata}
+     */
+    public static RangeMetadata getChildMetadata(RangeMetadata metadata, String memberName) {
         return metadata.getMemberMetadata(memberName);
+    }
+
+    /**
+     * Utility to get the vertical axis of a feature, if it exists
+     * @param feature the feature to check
+     * @return the {@link VerticalAxis}, or <code>null</code> if none exists
+     */
+    public static VerticalAxis getVerticalAxis(Feature feature) {
+        if (feature instanceof GridSeriesFeature) {
+            return ((GridSeriesFeature) feature).getCoverage().getDomain().getVerticalAxis();
+        } else if (feature instanceof ProfileFeature) {
+            ProfileFeature profileFeature = (ProfileFeature) feature;
+            return new VerticalAxisImpl("z", profileFeature.getCoverage().getDomain().getZValues(),
+                    profileFeature.getCoverage().getDomain().getVerticalCrs());
+
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Utility to get the time axis of a feature, if it exists
+     * @param feature the feature to check
+     * @return the {@link TimeAxis}, or <code>null</code> if none exists
+     */
+    public static TimeAxis getTimeAxis(Feature feature) {
+        if (feature instanceof GridSeriesFeature) {
+            return ((GridSeriesFeature) feature).getCoverage().getDomain().getTimeAxis();
+        } else if (feature instanceof PointSeriesFeature) {
+            return new TimeAxisImpl("time", ((PointSeriesFeature) feature).getCoverage().getDomain().getTimes());
+        } else {
+            return null;
+        }
     }
 }

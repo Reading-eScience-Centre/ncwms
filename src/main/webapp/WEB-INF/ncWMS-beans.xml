@@ -64,17 +64,21 @@
 
     <!-- Object that caches recently-extracted tiles of data, used to speed up
          repeat GetMap requests -->
+<!--
+    This has been temporarily removed.  Since the graphics library takes features, the caching needs some refactoring.
+ 
     <bean id="tileCache" class="uk.ac.rdg.resc.ncwms.cache.TileCache"
             init-method="init" destroy-method="shutdown">
         <property name="cacheDirectory" value="${ncwms.workingDirectory}/tilecache"/>
         <property name="config"><ref local="config"/></property>
     </bean>
+ -->         
     
     <!-- This Controller will handle all the requests to the WMS -->
     <bean id="wmsController" class="uk.ac.rdg.resc.ncwms.config.NcwmsController"
             init-method="init" destroy-method="shutdown">
         <property name="supportedMethods" value="GET"/>
-        <property name="tileCache"><ref local="tileCache"/></property>
+<!--         <property name="tileCache"><ref local="tileCache"/></property> -->
         <property name="serverConfig"><ref local="config"/></property>
         <property name="metadataController"><ref local="metadataController"/></property>
         <property name="featureFactory"><ref local="featureFactory"/></property>
