@@ -62,18 +62,16 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
 import uk.ac.rdg.resc.edal.Extent;
-import uk.ac.rdg.resc.edal.coverage.GridSeriesCoverage;
 import uk.ac.rdg.resc.edal.coverage.ProfileCoverage;
-import uk.ac.rdg.resc.edal.coverage.domain.ProfileDomain;
 import uk.ac.rdg.resc.edal.coverage.domain.impl.HorizontalDomain;
 import uk.ac.rdg.resc.edal.coverage.grid.GridCell2D;
+import uk.ac.rdg.resc.edal.coverage.grid.GridCoordinates2D;
 import uk.ac.rdg.resc.edal.coverage.grid.HorizontalGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinates2DImpl;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.TimeAxisImpl;
-import uk.ac.rdg.resc.edal.coverage.grid.impl.VerticalAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorDirection;
@@ -150,6 +148,7 @@ public abstract class AbstractWmsController extends AbstractController {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractWmsController.class);
     private static final String FEATURE_INFO_XML_FORMAT = "text/xml";
+    private static final String FEATURE_INFO_GML_FORMAT = "application/vnd.ogc.gml";
     private static final String FEATURE_INFO_PNG_FORMAT = "image/png";
 
     // These objects will be injected by Spring
@@ -531,6 +530,9 @@ public abstract class AbstractWmsController extends AbstractController {
                  * composite field)
                  */
             }
+            if(feature instanceof PointSeriesFeature || feature instanceof ProfileFeature){
+                plotStyle = PlotStyle.POINT;
+            }
             mapPlotter.addToFrame(feature, memberName, zValue, timeValue, tValueStr, plotStyle);
         }
         // We only create a legend object if the image format requires it
@@ -570,9 +572,11 @@ public abstract class AbstractWmsController extends AbstractController {
 
         GetFeatureInfoDataRequest dr = request.getDataRequest();
 
+        String outputFormat = request.getOutputFormat();
         // Check the output format
-        if (!request.getOutputFormat().equals(FEATURE_INFO_XML_FORMAT)
-                && !request.getOutputFormat().equals(FEATURE_INFO_PNG_FORMAT)) {
+        if (!outputFormat.equals(FEATURE_INFO_XML_FORMAT)
+                && !outputFormat.equals(FEATURE_INFO_GML_FORMAT)
+                && !outputFormat.equals(FEATURE_INFO_PNG_FORMAT)) {
             throw new InvalidFormatException("The output format " + request.getOutputFormat()
                     + " is not valid for GetFeatureInfo");
         }
@@ -603,14 +607,9 @@ public abstract class AbstractWmsController extends AbstractController {
         
         String timeString = dr.getTimeString();
         
-        if (request.getOutputFormat().equals(FEATURE_INFO_XML_FORMAT)) {
-            GridSeriesFeature gridSeriesFeature;
-            if(!(feature instanceof GridSeriesFeature)){
-                throw new WmsException(
-                        "Currently only GridSeriesFeatures can return XML GetFeatureInfo info");
-            } else {
-                gridSeriesFeature = (GridSeriesFeature) feature;
-            }
+        if (FEATURE_INFO_XML_FORMAT.equals(outputFormat)
+                || FEATURE_INFO_GML_FORMAT.equals(outputFormat)){
+
             Map<String, Object> models = new HashMap<String, Object>();
             models.put("longitude", lonLat.getLongitude());
             models.put("latitude", lonLat.getLatitude());
@@ -619,17 +618,31 @@ public abstract class AbstractWmsController extends AbstractController {
              * Find out the i,j coordinates of this point in the source grid (could
              * be null)
              */
-            HorizontalGrid horizGrid = gridSeriesFeature.getCoverage().getDomain().getHorizontalGrid();
-            GridCell2D gridCell = horizGrid.findContainingCell(pos);
-            models.put("gridCoords", gridCell.getGridCoordinates());
-            
-            LonLatPosition gridCellCentre = null;
-            if (gridCell != null) {
-                // Get the location of the centre of the grid cell
-                HorizontalPosition gridCellCentrePos = gridCell.getCentre();
-                gridCellCentre = GISUtils.transformToWgs84LonLat(gridCellCentrePos);
+            HorizontalGrid horizGrid = null;
+            if (feature instanceof GridSeriesFeature) {
+                horizGrid = ((GridSeriesFeature) feature).getCoverage().getDomain()
+                        .getHorizontalGrid();
+            } else if (feature instanceof GridFeature) {
+                GridFeature gridFeature = (GridFeature) feature;
+                horizGrid = gridFeature.getCoverage().getDomain();
+
             }
+
+            LonLatPosition gridCellCentre = null;
+            GridCoordinates2D gridCoordinates = null;
+            if(horizGrid != null){
+                GridCell2D gridCell = horizGrid.findContainingCell(pos);
+                if(gridCell != null){
+                    gridCoordinates = gridCell.getGridCoordinates();
+                    gridCellCentre = GISUtils.transformToWgs84LonLat(gridCell.getCentre());
+                }
+            }
+            
             models.put("gridCentre", gridCellCentre);
+            models.put("gridCoords", gridCoordinates);
+            models.put("varName", memberName);
+            models.put("coords", pos);
+            models.put("crs", dr.getCrsCode());
 
             /*
              * Get the requested timesteps. If the layer doesn't have a time
@@ -637,44 +650,25 @@ public abstract class AbstractWmsController extends AbstractController {
              */
             List<TimePosition> tValues = getTimeValues(timeString, feature);
 
-            // First we read the timeseries data. If the layer doesn't have a time
-            // axis we'll use ScalarLayer.readSinglePoint() instead.
-            List<Float> tsData;
             // Now we map date-times to data values
             // The map is kept in order of ascending time
-            Map<TimePosition, Float> featureData = new LinkedHashMap<TimePosition, Float>();
+            Map<TimePosition, Object> featureData = new LinkedHashMap<TimePosition, Object>();
             if(tValues.isEmpty()){
-                GridSeriesCoverage cov = gridSeriesFeature.getCoverage();
-                Object val = cov.evaluate(new GeoPositionImpl(pos, zValue, null), memberName);
-                if(Number.class.isAssignableFrom(cov.getScalarMetadata(memberName).getValueType())){
-                    tsData = Arrays.asList(((Number) val).floatValue());
-                } else {
-                    throw new UnsupportedOperationException("Cannot plot non-numerical field");
-                }
-                featureData.put(null, tsData.get(0));
+                Object val = getFeatureValue(feature, pos, zValue, null, memberName);
+                featureData.put(null, val);
             } else {
-                GridSeriesCoverage cov = gridSeriesFeature.getCoverage();
-                if(!Number.class.isAssignableFrom(cov.getScalarMetadata(memberName).getValueType())){
-                    throw new UnsupportedOperationException("Cannot plot non-numerical field");
-                } else {
-                    tsData = new ArrayList<Float>();
-                    for(TimePosition time : tValues){
-                        Object val = cov.evaluate(new GeoPositionImpl(pos, zValue, time), memberName);
-                        tsData.add(((Number) val).floatValue());
-                    }
-                }
-                
-                // Internal consistency check: arrays should be the same length
-                if (tValues.size() != tsData.size()) {
-                    throw new IllegalStateException("Internal error: timeseries length inconsistency");
-                }
-                for (int i = 0; i < tValues.size(); i++) {
-                    featureData.put(tValues.get(i), tsData.get(i));
+                for(TimePosition time : tValues){
+                    Object val = getFeatureValue(feature, pos, zValue, time, memberName);
+                    featureData.put(time, val);
                 }
             }
 
             models.put("data", featureData);
-            return new ModelAndView("showFeatureInfo_xml", models);
+            if(FEATURE_INFO_XML_FORMAT.equals(outputFormat)){
+                return new ModelAndView("showFeatureInfo_xml", models);
+            } else {
+                return new ModelAndView("showFeatureInfo_gml", models);
+            }
         } else {
             // Must be PNG format: prepare and output the JFreeChart
             PointSeriesFeature pointSeriesFeature = null;
@@ -690,6 +684,25 @@ public abstract class AbstractWmsController extends AbstractController {
             ChartUtilities.writeChartAsPNG(httpServletResponse.getOutputStream(), chart, 400, 300);
             return null;
         }
+    }
+    
+    private Object getFeatureValue(Feature feature, HorizontalPosition pos, VerticalPosition zPos,
+            TimePosition time, String memberName) {
+        /*
+         * TODO check for position threshold. We don't necessarily want to
+         * return a value...
+         */
+        if (feature instanceof GridSeriesFeature) {
+            return ((GridSeriesFeature) feature).getCoverage().evaluate(
+                    new GeoPositionImpl(pos, zPos, time), memberName);
+        } else if (feature instanceof PointSeriesFeature) {
+            return ((PointSeriesFeature) feature).getCoverage().evaluate(time, memberName);
+        } else if (feature instanceof ProfileFeature) {
+            return ((ProfileFeature) feature).getCoverage().evaluate(zPos);
+        } else if (feature instanceof GridFeature) {
+            return ((GridFeature) feature).getCoverage().evaluate(pos);
+        }
+        return null;
     }
 
     /**
@@ -1128,18 +1141,20 @@ public abstract class AbstractWmsController extends AbstractController {
      *             value
      */
     static VerticalPosition getElevationValue(String zValue, Feature feature) throws InvalidDimensionValueException {
-        VerticalAxis vAxis = null;
-        if(feature instanceof GridSeriesFeature){
-            GridSeriesFeature gridSeriesFeature = (GridSeriesFeature) feature;
-            vAxis = gridSeriesFeature.getCoverage().getDomain().getVerticalAxis();
-        } else if (feature instanceof ProfileFeature){
-            ProfileDomain domain = ((ProfileFeature) feature).getCoverage().getDomain();
-            vAxis = new VerticalAxisImpl("z", domain.getZValues(), domain.getVerticalCrs());
-        } else if (feature instanceof PointSeriesFeature){
-            return new VerticalPositionImpl(Double.parseDouble(zValue),
-                    ((PointSeriesFeature) feature).getVerticalPosition()
-                            .getCoordinateReferenceSystem());
+        /*
+         * TODO Check exactly what the required behaviour is
+         */
+        if (feature instanceof PointSeriesFeature) {
+            if (zValue != null && !zValue.equals("")) {
+                return new VerticalPositionImpl(Double.parseDouble(zValue),
+                        ((PointSeriesFeature) feature).getVerticalPosition()
+                                .getCoordinateReferenceSystem());
+            } else {
+                return ((PointSeriesFeature) feature).getVerticalPosition();
+            }
         }
+        VerticalAxis vAxis = WmsUtils.getVerticalAxis(feature);
+
         if (vAxis == null || vAxis.size() == 0) {
             return new VerticalPositionImpl(Double.NaN, null);
         }

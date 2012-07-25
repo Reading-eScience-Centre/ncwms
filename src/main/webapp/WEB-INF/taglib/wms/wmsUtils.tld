@@ -68,7 +68,7 @@
     <description>Sets the bounding box to conform with GIS standards</description>
     <name>getWmsBoundingBox</name>
     <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
-    <function-signature>uk.ac.rdg.resc.edal.geometry.BoundingBox getWmsBoundingBox(uk.ac.rdg.resc.edal.feature.GridSeriesFeature)</function-signature>
+    <function-signature>uk.ac.rdg.resc.edal.geometry.BoundingBox getWmsBoundingBox(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
   </function>
 
   <function>
@@ -84,5 +84,20 @@
     <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
     <function-signature>uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata getChildMetadata(uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata, java.lang.String)</function-signature>
   </function>
+
+  <function>
+    <description>Gets the vertical axis, if available</description>
+    <name>getVerticalAxis</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis getVerticalAxis(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
+  </function>
+
+  <function>
+    <description>Gets the time axis, if available</description>
+    <name>getTimeAxis</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>uk.ac.rdg.resc.edal.coverage.grid.TimeAxis getTimeAxis(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
+  </function>
+
   
 </taglib>

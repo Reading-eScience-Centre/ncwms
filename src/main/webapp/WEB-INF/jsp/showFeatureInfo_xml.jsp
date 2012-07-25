@@ -13,7 +13,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
           latitude = latitude of the point of interest (float)
           gridCoords = i,j indices of the data point in the source grid (GridCoordinates)
           gridCentre = coordinates of centre of grid cell (LatLonPoint)
-          data = Map of joda-time DateTime objects to data values (Map<DateTime, Float>) --%>
+          data = Map of joda-time DateTime objects to data values (Map<DateTime, Object>) --%>
 <FeatureInfoResponse>
     <longitude>${longitude}</longitude>
     <latitude>${latitude}</latitude>
