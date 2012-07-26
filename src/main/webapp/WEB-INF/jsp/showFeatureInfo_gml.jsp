@@ -21,7 +21,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 			<gml:boundedBy>
 				<gml:Box srsName="${crs}">
 					<gml:coordinates>
-                        ${coords.x},${coords.y},${coords.x},${coords.y}
+                        ${coords.x},${coords.y} ${coords.x},${coords.y}
 					</gml:coordinates>
 				</gml:Box>
 			</gml:boundedBy>
