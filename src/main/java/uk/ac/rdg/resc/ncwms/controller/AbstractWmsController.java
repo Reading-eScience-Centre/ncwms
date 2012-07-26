@@ -448,34 +448,71 @@ public abstract class AbstractWmsController extends AbstractController {
 
         styleDescriptor.setColorPalette(metadata.getPaletteName());
         String[] styles = styleRequest.getStyles();
+        
+        /*
+         * We start with a default plot style of BOXFIL
+         */
+        PlotStyle plotStyle = PlotStyle.BOXFILL;
+        
         if (styles.length > 0) {
             String[] styleStrEls = styles[0].split("/");
             
             /*
-             * TODO ? Currently we ignore style information and plot the feature
-             * in the most usual way
+             * We choose the plot style based on the request
              */
+            String styleType = styleStrEls[0];
+            if (styleType.equalsIgnoreCase("boxfill")) {
+                plotStyle = PlotStyle.BOXFILL;
+            } else if (styleType.equalsIgnoreCase("vector")) {
+                plotStyle = PlotStyle.VECTOR;
+            } else if (styleType.equalsIgnoreCase("point")) {
+                plotStyle = PlotStyle.POINT;
+            }
 
-//            // Get the style type
-//            String styleType = styleStrEls[0];
-//            if (styleType.equalsIgnoreCase("boxfill")) {
-//                styleDescriptor.setStyle(Style.BOXFILL);
-//            } else if (styleType.equalsIgnoreCase("vector")) {
-//                styleDescriptor.setStyle(Style.VECTOR);
-//            } else if (styleType.equalsIgnoreCase("point")) {
-//                styleDescriptor.setStyle(Style.POINT);
-//            } else {
-//                throw new StyleNotDefinedException("The style " + styles[0]
-//                        + " is not supported by this server");
-//            }
-
-            // Now get the colour palette
+            /*
+             * And set the palette
+             */
             String paletteName = null;
             if (styleStrEls.length > 1)
                 paletteName = styleStrEls[1];
             styleDescriptor.setColorPalette(paletteName);
         }
         
+        /*
+         * Now we possibly override the plot style.
+         * 
+         * TODO Sort out getCapabilities so that only appropriate fields are
+         * advertised. This will also affect some other methods.
+         * showLayerDetails + JSP, for one
+         */
+        if (feature.getCoverage().getScalarMemberNames().contains(memberName)) {
+            ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(memberName);
+            if (scalarMetadata.getValueType().equals(Object.class)) {
+                /*
+                 * We have non-numeric data. All we can do here is plot the grid
+                 * points
+                 */
+                plotStyle = PlotStyle.GRID_POINTS;
+            } else if (scalarMetadata instanceof VectorComponent
+                    && ((VectorComponent) scalarMetadata).getDirection() == VectorDirection.DIRECTION) {
+                /*
+                 * We always plot direction fields with vector style
+                 */
+                plotStyle = PlotStyle.VECTOR;
+            } else if (feature instanceof PointSeriesFeature || feature instanceof ProfileFeature) {
+                /*
+                 * We always plot these features as points.
+                 */
+                plotStyle = PlotStyle.POINT;
+            }
+        } else {
+            /*
+             * We are plotting a non-scalar member. That's fine, because the
+             * plot style should be overridden anyway (it will likely be a
+             * composite field)
+             */
+        }
+
         styleDescriptor.setScaleRange(scaleRange);
         styleDescriptor.setTransparent(styleRequest.isTransparent());
         styleDescriptor.setLogarithmic(logScale);
@@ -513,26 +550,6 @@ public abstract class AbstractWmsController extends AbstractController {
             }
             tValueStrings.add(tValueStr);
             
-            /*
-             * We plot using boxfill style for scalar fields, and vector style for Vector directions
-             */
-            PlotStyle plotStyle = PlotStyle.BOXFILL;
-            try{
-                ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(memberName);
-                if (scalarMetadata instanceof VectorComponent
-                        && ((VectorComponent) scalarMetadata).getDirection() == VectorDirection.DIRECTION) {
-                    plotStyle = PlotStyle.VECTOR;
-                }
-            } catch (IllegalArgumentException iae){
-                /*
-                 * We are plotting a non-scalar member. That's fine, because the
-                 * plot style should be overridden anyway (it will likely be a
-                 * composite field)
-                 */
-            }
-            if(feature instanceof PointSeriesFeature || feature instanceof ProfileFeature){
-                plotStyle = PlotStyle.POINT;
-            }
             mapPlotter.addToFrame(feature, memberName, zValue, timeValue, tValueStr, plotStyle);
         }
         // We only create a legend object if the image format requires it

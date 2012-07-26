@@ -359,8 +359,18 @@ public abstract class AbstractMetadataController {
                     }
                 });
             } else {
-                throw new IllegalArgumentException("Cannot find range for a non-numerical coverage");
+                /*
+                 * We have a non-numerical coverage.  It doesn't matter what we return
+                 */
+                valueRange = Extents.newExtent(0f,100f);
             }
+        }
+        if(valueRange.getLow() == null){
+            /*
+             * We only have null values in this feature. It doesn't really
+             * matter what we return...
+             */
+            valueRange = Extents.newExtent(0f,100f);
         }
         if(valueRange.getLow().equals(valueRange.getHigh())){
             valueRange = Extents.newExtent(valueRange.getLow()/1.1f, valueRange.getHigh()*1.1f);
