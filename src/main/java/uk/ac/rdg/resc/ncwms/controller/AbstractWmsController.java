@@ -450,7 +450,7 @@ public abstract class AbstractWmsController extends AbstractController {
         String[] styles = styleRequest.getStyles();
         
         /*
-         * We start with a default plot style of BOXFIL
+         * We start with a default plot style of BOXFILL
          */
         PlotStyle plotStyle = PlotStyle.BOXFILL;
         
@@ -467,10 +467,18 @@ public abstract class AbstractWmsController extends AbstractController {
                 plotStyle = PlotStyle.VECTOR;
             } else if (styleType.equalsIgnoreCase("point")) {
                 plotStyle = PlotStyle.POINT;
+            } else if (styleType.equalsIgnoreCase("contour")) {
+                plotStyle = PlotStyle.CONTOUR;
+            } else if (styleType.equalsIgnoreCase("gridpoint")) {
+                plotStyle = PlotStyle.GRID_POINTS;
+            } else if (styleType.equalsIgnoreCase("trajectory")) {
+                plotStyle = PlotStyle.TRAJECTORY;
             }
 
             /*
              * And set the palette
+             * 
+             * TODO Not every style has a palette.
              */
             String paletteName = null;
             if (styleStrEls.length > 1)
