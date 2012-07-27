@@ -31,11 +31,12 @@ package uk.ac.rdg.resc.ncwms.util;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.geotoolkit.referencing.CRS;
@@ -55,7 +56,6 @@ import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorDirection;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorMetadata;
 import uk.ac.rdg.resc.edal.feature.Feature;
-import uk.ac.rdg.resc.edal.feature.FeatureCollection;
 import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.feature.PointSeriesFeature;
@@ -674,6 +674,66 @@ public class WmsUtils {
         List<RangeMetadata> ret = new ArrayList<RangeMetadata>();
         for (String member : feature.getCoverage().getScalarMemberNames()) {
             ret.add(feature.getCoverage().getScalarMetadata(member));
+        }
+        return ret;
+    }
+    
+    public static class StyleInfo {
+        private String stylename;
+        private String palettename;
+
+        public StyleInfo(String stylename, String palettename) {
+            super();
+            this.stylename = stylename;
+            this.palettename = palettename;
+        }
+
+        public String getStylename() {
+            return stylename;
+        }
+        public String getPalettename() {
+            return palettename;
+        }
+        @Override
+        public String toString() {
+            return stylename+"/"+palettename;
+        }
+    }
+
+    
+    public static List<StyleInfo> getStyles(Feature feature, String memberName, Set<String> palettes){
+        Map<String, Boolean> stylesAndUsesPalettes = new HashMap<String, Boolean>();
+        ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(memberName);
+        boolean numerical = Number.class.isAssignableFrom(scalarMetadata.getValueType()); 
+        /*
+         * All feature types can plot as gridpoints
+         */
+        stylesAndUsesPalettes.put("gridpoint", false);
+        if(scalarMetadata instanceof VectorComponent && (((VectorComponent) scalarMetadata).getDirection()==VectorDirection.DIRECTION)){
+            /*
+             * If we have a vector direction, we can plot it as a gridpoint or a vector.
+             */
+            stylesAndUsesPalettes.put("vector", false);
+        } else {
+            if(numerical){
+                stylesAndUsesPalettes.put("point", true);
+                if((feature instanceof GridSeriesFeature || feature instanceof GridFeature)){
+                    stylesAndUsesPalettes.put("boxfill", true);
+                }
+            }
+        }
+        /*
+         * TODO add trajectories etc. when they become available
+         */
+        List<StyleInfo> ret = new ArrayList<StyleInfo>();
+        for(String style : stylesAndUsesPalettes.keySet()){
+            if(stylesAndUsesPalettes.get(style)){
+                for(String palette : palettes){
+                    ret.add(new StyleInfo(style, palette));
+                }
+            } else {
+                ret.add(new StyleInfo(style, ""));
+            }
         }
         return ret;
     }

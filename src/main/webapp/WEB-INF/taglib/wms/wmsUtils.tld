@@ -106,5 +106,12 @@
     <function-signature>java.util.List getPlottableLayers(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
   </function>
 
+  <function>
+    <description>Gets the available styles for a given feature</description>
+    <name>getStyles</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>java.util.List getStyles(uk.ac.rdg.resc.edal.feature.Feature, java.lang.String, java.util.Set)</function-signature>
+  </function>
+
   
 </taglib>

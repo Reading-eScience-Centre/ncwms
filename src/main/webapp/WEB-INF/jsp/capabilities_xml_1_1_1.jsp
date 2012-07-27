@@ -19,6 +19,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
          paletteNames = Names of colour palettes that are supported by this server (Set<String>)
          verboseTime = boolean flag to indicate whether we should use a verbose or concise version of the TIME value string
      --%>
+
 <!DOCTYPE WMT_MS_Capabilities SYSTEM "http://schemas.opengis.net/wms/1.1.1/capabilities_1_1_1.dtd">
 <WMT_MS_Capabilities
         version="1.1.1"
@@ -107,27 +108,30 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
             <Layer>
                 <Title><c:out value="${dataset.title}"/></Title>
                 <c:forEach var="layer" items="${dataset.featureCollection.features}">
+                <c:forEach var="metadata" items="${utils:getPlottableLayers(layer)}">
                 <Layer<c:if test="${dataset.queryable}"> queryable="1"</c:if>>
-                    <Name>${dataset.id}/${layer.id}</Name>
-                    <Title><c:out value="${layer.name}"/></Title>
+                    <Name>${dataset.id}/${layer.id}/${metadata.name}</Name>
+                    <Title><c:out value="${metadata.description}" /></Title>
                     <Abstract><c:out value="${layer.description}"/></Abstract>
                     <c:set var="bbox" value="${utils:getWmsBoundingBox(layer)}"/>
                     <LatLonBoundingBox minx="${bbox.minX}" maxx="${bbox.maxX}" miny="${bbox.minY}" maxy="${bbox.maxY}"/>
                     <BoundingBox SRS="EPSG:4326" minx="${bbox.minX}" maxx="${bbox.maxX}" miny="${bbox.minY}" maxy="${bbox.maxY}"/>
-                    <c:if test="${not empty layer.coverage.domain.verticalAxis}"><Dimension name="elevation" units="${ayer.coverage.domain.verticalCrs.units.unitString}"/><!-- TODO: units correct? --></c:if>
-                    <c:if test="${not empty layer.coverage.domain.timeAxis}"><Dimension name="time" units="${utils:getTimeAxisUnits(layer.coverage.domain.timeAxis.calendarSystem)}"/></c:if>
-                    <c:if test="${not empty layer.coverage.domain.verticalAxis}">
-                    <Extent name="elevation" default="${utils:getDefaultElevation(layer)}">
-                        <%-- Print out the dimension values, comma separated, making sure
-                             that there is no comma at the start or end of the list.  Note that
-                             we can't use ${fn:join} because the z values are an array of doubles,
-                             not strings. --%>
-                        <c:forEach var="zval" items="${layer.coverage.domain.verticalAxis.coordinateValues}" varStatus="status"><c:if test="${status.index > 0}">,</c:if>${zval}</c:forEach>
-                    </Extent>
+                    <c:set var="vAxis" value="${utils:getVerticalAxis(layer)}"/>
+                    <c:set var="tAxis" value="${utils:getTimeAxis(feature)}"/>
+                    <c:if test="${not empty vAxis}"><Dimension name="elevation" units="${vAxis.verticalCrs.units.unitString}"/><!-- TODO: units correct? --></c:if>
+                    <c:if test="${not empty tAxis}"><Dimension name="time" units="${utils:getTimeAxisUnits(tAxis.calendarSystem)}"/></c:if>
+                    <c:if test="${not empty vAxis}">
+	                    <Extent name="elevation" default="${utils:getDefaultElevation(layer)}">
+	                        <%-- Print out the dimension values, comma separated, making sure
+	                             that there is no comma at the start or end of the list.  Note that
+	                             we can't use ${fn:join} because the z values are an array of doubles,
+	                             not strings. --%>
+	                        <c:forEach var="zval" items="${vAxis.coordinateValues}" varStatus="status"><c:if test="${status.index > 0}">,</c:if>${zval}</c:forEach>
+	                    </Extent>
                     </c:if>
-                    <c:if test="${not empty layer.coverage.domain.timeAxis}">
-                    <c:set var="tvalues" value="${layer.coverage.domain.timeAxis.coordinateValues}"/>
-                    <Extent name="time" multipleValues="1" current="1" default="${utils:dateTimeToISO8601(utils:getDefaultTime(layer.coverage.domain.timeAxis))}">
+                    <c:if test="${not empty tAxis}">
+                    <c:set var="tvalues" value="${tAxis.coordinateValues}"/>
+                    <Extent name="time" multipleValues="1" current="1" default="${utils:dateTimeToISO8601(utils:getDefaultTime(tAxis))}">
                         <c:choose>
                             <c:when test="${verboseTimes}">
                                 <%-- Use the verbose version of the time string --%>
@@ -140,25 +144,22 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                         </c:choose>
                     </Extent>
                     </c:if>
-                    <c:set var="styles" value="boxfill"/>
-<%--                     <c:if test="${utils:isVectorLayer(layer)}"> --%>
-<%--                         <c:set var="styles" value="vector,boxfill"/> --%>
-<%--                     </c:if> --%>
-                    <c:forEach var="style" items="${styles}">
-                    <c:forEach var="paletteName" items="${paletteNames}">
-                    <Style>
-                      <Name>${style}/${paletteName}</Name>
-                        <Title>${style}/${paletteName}</Title>
-                        <Abstract>${style} style, using the ${paletteName} palette </Abstract>
-                        <LegendURL width="${legendWidth}" height="${legendHeight}"> 
-                            <Format>image/png</Format> 
-                            <OnlineResource xlink:type="simple" xlink:href="${wmsBaseUrl}?REQUEST=GetLegendGraphic&amp;LAYER=${layer.name}&amp;PALETTE=${paletteName}"/>
-                        </LegendURL>
-                    </Style>
-                    </c:forEach>
-                    </c:forEach>
+	                <c:forEach var="style" items="${utils:getStyles(layer, metadata.name, paletteNames)}">
+	                    <Style>
+	                         <Name>${style}</Name>
+	                         <Title>${style}</Title>
+	                         <Abstract>${style.stylename} style<c:if test="${not empty style.palettename}">, using the ${style.palettename} palette</c:if></Abstract>
+	                         <c:if test="${not empty style.palettename}">
+	                             <LegendURL width="${legendWidth}" height="${legendHeight}">
+	                                 <Format>image/png</Format>
+	                                 <OnlineResource xlink:type="simple" xlink:href="${wmsBaseUrl}?REQUEST=GetLegendGraphic&amp;PALETTE=${style.palettename}&amp;COLORBARONLY=true&amp;WIDTH=${legendWidth}&amp;HEIGHT=${legendHeight}"/>
+	                             </LegendURL>
+	                         </c:if>
+	                    </Style>
+	                </c:forEach>
                 </Layer>
-                </c:forEach> <%-- End loop through variables --%>
+                </c:forEach> <%-- End loop through members --%>
+                </c:forEach> <%-- End loop through features --%>
             </Layer>
             </c:if>
             </c:forEach>

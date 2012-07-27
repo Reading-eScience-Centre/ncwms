@@ -170,23 +170,21 @@
 					</c:choose>
 					</Dimension>
 				</c:if>
-				<c:set var="styles" value="boxfill" />
-				<c:if test="${utils:isVectorLayer(feature.coverage, metadata.name)}">
-					<c:set var="styles" value="vector,boxfill" />
-				</c:if>
-				<c:forEach var="style" items="${styles}">
-					<c:forEach var="paletteName" items="${paletteNames}">
-						<Style>
-                            <Name>${style}/${paletteName}</Name>
-                            <Title>${style}/${paletteName}</Title>
-                            <Abstract>${style} style, using the ${paletteName} palette</Abstract>
-                            <LegendURL width="${legendWidth}" height="${legendHeight}">
-                                <Format>image/png</Format>
-                                <OnlineResource xlink:type="simple" xlink:href="${wmsBaseUrl}?REQUEST=GetLegendGraphic&amp;LAYER=${layer.name}&amp;PALETTE=${paletteName}"/>
-                            </LegendURL>
-                        </Style>
-					</c:forEach>
+
+				<c:forEach var="style" items="${utils:getStyles(feature, metadata.name, paletteNames)}">
+					<Style>
+                         <Name>${style}</Name>
+                         <Title>${style}</Title>
+                         <Abstract>${style.stylename} style<c:if test="${not empty style.palettename}">, using the ${style.palettename} palette</c:if></Abstract>
+                         <c:if test="${not empty style.palettename}">
+	                         <LegendURL width="${legendWidth}" height="${legendHeight}">
+	                             <Format>image/png</Format>
+	                             <OnlineResource xlink:type="simple" xlink:href="${wmsBaseUrl}?REQUEST=GetLegendGraphic&amp;PALETTE=${style.palettename}&amp;COLORBARONLY=true&amp;WIDTH=${legendWidth}&amp;HEIGHT=${legendHeight}"/>
+	                         </LegendURL>
+	                     </c:if>
+                    </Style>
 				</c:forEach>
+
 				</Layer>
 			</c:forEach>
 			<%-- End loop through members --%>
