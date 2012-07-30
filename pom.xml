@@ -157,6 +157,19 @@
 					<attachClasses>true</attachClasses>
 				</configuration>
 			</plugin>
+            <plugin>
+                <groupId>de.akquinet.maven</groupId>
+                <artifactId>maven-latex-plugin</artifactId>
+                <version>1.1</version>
+                <executions>
+                    <execution>
+                        <phase>site</phase>
+                        <goals>
+                            <goal>latex</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 		</plugins>
 	</build>
 	<repositories>
@@ -179,4 +192,15 @@
 			<url>http://www.mvnsearch.org/maven2/</url>
 		</repository>
 	</repositories>
+	<pluginRepositories>
+	    <!-- Plugin used to generate PDF ncWMS user manual -->
+		<pluginRepository>
+			<id>maven-latex-plugin-repo</id>
+			<url>http://akquinet.github.com/maven-latex-plugin/maven2/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+		</pluginRepository>
+	</pluginRepositories>
+
 </project>

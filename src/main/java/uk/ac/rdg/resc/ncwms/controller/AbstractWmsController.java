@@ -71,7 +71,6 @@ import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinates2DImpl;
-import uk.ac.rdg.resc.edal.coverage.grid.impl.TimeAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorDirection;
@@ -98,7 +97,6 @@ import uk.ac.rdg.resc.edal.position.LonLatPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
-import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.HorizontalPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.position.impl.VerticalPositionImpl;
@@ -679,11 +677,11 @@ public abstract class AbstractWmsController extends AbstractController {
             // The map is kept in order of ascending time
             Map<TimePosition, Object> featureData = new LinkedHashMap<TimePosition, Object>();
             if(tValues.isEmpty()){
-                Object val = getFeatureValue(feature, pos, zValue, null, memberName);
+                Object val = WmsUtils.getFeatureValue(feature, pos, zValue, null, memberName);
                 featureData.put(null, val);
             } else {
                 for(TimePosition time : tValues){
-                    Object val = getFeatureValue(feature, pos, zValue, time, memberName);
+                    Object val = WmsUtils.getFeatureValue(feature, pos, zValue, time, memberName);
                     featureData.put(time, val);
                 }
             }
@@ -711,25 +709,6 @@ public abstract class AbstractWmsController extends AbstractController {
         }
     }
     
-    private Object getFeatureValue(Feature feature, HorizontalPosition pos, VerticalPosition zPos,
-            TimePosition time, String memberName) {
-        /*
-         * TODO check for position threshold. We don't necessarily want to
-         * return a value...
-         */
-        if (feature instanceof GridSeriesFeature) {
-            return ((GridSeriesFeature) feature).getCoverage().evaluate(
-                    new GeoPositionImpl(pos, zPos, time), memberName);
-        } else if (feature instanceof PointSeriesFeature) {
-            return ((PointSeriesFeature) feature).getCoverage().evaluate(time, memberName);
-        } else if (feature instanceof ProfileFeature) {
-            return ((ProfileFeature) feature).getCoverage().evaluate(zPos);
-        } else if (feature instanceof GridFeature) {
-            return ((GridFeature) feature).getCoverage().evaluate(pos);
-        }
-        return null;
-    }
-
     /**
      * Creates and returns a PNG image with the colour scale and range for a
      * given Layer
@@ -948,9 +927,7 @@ public abstract class AbstractWmsController extends AbstractController {
                 && !"image/jpg".equals(outputFormat)) {
             throw new InvalidFormatException(outputFormat + " is not a valid output format");
         }
-        if(feature instanceof GridFeature || feature instanceof PointSeriesFeature){
-            throw new WmsException("Cannot get a vertical profile of this type of feature");
-        } else if(feature instanceof ProfileFeature){
+        if(feature instanceof ProfileFeature){
             profileFeature = (ProfileFeature) feature;
         } else if(feature instanceof GridSeriesFeature){
             GridSeriesFeature gridSeriesFeature = (GridSeriesFeature) feature;
@@ -991,6 +968,8 @@ public abstract class AbstractWmsController extends AbstractController {
             profileFeature = gridSeriesFeature.extractProfileFeature(pos, tValue,
                     CollectionUtils.setOf(memberName));
                     
+        } else {
+            throw new WmsException("Cannot get a vertical profile of this type of feature");
         }
         // Now create the vertical profile plot
         JFreeChart chart = Charting.createVerticalProfilePlot(profileFeature, memberName);
@@ -1208,7 +1187,7 @@ public abstract class AbstractWmsController extends AbstractController {
 
     private static Extent<TimePosition> getTimeRange(String timeString, Feature feature)
             throws InvalidDimensionValueException {
-        TimeAxis tAxis = getTimeAxis(feature);
+        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
         
         // If the layer does not have a time axis return an extent
         if (tAxis == null)
@@ -1250,7 +1229,7 @@ public abstract class AbstractWmsController extends AbstractController {
     static List<TimePosition> getTimeValues(String timeString, Feature feature)
             throws InvalidDimensionValueException {
 
-        TimeAxis tAxis = getTimeAxis(feature);
+        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
         // If the layer does not have a time axis return an empty list
         if (tAxis == null)
             return Collections.emptyList();
@@ -1385,20 +1364,6 @@ public abstract class AbstractWmsController extends AbstractController {
             tValues.add(layerTValues.get(i));
         }
         return tValues;
-    }
-
-    /*
-     * Gets a time axis from the feature.  If the feature doesn't have one, it returns null
-     */
-    private static TimeAxis getTimeAxis(Feature feature){
-        TimeAxis tAxis = null;
-        if(feature instanceof PointSeriesFeature){
-            tAxis = new TimeAxisImpl("time", ((PointSeriesFeature) feature).getCoverage()
-                    .getDomain().getDomainObjects());
-        } else if(feature instanceof GridSeriesFeature){
-            tAxis = ((GridSeriesFeature) feature).getCoverage().getDomain().getTimeAxis();
-        }
-        return tAxis;
     }
 
     /**

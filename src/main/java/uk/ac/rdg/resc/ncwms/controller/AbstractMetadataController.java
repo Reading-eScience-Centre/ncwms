@@ -16,14 +16,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.coverage.DiscreteCoverage;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.feature.Feature;
-import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
-import uk.ac.rdg.resc.edal.feature.PointSeriesFeature;
-import uk.ac.rdg.resc.edal.feature.ProfileFeature;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.TimePeriod;
@@ -31,7 +29,6 @@ import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePeriodImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
-import uk.ac.rdg.resc.edal.util.BigList;
 import uk.ac.rdg.resc.edal.util.CollectionUtils;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
@@ -267,8 +264,10 @@ public abstract class AbstractMetadataController {
      */
     private ModelAndView showMinMax(HttpServletRequest request) throws Exception {
         RequestParams params = new RequestParams(request.getParameterMap());
-        // We only need the bit of the GetMap request that pertains to data
-        // extraction
+        /*
+         * We only need the bit of the GetMap request that pertains to data
+         * extraction
+         */
         GetMapDataRequest dr = new GetMapDataRequest(params, params.getWmsVersion());
 
         String layerName = WmsUtils.getLayerName(dr);
@@ -276,19 +275,15 @@ public abstract class AbstractMetadataController {
 
         // Get the variable we're interested in
         Feature feature = featureFactory.getFeature(layerName);
-        GridFeature gridFeature = null;
-        Extent<Float> valueRange = null;
-        if (feature instanceof GridFeature) {
-            gridFeature = (GridFeature) feature;
-        } else if (feature instanceof GridSeriesFeature) {
-
-            // Get the grid onto which the data is being projected
+        if (feature instanceof GridSeriesFeature) {
+            /*
+             * If we have a grid series feature, extract the relevant portion of
+             * the data
+             */
+       
             RegularGrid grid = WmsUtils.getImageGrid(dr);
-
-            // Get the value on the z axis
             VerticalPosition zValue = AbstractWmsController.getElevationValue(
                     dr.getElevationString(), feature);
-
             /*
              * Get the requested timestep (taking the first only if an animation
              * is requested)
@@ -297,60 +292,24 @@ public abstract class AbstractMetadataController {
                     feature);
             TimePosition tValue = timeValues.isEmpty() ? null : timeValues.get(0);
 
-            gridFeature = ((GridSeriesFeature) feature).extractGridFeature(grid, zValue, tValue,
+            feature = ((GridSeriesFeature) feature).extractGridFeature(grid, zValue, tValue,
                     CollectionUtils.setOf(memberName));
-        } else if (feature instanceof ProfileFeature) {
-            ProfileFeature profileFeature = (ProfileFeature) feature;
-            // Get the value on the z axis
-            VerticalPosition zValue = AbstractWmsController.getElevationValue(
-                    dr.getElevationString(), feature);
-            Class<?> clazz = profileFeature.getCoverage().getScalarMetadata(memberName)
-                    .getValueType();
-            if (Number.class.isAssignableFrom(clazz)) {
-                float floatValue = ((Number) profileFeature.getCoverage().evaluate(zValue,
-                        memberName)).floatValue();
-                valueRange = Extents.newExtent(floatValue, floatValue);
-            } else {
-                throw new IllegalArgumentException("Cannot find range for a non-numerical coverage");
-            }
-        } else if (feature instanceof PointSeriesFeature) {
-            final PointSeriesFeature pointSeriesFeature = (PointSeriesFeature) feature;
-            final List<TimePosition> timeValues = AbstractWmsController.getTimeValues(
-                    dr.getTimeString(), feature);
-            Class<?> clazz = pointSeriesFeature.getCoverage().getScalarMetadata(memberName)
-                    .getValueType();
-
-            if (Number.class.isAssignableFrom(clazz)) {
-                valueRange = Extents.findMinMax(new AbstractList<Float>() {
-                    @Override
-                    public Float get(int index) {
-                        return ((Number) pointSeriesFeature.getCoverage().evaluate(
-                                timeValues.get(index), memberName)).floatValue();
-                    }
-
-                    @Override
-                    public int size() {
-                        return timeValues.size();
-                    }
-                });
-            } else {
-                throw new IllegalArgumentException("Cannot find range for a non-numerical coverage");
-            }
         }
-
-        if (gridFeature != null) {
-            final BigList<?> values = gridFeature.getCoverage().getValues(memberName);
-            Class<?> clazz = gridFeature.getCoverage().getScalarMetadata(memberName).getValueType();
+        
+        /*
+         * Now we have a feature with the data. If it has a discrete coverage,
+         * get the value range
+         */
+        Extent<Float> valueRange = null;
+        if (feature.getCoverage() instanceof DiscreteCoverage) {
+            DiscreteCoverage<?,?> discreteCoverage = (DiscreteCoverage<?, ?>) feature.getCoverage();
+            Class<?> clazz = discreteCoverage.getScalarMetadata(memberName).getValueType();
+            final List<?> values = discreteCoverage.getValues(memberName);
             if (Number.class.isAssignableFrom(clazz)) {
                 valueRange = Extents.findMinMax(new AbstractList<Float>() {
                     @Override
                     public Float get(int index) {
-                        Number number = (Number) values.get(index);
-                        if (number != null) {
-                            return number.floatValue();
-                        } else {
-                            return null;
-                        }
+                        return ((Number)values.get(index)).floatValue();
                     }
 
                     @Override
@@ -364,6 +323,14 @@ public abstract class AbstractMetadataController {
                  */
                 valueRange = Extents.newExtent(0f,100f);
             }
+        } else {
+            /*
+             * We don't know how to handle non-discrete coverages.
+             * 
+             * At the time of writing, there are no coverages which are non-discrete
+             */
+            throw new UnsupportedOperationException(
+                    "Coverage must be discrete for min-max requests");
         }
         if(valueRange.getLow() == null){
             /*
