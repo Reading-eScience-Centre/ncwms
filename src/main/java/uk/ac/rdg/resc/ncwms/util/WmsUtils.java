@@ -60,12 +60,14 @@ import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.feature.PointSeriesFeature;
 import uk.ac.rdg.resc.edal.feature.ProfileFeature;
+import uk.ac.rdg.resc.edal.feature.TrajectoryFeature;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
+import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.position.impl.VerticalPositionImpl;
 import uk.ac.rdg.resc.edal.util.CollectionUtils;
@@ -256,8 +258,6 @@ public class WmsUtils {
             ret.add(0.0f);
             ret.add(100.0f);
             return ret;
-//            throw new IllegalArgumentException(
-//                    "Cannot read a data sample from a non-numerical field");
         }
         /*
          * Read a low-resolution grid of data covering the entire spatial extent
@@ -736,5 +736,33 @@ public class WmsUtils {
             }
         }
         return ret;
+    }
+    
+    /*
+     * The following methods all depend on the class type of the feature. If new
+     * feature types are added, these methods should be looked at, since they
+     * are likely to need to change
+     */
+    
+    public static Object getFeatureValue(Feature feature, HorizontalPosition pos, VerticalPosition zPos,
+            TimePosition time, String memberName) {
+        /*
+         * TODO check for position threshold. We don't necessarily want to
+         * return a value...
+         */
+        if (feature instanceof GridSeriesFeature) {
+            return ((GridSeriesFeature) feature).getCoverage().evaluate(
+                    new GeoPositionImpl(pos, zPos, time), memberName);
+        } else if (feature instanceof PointSeriesFeature) {
+            return ((PointSeriesFeature) feature).getCoverage().evaluate(time, memberName);
+        } else if (feature instanceof ProfileFeature) {
+            return ((ProfileFeature) feature).getCoverage().evaluate(zPos);
+        } else if (feature instanceof GridFeature) {
+            return ((GridFeature) feature).getCoverage().evaluate(pos);
+        } else if (feature instanceof TrajectoryFeature) {
+            return ((TrajectoryFeature) feature).getCoverage().evaluate(
+                    new GeoPositionImpl(pos, zPos, time), memberName);
+        }
+        return null;
     }
 }
