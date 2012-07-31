@@ -55,6 +55,7 @@ import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorDirection;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorMetadata;
+import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
@@ -444,7 +445,7 @@ public class WmsUtils {
         if (feature.getCoverage().getScalarMemberNames().contains(memberName)) {
             return memberName;
         } else {
-            RangeMetadata descendentMetadata = getDescendentMetadata(feature.getCoverage()
+            RangeMetadata descendentMetadata = MetadataUtils.getDescendentMetadata(feature.getCoverage()
                     .getRangeMetadata(), memberName);
             if (descendentMetadata == null) {
                 return null;
@@ -460,20 +461,6 @@ public class WmsUtils {
                             return vectorComponentName;
                         }
                     }
-                }
-            }
-        }
-        return null;
-    }
-
-    private static RangeMetadata getDescendentMetadata(RangeMetadata topMetadata, String memberName) {
-        if (topMetadata.getMemberNames().contains(memberName)) {
-            return topMetadata.getMemberMetadata(memberName);
-        } else {
-            for (String childMember : topMetadata.getMemberNames()) {
-                RangeMetadata memberMetadata = topMetadata.getMemberMetadata(childMember);
-                if (!(memberMetadata instanceof ScalarMetadata)) {
-                    return getDescendentMetadata(memberMetadata, memberName);
                 }
             }
         }
