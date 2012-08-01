@@ -270,11 +270,12 @@ public abstract class AbstractMetadataController {
          */
         GetMapDataRequest dr = new GetMapDataRequest(params, params.getWmsVersion());
 
-        String layerName = WmsUtils.getLayerName(dr);
-        final String memberName = WmsUtils.getMemberName(layerName);
+        String layerName = WmsUtils.getWmsLayerName(dr);
+        String memberName = WmsUtils.getMemberName(layerName);
+        Feature feature = featureFactory.getFeature(layerName);
+        memberName = WmsUtils.getPlottableMemberName(feature, memberName);
 
         // Get the variable we're interested in
-        Feature feature = featureFactory.getFeature(layerName);
         if (feature instanceof GridSeriesFeature) {
             /*
              * If we have a grid series feature, extract the relevant portion of
@@ -309,7 +310,8 @@ public abstract class AbstractMetadataController {
                 valueRange = Extents.findMinMax(new AbstractList<Float>() {
                     @Override
                     public Float get(int index) {
-                        return ((Number)values.get(index)).floatValue();
+                        Number val = (Number)values.get(index);
+                        return val == null ? null : val.floatValue();
                     }
 
                     @Override
