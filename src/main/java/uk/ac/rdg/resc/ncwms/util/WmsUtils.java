@@ -43,7 +43,7 @@ import org.geotoolkit.referencing.CRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import uk.ac.rdg.resc.edal.Extent;
-import uk.ac.rdg.resc.edal.coverage.Coverage;
+import uk.ac.rdg.resc.edal.coverage.DiscreteCoverage;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
@@ -66,7 +66,6 @@ import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
-import uk.ac.rdg.resc.edal.position.Vector2D;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
@@ -87,8 +86,8 @@ import uk.ac.rdg.resc.ncwms.wms.Dataset;
  * </p>
  * 
  * <p>
- * Through the taglib definition /WEB-INF/taglib/wmsUtils.tld, these functions
- * are also available as JSP2.0 functions. For example:
+ * Through the taglib definition /WEB-INF/taglib/wmsUtils.tld, some of these
+ * functions are also available as JSP2.0 functions. For example:
  * </p>
  * <code>
  * <%@taglib uri="/WEB-INF/taglib/wmsUtils" prefix="utils"%>
@@ -137,17 +136,6 @@ public class WmsUtils {
     }
 
     /**
-     * Creates a unique name for a Layer (for display in the Capabilities
-     * document) based on a dataset ID and a Layer ID that is unique within a
-     * dataset.
-     * 
-     * @todo doesn't belong in generic WmsUtils: specific to ncWMS
-     */
-    public static String createUniqueLayerName(String datasetId, String layerId) {
-        return datasetId + "/" + layerId;
-    }
-
-    /**
      * Converts a string of the form "x1,y1,x2,y2" into a bounding box of four
      * doubles.
      * 
@@ -180,36 +168,6 @@ public class WmsUtils {
             throw new WmsException("Invalid bounding box format");
         }
         return bbox;
-    }
-
-    /**
-     * Calculates the magnitude of the vector components given in the provided
-     * Lists. The two lists must be of the same length. For any element in the
-     * component lists, if either east or north is null, the magnitude will also
-     * be null.
-     * 
-     * @return a List of the magnitudes calculated from the components.
-     */
-    public static List<Float> getMagnitudes(List<Float> eastData, List<Float> northData) {
-        if (eastData == null || northData == null)
-            throw new NullPointerException();
-        if (eastData.size() != northData.size()) {
-            throw new IllegalArgumentException(
-                    "east and north data components must be the same length");
-        }
-        List<Float> mag = new ArrayList<Float>(eastData.size());
-        for (int i = 0; i < eastData.size(); i++) {
-            Float east = eastData.get(i);
-            Float north = northData.get(i);
-            Float val = null;
-            if (east != null && north != null) {
-                val = (float) Math.sqrt(east * east + north * north);
-            }
-            mag.add(val);
-        }
-        if (mag.size() != eastData.size())
-            throw new AssertionError();
-        return mag;
     }
 
     /**
@@ -252,9 +210,10 @@ public class WmsUtils {
         Class<?> clazz = feature.getCoverage().getScalarMetadata(member).getValueType();
         if (!Number.class.isAssignableFrom(clazz)) {
             /*
-             * TODO a more elegant solution?  Some kind of None value for scale ranges?
+             * TODO a more elegant solution? Some kind of None value for scale
+             * ranges?
              * 
-             * We want a non-numerical value range.  Return whatever you like
+             * We want a non-numerical value range. Return whatever you like
              */
             ret.add(0.0f);
             ret.add(100.0f);
@@ -266,25 +225,26 @@ public class WmsUtils {
         List<?> values = null;
         if (feature instanceof GridFeature) {
             GridFeature gridFeature = (GridFeature) feature;
-            GridFeature loResFeature = gridFeature.extractGridFeature(new RegularGridImpl(
-                    gridFeature.getCoverage().getDomain().getCoordinateExtent(), 100, 100),
-                    CollectionUtils.setOf(member));
-            values = loResFeature.getCoverage().getValues(member);
+            feature = gridFeature.extractGridFeature(new RegularGridImpl(gridFeature.getCoverage()
+                    .getDomain().getCoordinateExtent(), 100, 100), CollectionUtils.setOf(member));
         } else if (feature instanceof GridSeriesFeature) {
             GridSeriesFeature gridSeriesFeature = (GridSeriesFeature) feature;
-            GridFeature loResFeature = gridSeriesFeature.extractGridFeature(new RegularGridImpl(
-                    gridSeriesFeature.getCoverage().getDomain().getHorizontalGrid()
-                            .getCoordinateExtent(), 100, 100),
+            feature = gridSeriesFeature.extractGridFeature(
+                    new RegularGridImpl(gridSeriesFeature.getCoverage().getDomain()
+                            .getHorizontalGrid().getCoordinateExtent(), 100, 100),
                     getUppermostElevation(gridSeriesFeature),
                     getClosestToCurrentTime(gridSeriesFeature.getCoverage().getDomain()
                             .getTimeAxis()), CollectionUtils.setOf(member));
-            values = loResFeature.getCoverage().getValues(member);
-        } else if (feature instanceof PointSeriesFeature) {
-            values = ((PointSeriesFeature) feature).getCoverage().getValues(member);
-        } else if (feature instanceof ProfileFeature) {
-            ProfileFeature profileFeature = (ProfileFeature) feature;
-            values = profileFeature.getCoverage().getValues(member);
         }
+
+        if (feature.getCoverage() instanceof DiscreteCoverage) {
+            DiscreteCoverage<?, ?> discreteCoverage = (DiscreteCoverage<?, ?>) feature
+                    .getCoverage();
+            values = discreteCoverage.getValues(member);
+        } else {
+            throw new UnsupportedOperationException("Currently we only support discrete coverages");
+        }
+
         for (Object r : values) {
             Number num = (Number) r;
             if (num == null || num.equals(Float.NaN) || num.equals(Double.NaN)) {
@@ -294,17 +254,6 @@ public class WmsUtils {
             }
         }
         return ret;
-    }
-
-    /**
-     * Returns the RuntimeException name. This used in
-     * 'displayDefaultException.jsp' to show the exception name, to go around
-     * the use of '${exception.class.name}' where the word 'class' is deemed as
-     * Java keyword by Tomcat 7.0
-     * 
-     */
-    public static String getExceptionName(Exception e) {
-        return e.getClass().getName();
     }
 
     /**
@@ -342,15 +291,6 @@ public class WmsUtils {
         CoordinateReferenceSystem crs = getCrs(dr.getCrsCode());
         BoundingBox bbox = new BoundingBoxImpl(dr.getBbox(), crs);
         return new RegularGridImpl(bbox, dr.getWidth(), dr.getHeight());
-    }
-
-    /**
-     * Returns an ArrayList of null values of the given length
-     */
-    public static ArrayList<Float> nullArrayList(int n) {
-        ArrayList<Float> list = new ArrayList<Float>(n);
-        Collections.fill(list, null);
-        return list;
     }
 
     public static TimePosition getClosestToCurrentTime(TimeAxis tAxis) {
@@ -445,8 +385,8 @@ public class WmsUtils {
         if (feature.getCoverage().getScalarMemberNames().contains(memberName)) {
             return memberName;
         } else {
-            RangeMetadata descendentMetadata = MetadataUtils.getDescendentMetadata(feature.getCoverage()
-                    .getRangeMetadata(), memberName);
+            RangeMetadata descendentMetadata = MetadataUtils.getDescendentMetadata(feature
+                    .getCoverage().getRangeMetadata(), memberName);
             if (descendentMetadata == null) {
                 return null;
             } else {
@@ -488,66 +428,12 @@ public class WmsUtils {
                 + getPlottableMemberName(feature, layerParts[2]);
     }
 
-    public static boolean isVectorLayer(Coverage<?> coverage, String memberName) {
-        if (coverage.getScalarMetadata(memberName).getValueType() == Vector2D.class) {
-            return true;
-        }
-        return false;
-    }
-
-    public static BoundingBox getWmsBoundingBox(Feature feature) {
-        BoundingBox inBbox;
-        if (feature instanceof GridSeriesFeature) {
-            inBbox = ((GridSeriesFeature) feature).getCoverage().getDomain().getHorizontalGrid()
-                    .getCoordinateExtent();
-        } else if (feature instanceof GridFeature) {
-            inBbox = ((GridFeature) feature).getCoverage().getDomain().getCoordinateExtent();
-        } else if (feature instanceof PointSeriesFeature) {
-            HorizontalPosition pos = ((PointSeriesFeature) feature).getHorizontalPosition();
-            return getBoundingBoxForSinglePosition(pos);
-        } else if (feature instanceof ProfileFeature) {
-            HorizontalPosition pos = ((ProfileFeature) feature).getHorizontalPosition();
-            return getBoundingBoxForSinglePosition(pos);
-        } else {
-            throw new IllegalArgumentException("Unknown feature type");
-        }
-        // TODO: should take into account the cell bounds
-        double minLon = inBbox.getMinX() % 360;
-        double maxLon = inBbox.getMaxX() % 360;
-        double minLat = inBbox.getMinY();
-        double maxLat = inBbox.getMaxY();
-        // Correct the bounding box in case of mistakes or in case it
-        // crosses the date line
-        if ((minLon < 180 && maxLon > 180) || (minLon < -180 && maxLon > -180) || minLon >= maxLon) {
-            minLon = -180.0;
-            maxLon = 180.0;
-        }
-        if (minLat >= maxLat) {
-            minLat = -90.0;
-            maxLat = 90.0;
-        }
-        // Sometimes the bounding boxes can be NaN, e.g. for a
-        // VerticalPerspectiveView
-        // that encompasses more than the Earth's disc
-        minLon = Double.isNaN(minLon) ? -180.0 : minLon;
-        minLat = Double.isNaN(minLat) ? -90.0 : minLat;
-        maxLon = Double.isNaN(maxLon) ? 180.0 : maxLon;
-        maxLat = Double.isNaN(maxLat) ? 90.0 : maxLat;
-        double[] bbox = { minLon, minLat, maxLon, maxLat };
-        return new BoundingBoxImpl(bbox, inBbox.getCoordinateReferenceSystem());
-    }
-
-    private static BoundingBox getBoundingBoxForSinglePosition(HorizontalPosition pos) {
-        return new BoundingBoxImpl(new double[] { pos.getX() - 1.0, pos.getY() - 1.0,
-                pos.getX() + 1.0, pos.getY() + 1.0 }, pos.getCoordinateReferenceSystem());
-    }
-
     /**
      * Utility method for getting the layer name (unique within a Capabilities
      * document) from the given GetMapRequest, checking that there is only one
      * layer in the request
      */
-    public static String getLayerName(GetMapDataRequest getMapDataRequest) throws WmsException {
+    public static String getWmsLayerName(GetMapDataRequest getMapDataRequest) throws WmsException {
         // Find which layer the user is requesting
         String[] layers = getMapDataRequest.getLayers();
         if (layers.length == 0) {
@@ -583,34 +469,6 @@ public class WmsUtils {
             throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
         }
         return layerParts[2];
-    }
-
-    /**
-     * Utility method to check if a particular child member of a metadata is
-     * scalar
-     * 
-     * @param metadata
-     *            the parent metadata object
-     * @param memberName
-     *            the member to check
-     * @return true if the child member is an instance of {@link ScalarMetadata}
-     */
-    public static boolean memberIsScalar(RangeMetadata metadata, String memberName) {
-        return metadata.getMemberMetadata(memberName) instanceof ScalarMetadata;
-    }
-
-    /**
-     * Utility method to return the child metadata of a {@link RangeMetadata}
-     * object
-     * 
-     * @param metadata
-     *            the parent metadata object
-     * @param memberName
-     *            the desired child member id
-     * @return the child {@link RangeMetadata}
-     */
-    public static RangeMetadata getChildMetadata(RangeMetadata metadata, String memberName) {
-        return metadata.getMemberMetadata(memberName);
     }
 
     /**
@@ -651,20 +509,14 @@ public class WmsUtils {
         }
     }
 
-    public static List<RangeMetadata> getPlottableLayers(Feature feature) {
-        /*
-         * TODO Currently this just returns all scalar members. These will be
-         * guaranteed to be plottable, but the list will omit any plottable
-         * parent members. This needs implementing consistently throughout the
-         * code (somewhere in edal-graphics)
-         */
-        List<RangeMetadata> ret = new ArrayList<RangeMetadata>();
-        for (String member : feature.getCoverage().getScalarMemberNames()) {
-            ret.add(feature.getCoverage().getScalarMetadata(member));
-        }
-        return ret;
-    }
-    
+    /*
+     * Starting here, we have methods which are only found in the wmsUtls.tld
+     * tag library.
+     * 
+     * Don't delete them just because you can't find where they're used in Java
+     * code
+     */
+
     public static class StyleInfo {
         private String stylename;
         private String palettename;
@@ -678,34 +530,50 @@ public class WmsUtils {
         public String getStylename() {
             return stylename;
         }
+
         public String getPalettename() {
             return palettename;
         }
+
         @Override
         public String toString() {
-            return stylename+"/"+palettename;
+            return stylename + "/" + palettename;
         }
     }
 
-    
-    public static List<StyleInfo> getStyles(Feature feature, String memberName, Set<String> palettes){
+    /**
+     * Gets the styles available for a particular layer
+     * 
+     * @param feature
+     *            the feature containing the layer
+     * @param memberName
+     *            the member of the coverage
+     * @param palettes
+     *            the available palettes to generate styles for
+     * @return A list of styles
+     */
+    public static List<StyleInfo> getStyles(Feature feature, String memberName, Set<String> palettes) {
         Map<String, Boolean> stylesAndUsesPalettes = new HashMap<String, Boolean>();
         ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(memberName);
-        boolean numerical = Number.class.isAssignableFrom(scalarMetadata.getValueType()); 
+        boolean numerical = Number.class.isAssignableFrom(scalarMetadata.getValueType());
         /*
          * All feature types can plot as gridpoints
          */
         stylesAndUsesPalettes.put("gridpoint", false);
-        if(scalarMetadata instanceof VectorComponent && (((VectorComponent) scalarMetadata).getDirection()==VectorDirection.DIRECTION)){
+        if (scalarMetadata instanceof VectorComponent
+                && (((VectorComponent) scalarMetadata).getDirection() == VectorDirection.DIRECTION)) {
             /*
-             * If we have a vector direction, we can plot it as a gridpoint or a vector.
+             * If we have a vector direction, we can plot it as a gridpoint or a
+             * vector.
              */
             stylesAndUsesPalettes.put("vector", false);
         } else {
-            if(numerical){
+            if (numerical) {
                 stylesAndUsesPalettes.put("point", true);
-                if((feature instanceof GridSeriesFeature || feature instanceof GridFeature)){
+                if ((feature instanceof GridSeriesFeature || feature instanceof GridFeature)) {
                     stylesAndUsesPalettes.put("boxfill", true);
+                } else if ((feature instanceof TrajectoryFeature)) {
+                    stylesAndUsesPalettes.put("trajectory", false);
                 }
             }
         }
@@ -713,9 +581,9 @@ public class WmsUtils {
          * TODO add trajectories etc. when they become available
          */
         List<StyleInfo> ret = new ArrayList<StyleInfo>();
-        for(String style : stylesAndUsesPalettes.keySet()){
-            if(stylesAndUsesPalettes.get(style)){
-                for(String palette : palettes){
+        for (String style : stylesAndUsesPalettes.keySet()) {
+            if (stylesAndUsesPalettes.get(style)) {
+                for (String palette : palettes) {
                     ret.add(new StyleInfo(style, palette));
                 }
             } else {
@@ -724,15 +592,78 @@ public class WmsUtils {
         }
         return ret;
     }
-    
+
+    /**
+     * Returns the RuntimeException name. This used in
+     * 'displayDefaultException.jsp' to show the exception name, to go around
+     * the use of '${exception.class.name}' where the word 'class' is deemed as
+     * Java keyword by Tomcat 7.0
+     * 
+     */
+    public static String getExceptionName(Exception e) {
+        return e.getClass().getName();
+    }
+
+    /**
+     * Utility method to check if a particular child member of a metadata is
+     * scalar
+     * 
+     * @param metadata
+     *            the parent metadata object
+     * @param memberName
+     *            the member to check
+     * @return true if the child member is an instance of {@link ScalarMetadata}
+     */
+    public static boolean memberIsScalar(RangeMetadata metadata, String memberName) {
+        return metadata.getMemberMetadata(memberName) instanceof ScalarMetadata;
+    }
+
+    /**
+     * Utility method to return the child metadata of a {@link RangeMetadata}
+     * object
+     * 
+     * @param metadata
+     *            the parent metadata object
+     * @param memberName
+     *            the desired child member id
+     * @return the child {@link RangeMetadata}
+     */
+    public static RangeMetadata getChildMetadata(RangeMetadata metadata, String memberName) {
+        return metadata.getMemberMetadata(memberName);
+    }
+
+    /**
+     * Gets all plottable layers of a feature.
+     * 
+     * @param feature
+     * @return
+     */
+    public static List<RangeMetadata> getPlottableLayers(Feature feature) {
+        /*
+         * TODO Currently this just returns all scalar members. These will be
+         * guaranteed to be plottable, but the list will omit any plottable
+         * parent members. This needs implementing consistently throughout the
+         * code (somewhere in edal-graphics)
+         */
+        List<RangeMetadata> ret = new ArrayList<RangeMetadata>();
+        for (String member : feature.getCoverage().getScalarMemberNames()) {
+            ret.add(feature.getCoverage().getScalarMetadata(member));
+        }
+        return ret;
+    }
+
+    /*
+     * End of methods only present for the taglib
+     */
+
     /*
      * The following methods all depend on the class type of the feature. If new
      * feature types are added, these methods should be looked at, since they
      * are likely to need to change
      */
-    
-    public static Object getFeatureValue(Feature feature, HorizontalPosition pos, VerticalPosition zPos,
-            TimePosition time, String memberName) {
+
+    public static Object getFeatureValue(Feature feature, HorizontalPosition pos,
+            VerticalPosition zPos, TimePosition time, String memberName) {
         /*
          * TODO check for position threshold. We don't necessarily want to
          * return a value...
@@ -751,5 +682,57 @@ public class WmsUtils {
                     new GeoPositionImpl(pos, zPos, time), memberName);
         }
         return null;
+    }
+
+    public static BoundingBox getWmsBoundingBox(Feature feature) {
+        BoundingBox inBbox;
+        if (feature instanceof GridSeriesFeature) {
+            inBbox = ((GridSeriesFeature) feature).getCoverage().getDomain().getHorizontalGrid()
+                    .getCoordinateExtent();
+        } else if (feature instanceof GridFeature) {
+            inBbox = ((GridFeature) feature).getCoverage().getDomain().getCoordinateExtent();
+        } else if (feature instanceof PointSeriesFeature) {
+            HorizontalPosition pos = ((PointSeriesFeature) feature).getHorizontalPosition();
+            return getBoundingBoxForSinglePosition(pos);
+        } else if (feature instanceof ProfileFeature) {
+            HorizontalPosition pos = ((ProfileFeature) feature).getHorizontalPosition();
+            return getBoundingBoxForSinglePosition(pos);
+        } else if (feature instanceof TrajectoryFeature) {
+            TrajectoryFeature trajectoryFeature = (TrajectoryFeature) feature;
+            trajectoryFeature.getCoverage().getDomain().getDomainObjects();
+            HorizontalPosition pos = ((ProfileFeature) feature).getHorizontalPosition();
+            return getBoundingBoxForSinglePosition(pos);
+        } else {
+            throw new IllegalArgumentException("Unknown feature type");
+        }
+        // TODO: should take into account the cell bounds
+        double minLon = inBbox.getMinX() % 360;
+        double maxLon = inBbox.getMaxX() % 360;
+        double minLat = inBbox.getMinY();
+        double maxLat = inBbox.getMaxY();
+        // Correct the bounding box in case of mistakes or in case it
+        // crosses the date line
+        if ((minLon < 180 && maxLon > 180) || (minLon < -180 && maxLon > -180) || minLon >= maxLon) {
+            minLon = -180.0;
+            maxLon = 180.0;
+        }
+        if (minLat >= maxLat) {
+            minLat = -90.0;
+            maxLat = 90.0;
+        }
+        // Sometimes the bounding boxes can be NaN, e.g. for a
+        // VerticalPerspectiveView
+        // that encompasses more than the Earth's disc
+        minLon = Double.isNaN(minLon) ? -180.0 : minLon;
+        minLat = Double.isNaN(minLat) ? -90.0 : minLat;
+        maxLon = Double.isNaN(maxLon) ? 180.0 : maxLon;
+        maxLat = Double.isNaN(maxLat) ? 90.0 : maxLat;
+        double[] bbox = { minLon, minLat, maxLon, maxLat };
+        return new BoundingBoxImpl(bbox, inBbox.getCoordinateReferenceSystem());
+    }
+
+    private static BoundingBox getBoundingBoxForSinglePosition(HorizontalPosition pos) {
+        return new BoundingBoxImpl(new double[] { pos.getX() - 1.0, pos.getY() - 1.0,
+                pos.getX() + 1.0, pos.getY() + 1.0 }, pos.getCoordinateReferenceSystem());
     }
 }

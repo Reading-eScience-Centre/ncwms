@@ -423,7 +423,7 @@ public abstract class AbstractWmsController extends AbstractController {
                     + this.serverConfig.getMaxImageWidth() + "x" + this.serverConfig.getMaxImageHeight());
         }
 
-        String layerName = WmsUtils.getLayerName(dr);
+        String layerName = WmsUtils.getWmsLayerName(dr);
         String memberName = WmsUtils.getMemberName(layerName);
         
         Feature feature = featureFactory.getFeature(layerName);
@@ -604,7 +604,7 @@ public abstract class AbstractWmsController extends AbstractController {
                     + " is not valid for GetFeatureInfo");
         }
 
-        String layerName = WmsUtils.getLayerName(dr);
+        String layerName = WmsUtils.getWmsLayerName(dr);
         String memberName = WmsUtils.getMemberName(layerName);
         
         
@@ -739,7 +739,7 @@ public abstract class AbstractWmsController extends AbstractController {
             GetFeatureInfoRequest request = new GetFeatureInfoRequest(params);
             GetFeatureInfoDataRequest dr = request.getDataRequest();
 
-            String layerName = WmsUtils.getLayerName(dr);
+            String layerName = WmsUtils.getWmsLayerName(dr);
             Feature feature = featureFactory.getFeature(layerName);
 
             String plottableMemberName = WmsUtils.getPlottableMemberName(feature,
@@ -769,7 +769,6 @@ public abstract class AbstractWmsController extends AbstractController {
                         + "for a legend graphic.  Use COLORSCALERANGE=default or specify "
                         + "the scale extremes explicitly.");
             }
-
 
             // Now create the legend image
             legend = palette.createLegend(numColourBands, feature.getName(), feature.getCoverage()
