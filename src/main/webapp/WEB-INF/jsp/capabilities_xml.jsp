@@ -171,7 +171,7 @@
 					</Dimension>
 				</c:if>
 
-				<c:forEach var="style" items="${utils:getStyles(feature, metadata.name, paletteNames)}">
+				<c:forEach var="style" items="${utils:getFullStyles(feature, metadata.name, paletteNames)}">
 					<Style>
                          <Name>${style}</Name>
                          <Title>${style}</Title>
