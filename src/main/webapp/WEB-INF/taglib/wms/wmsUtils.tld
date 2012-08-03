@@ -103,9 +103,16 @@
 
   <function>
     <description>Gets the available styles for a given feature</description>
-    <name>getStyles</name>
+    <name>getFullStyles</name>
     <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
-    <function-signature>java.util.List getStyles(uk.ac.rdg.resc.edal.feature.Feature, java.lang.String, java.util.Set)</function-signature>
+    <function-signature>java.util.List getStylesWithPalettes(uk.ac.rdg.resc.edal.feature.Feature, java.lang.String, java.util.Set)</function-signature>
+  </function>
+
+  <function>
+    <description>Gets the available base styles for a given feature</description>
+    <name>getBaseStyles</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>java.util.Set getBaseStyles(uk.ac.rdg.resc.edal.feature.Feature, java.lang.String)</function-signature>
   </function>
 
   

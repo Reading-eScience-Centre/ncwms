@@ -13,13 +13,19 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
      See MetadataController.showLayerDetails().
      
      Data (models) passed in to this page:
-         layer = Layer object
+         feature = feature object
+         featureMetadata = the plotting metadata
+         memberName = the member to be plotted
+         dataset = the dataset which the feature belongs to
          datesWithData = Map<Integer, Map<Integer, List<Integer>>>.  Contains
                 information about which days contain data for the Layer.  Maps
                 years to a map of months to an array of day numbers.
+         units = the units
          nearestTimeIso = ISO8601 String representing the point along the time
                 axis that is closest to the required date (as passed to the server)
+         paletteNames = the available palettes
 --%>
+
 <json:object>
     <json:property name="units" value="${units}"/>
 
@@ -41,7 +47,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
     <json:property name="numColorBands" value="${featureMetadata.numColorBands}"/>
 
     <c:set var="styles" value="boxfill"/>
-    <json:array name="supportedStyles" items="${styles}"/>
+    <json:array name="supportedStyles" items="${utils:getBaseStyles(feature, memberName)}"/>
 
     <c:set var="vaxis" value="${utils:getVerticalAxis(feature)}"/>
     <c:if test="${not empty vaxis}">

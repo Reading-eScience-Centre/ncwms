@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -552,9 +553,53 @@ public class WmsUtils {
      *            the available palettes to generate styles for
      * @return A list of styles
      */
-    public static List<StyleInfo> getStyles(Feature feature, String memberName, Set<String> palettes) {
+    public static List<StyleInfo> getStylesWithPalettes(Feature feature, String memberName, Set<String> palettes) {
+        Map<String, Boolean> stylesAndUsesPalettes = getStylesAndWhetherTheyUsePalettes(feature, memberName);
+        if(stylesAndUsesPalettes.size() == 0){
+            stylesAndUsesPalettes.put("default", true);
+        }
+        List<StyleInfo> ret = new ArrayList<StyleInfo>();
+        for (String style : stylesAndUsesPalettes.keySet()) {
+            if (stylesAndUsesPalettes.get(style)) {
+                for (String palette : palettes) {
+                    ret.add(new StyleInfo(style, palette));
+                }
+            } else {
+                ret.add(new StyleInfo(style, ""));
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * Gets the base styles (i.e. without palette names) available for a particular layer
+     * 
+     * @param feature
+     *            the feature containing the layer
+     * @param memberName
+     *            the member of the coverage
+     * @return A list of styles
+     */
+    public static Set<String> getBaseStyles(Feature feature, String memberName) {
+        Set<String> styles = new LinkedHashSet<String>();
+        styles.add("default");
+        styles.addAll(getStylesAndWhetherTheyUsePalettes(feature, memberName).keySet());
+        return styles;
+    }
+    
+    private static Map<String, Boolean> getStylesAndWhetherTheyUsePalettes(Feature feature, String memberName){
         Map<String, Boolean> stylesAndUsesPalettes = new HashMap<String, Boolean>();
-        ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(memberName);
+        ScalarMetadata scalarMetadata;
+        try{
+            scalarMetadata = feature.getCoverage().getScalarMetadata(memberName);
+        } catch (IllegalArgumentException iae){
+            /*
+             * We don't have scalar metadata for this member. We can only plot
+             * using the default style.
+             */
+            return stylesAndUsesPalettes;
+        }
+            
         boolean numerical = Number.class.isAssignableFrom(scalarMetadata.getValueType());
         /*
          * All feature types can plot as gridpoints
@@ -577,20 +622,7 @@ public class WmsUtils {
                 }
             }
         }
-        /*
-         * TODO add trajectories etc. when they become available
-         */
-        List<StyleInfo> ret = new ArrayList<StyleInfo>();
-        for (String style : stylesAndUsesPalettes.keySet()) {
-            if (stylesAndUsesPalettes.get(style)) {
-                for (String palette : palettes) {
-                    ret.add(new StyleInfo(style, palette));
-                }
-            } else {
-                ret.add(new StyleInfo(style, ""));
-            }
-        }
-        return ret;
+        return stylesAndUsesPalettes;
     }
 
     /**
@@ -639,17 +671,7 @@ public class WmsUtils {
      * @return
      */
     public static List<RangeMetadata> getPlottableLayers(Feature feature) {
-        /*
-         * TODO Currently this just returns all scalar members. These will be
-         * guaranteed to be plottable, but the list will omit any plottable
-         * parent members. This needs implementing consistently throughout the
-         * code (somewhere in edal-graphics)
-         */
-        List<RangeMetadata> ret = new ArrayList<RangeMetadata>();
-        for (String member : feature.getCoverage().getScalarMemberNames()) {
-            ret.add(feature.getCoverage().getScalarMetadata(member));
-        }
-        return ret;
+        return MetadataUtils.getAllTreeMembers(feature.getCoverage().getRangeMetadata());
     }
 
     /*

@@ -71,9 +71,6 @@ import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinates2DImpl;
-import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
-import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
-import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorDirection;
 import uk.ac.rdg.resc.edal.exceptions.InvalidCrsException;
 import uk.ac.rdg.resc.edal.exceptions.InvalidLineStringException;
 import uk.ac.rdg.resc.edal.feature.Feature;
@@ -448,9 +445,9 @@ public abstract class AbstractWmsController extends AbstractController {
         String[] styles = styleRequest.getStyles();
         
         /*
-         * We start with a default plot style of BOXFILL
+         * We start with a default plot style
          */
-        PlotStyle plotStyle = PlotStyle.BOXFILL;
+        PlotStyle plotStyle = PlotStyle.DEFAULT;
         
         if (styles.length > 0) {
             String[] styleStrEls = styles[0].split("/");
@@ -484,41 +481,6 @@ public abstract class AbstractWmsController extends AbstractController {
             styleDescriptor.setColorPalette(paletteName);
         }
         
-        /*
-         * Now we possibly override the plot style.
-         * 
-         * TODO Sort out getCapabilities so that only appropriate fields are
-         * advertised. This will also affect some other methods.
-         * showLayerDetails + JSP, for one
-         */
-        if (feature.getCoverage().getScalarMemberNames().contains(memberName)) {
-            ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(memberName);
-            if (scalarMetadata.getValueType().equals(Object.class)) {
-                /*
-                 * We have non-numeric data. All we can do here is plot the grid
-                 * points
-                 */
-                plotStyle = PlotStyle.GRID_POINTS;
-            } else if (scalarMetadata instanceof VectorComponent
-                    && ((VectorComponent) scalarMetadata).getDirection() == VectorDirection.DIRECTION) {
-                /*
-                 * We always plot direction fields with vector style
-                 */
-                plotStyle = PlotStyle.VECTOR;
-            } else if (feature instanceof PointSeriesFeature || feature instanceof ProfileFeature) {
-                /*
-                 * We always plot these features as points.
-                 */
-                plotStyle = PlotStyle.POINT;
-            }
-        } else {
-            /*
-             * We are plotting a non-scalar member. That's fine, because the
-             * plot style should be overridden anyway (it will likely be a
-             * composite field)
-             */
-        }
-
         styleDescriptor.setScaleRange(scaleRange);
         styleDescriptor.setTransparent(styleRequest.isTransparent());
         styleDescriptor.setLogarithmic(logScale);
@@ -558,10 +520,13 @@ public abstract class AbstractWmsController extends AbstractController {
             
             mapPlotter.addToFrame(feature, memberName, zValue, timeValue, tValueStr, plotStyle);
         }
+        
         // We only create a legend object if the image format requires it
         BufferedImage legend = imageFormat.requiresLegend() ? styleDescriptor.getLegend(
-                feature.getName(), feature.getCoverage().getScalarMetadata(memberName).getUnits()
-                        .getUnitString()) : null;
+                feature.getName(),
+                feature.getCoverage()
+                        .getScalarMetadata(WmsUtils.getPlottableMemberName(feature, memberName))
+                        .getUnits().getUnitString()) : null;
 
         // Write the image to the client.
         // First we set the HTTP headers

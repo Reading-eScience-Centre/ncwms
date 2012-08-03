@@ -144,7 +144,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                         </c:choose>
                     </Extent>
                     </c:if>
-	                <c:forEach var="style" items="${utils:getStyles(layer, metadata.name, paletteNames)}">
+	                <c:forEach var="style" items="${utils:getFullStyles(layer, metadata.name, paletteNames)}">
 	                    <Style>
 	                         <Name>${style}</Name>
 	                         <Title>${style}</Title>
