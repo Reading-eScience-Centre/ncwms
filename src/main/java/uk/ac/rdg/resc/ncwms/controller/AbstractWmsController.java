@@ -563,8 +563,7 @@ public abstract class AbstractWmsController extends AbstractController {
         String outputFormat = request.getOutputFormat();
         // Check the output format
         if (!outputFormat.equals(FEATURE_INFO_XML_FORMAT)
-                && !outputFormat.equals(FEATURE_INFO_GML_FORMAT)
-                && !outputFormat.equals(FEATURE_INFO_PNG_FORMAT)) {
+                && !outputFormat.equals(FEATURE_INFO_GML_FORMAT)) {
             throw new InvalidFormatException("The output format " + request.getOutputFormat()
                     + " is not valid for GetFeatureInfo");
         }
@@ -595,82 +594,64 @@ public abstract class AbstractWmsController extends AbstractController {
         
         String timeString = dr.getTimeString();
         
-        if (FEATURE_INFO_XML_FORMAT.equals(outputFormat)
-                || FEATURE_INFO_GML_FORMAT.equals(outputFormat)){
+        Map<String, Object> models = new HashMap<String, Object>();
+        models.put("longitude", lonLat.getLongitude());
+        models.put("latitude", lonLat.getLatitude());
+        
+        /*
+         * Find out the i,j coordinates of this point in the source grid (could
+         * be null)
+         */
+        HorizontalGrid horizGrid = null;
+        if (feature instanceof GridSeriesFeature) {
+            horizGrid = ((GridSeriesFeature) feature).getCoverage().getDomain()
+                    .getHorizontalGrid();
+        } else if (feature instanceof GridFeature) {
+            GridFeature gridFeature = (GridFeature) feature;
+            horizGrid = gridFeature.getCoverage().getDomain();
 
-            Map<String, Object> models = new HashMap<String, Object>();
-            models.put("longitude", lonLat.getLongitude());
-            models.put("latitude", lonLat.getLatitude());
-            
-            /*
-             * Find out the i,j coordinates of this point in the source grid (could
-             * be null)
-             */
-            HorizontalGrid horizGrid = null;
-            if (feature instanceof GridSeriesFeature) {
-                horizGrid = ((GridSeriesFeature) feature).getCoverage().getDomain()
-                        .getHorizontalGrid();
-            } else if (feature instanceof GridFeature) {
-                GridFeature gridFeature = (GridFeature) feature;
-                horizGrid = gridFeature.getCoverage().getDomain();
+        }
 
+        LonLatPosition gridCellCentre = null;
+        GridCoordinates2D gridCoordinates = null;
+        if(horizGrid != null){
+            GridCell2D gridCell = horizGrid.findContainingCell(pos);
+            if(gridCell != null){
+                gridCoordinates = gridCell.getGridCoordinates();
+                gridCellCentre = GISUtils.transformToWgs84LonLat(gridCell.getCentre());
             }
+        }
+        
+        models.put("gridCentre", gridCellCentre);
+        models.put("gridCoords", gridCoordinates);
+        models.put("varName", memberName);
+        models.put("coords", pos);
+        models.put("crs", dr.getCrsCode());
 
-            LonLatPosition gridCellCentre = null;
-            GridCoordinates2D gridCoordinates = null;
-            if(horizGrid != null){
-                GridCell2D gridCell = horizGrid.findContainingCell(pos);
-                if(gridCell != null){
-                    gridCoordinates = gridCell.getGridCoordinates();
-                    gridCellCentre = GISUtils.transformToWgs84LonLat(gridCell.getCentre());
-                }
-            }
-            
-            models.put("gridCentre", gridCellCentre);
-            models.put("gridCoords", gridCoordinates);
-            models.put("varName", memberName);
-            models.put("coords", pos);
-            models.put("crs", dr.getCrsCode());
+        /*
+         * Get the requested timesteps. If the layer doesn't have a time
+         * axis then this will return a single-element List with value null.
+         */
+        List<TimePosition> tValues = getTimeValues(timeString, feature);
 
-            /*
-             * Get the requested timesteps. If the layer doesn't have a time
-             * axis then this will return a single-element List with value null.
-             */
-            List<TimePosition> tValues = getTimeValues(timeString, feature);
-
-            // Now we map date-times to data values
-            // The map is kept in order of ascending time
-            Map<TimePosition, Object> featureData = new LinkedHashMap<TimePosition, Object>();
-            if(tValues.isEmpty()){
-                Object val = WmsUtils.getFeatureValue(feature, pos, zValue, null, memberName);
-                featureData.put(null, val);
-            } else {
-                for(TimePosition time : tValues){
-                    Object val = WmsUtils.getFeatureValue(feature, pos, zValue, time, memberName);
-                    featureData.put(time, val);
-                }
-            }
-
-            models.put("data", featureData);
-            if(FEATURE_INFO_XML_FORMAT.equals(outputFormat)){
-                return new ModelAndView("showFeatureInfo_xml", models);
-            } else {
-                return new ModelAndView("showFeatureInfo_gml", models);
-            }
+        // Now we map date-times to data values
+        // The map is kept in order of ascending time
+        Map<TimePosition, Object> featureData = new LinkedHashMap<TimePosition, Object>();
+        if(tValues.isEmpty()){
+            Object val = WmsUtils.getFeatureValue(feature, pos, zValue, null, memberName);
+            featureData.put(null, val);
         } else {
-            // Must be PNG format: prepare and output the JFreeChart
-            PointSeriesFeature pointSeriesFeature = null;
-            if(feature instanceof GridSeriesFeature){
-                pointSeriesFeature = ((GridSeriesFeature)feature).extractPointSeriesFeature(lonLat, zValue, getTimeRange(timeString, feature),
-                        CollectionUtils.setOf(memberName));
-            } else if(feature instanceof PointSeriesFeature) {
-                pointSeriesFeature = (PointSeriesFeature) feature;
-            } else {
-                throw new WmsException("Cannot generate time series plot for this type of feature");
+            for(TimePosition time : tValues){
+                Object val = WmsUtils.getFeatureValue(feature, pos, zValue, time, memberName);
+                featureData.put(time, val);
             }
-            JFreeChart chart = Charting.createTimeseriesPlot(pointSeriesFeature, memberName);
-            ChartUtilities.writeChartAsPNG(httpServletResponse.getOutputStream(), chart, 400, 300);
-            return null;
+        }
+
+        models.put("data", featureData);
+        if(FEATURE_INFO_XML_FORMAT.equals(outputFormat)){
+            return new ModelAndView("showFeatureInfo_xml", models);
+        } else {
+            return new ModelAndView("showFeatureInfo_gml", models);
         }
     }
     
@@ -876,7 +857,88 @@ public abstract class AbstractWmsController extends AbstractController {
     }
 
     /**
-     * Outputs a vertical profile plot in PNG format.
+     * Outputs a timeseries plot in PNG or JPEG format.
+     */
+    protected ModelAndView getTimeseries(RequestParams params, FeatureFactory featureFactory,
+            HttpServletResponse response) throws WmsException, IOException {
+        String layerName = params.getMandatoryString("layer");
+        
+        PointSeriesFeature pointSeriesFeature = null;
+        Feature feature = featureFactory.getFeature(layerName);
+        final String memberName = WmsUtils.getPlottableMemberName(feature,
+                WmsUtils.getMemberName(layerName));
+        String outputFormat = params.getMandatoryString("format");
+        if (!"image/png".equals(outputFormat) && !"image/jpeg".equals(outputFormat)
+                && !"image/jpg".equals(outputFormat)) {
+            throw new InvalidFormatException(outputFormat + " is not a valid output format");
+        }
+        
+        String timeString = params.getMandatoryString("time");
+        Extent<TimePosition> timeRange = getTimeRange(timeString, feature);
+        
+        if(feature instanceof PointSeriesFeature){
+            pointSeriesFeature = (PointSeriesFeature) feature;
+            /*
+             * TODO extract sub-feature according to times
+             * TODO do this for all features (extraction of sub-feature, that is)
+             */
+        } else if(feature instanceof GridSeriesFeature){
+            String crsCode = params.getString("crs");
+            String point = params.getString("point");
+            VerticalPosition zValue = getElevationValue(params.getString("elevation"), feature);
+            // Get the required coordinate reference system, forcing longitude-first
+            // axis order.
+            final CoordinateReferenceSystem crs = WmsUtils.getCrs(crsCode);
+            
+            // The location of the vertical profile
+            String[] coords = point.trim().split(" +"); // allows one or more spaces
+            // to be used as a delimiter
+            if (coords.length != 2) {
+                throw new WmsException("Invalid POINT format");
+            }
+            int lonIndex = 0;
+            int latIndex = 1;
+            // If we have lat lon order...
+            if (crsCode.equalsIgnoreCase("EPSG:4326") && params.getWmsVersion().equalsIgnoreCase("1.3.0")) {
+                // Swap the co-ordinates to lon lat order
+                latIndex = 0;
+                lonIndex = 1;
+            }
+            
+            double x, y;
+            try {
+                x = Double.parseDouble(coords[lonIndex]);
+                y = Double.parseDouble(coords[latIndex]);
+            } catch (NumberFormatException nfe) {
+                throw new WmsException("Invalid POINT format");
+            }
+            HorizontalPosition pos = new HorizontalPositionImpl(x, y, crs);
+            
+            GridSeriesFeature gridSeriesFeature = (GridSeriesFeature) feature;
+
+            pointSeriesFeature = gridSeriesFeature.extractPointSeriesFeature(pos, zValue,
+                    timeRange, CollectionUtils.setOf(memberName));
+            
+        } else {
+            throw new WmsException("Cannot get a time series for this type of feature");
+        }
+        
+        JFreeChart chart = Charting.createTimeseriesPlot(pointSeriesFeature, memberName);
+        response.setContentType(outputFormat);
+        int width = 500;
+        int height = 400;
+        if ("image/png".equals(outputFormat)) {
+            ChartUtilities.writeChartAsPNG(response.getOutputStream(), chart, width, height);
+        } else {
+            // Must be a JPEG
+            ChartUtilities.writeChartAsJPEG(response.getOutputStream(), chart, width, height);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Outputs a vertical profile plot in PNG or JPEG format.
      */
     protected ModelAndView getVerticalProfile(RequestParams params, FeatureFactory featureFactory,
             HttpServletResponse response) throws WmsException, IOException {

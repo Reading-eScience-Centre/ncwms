@@ -125,6 +125,10 @@ public final class NcwmsController extends AbstractWmsController
             logUsage = false; // We don't log usage for this operation
             return getKMLRegion(params, httpServletRequest); */
         }
+        else if (request.equals("GetTimeseries"))
+        {
+            return getTimeseries(params, featureFactory, httpServletResponse);
+        }
         else if (request.equals("GetTransect"))
         {
             return getTransect(params, featureFactory, httpServletResponse);
