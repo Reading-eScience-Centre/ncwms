@@ -34,16 +34,13 @@ import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 /**
  * Contains the parts of the GetMap request that pertain to data extraction,
  * i.e. independent of styling.
- * @todo Use this as a key for the tile cache?  Would need to normalise timeString
- * etc.
- *
- * @author Jon Blower
- * $Revision$
- * $Date$
- * $Log$
+ * 
+ * @todo Use this as a key for the tile cache? Would need to normalise
+ *       timeString etc.
+ * 
+ * @author Jon Blower $Revision$ $Date$ $Log$
  */
-public class GetMapDataRequest
-{
+public class GetMapDataRequest {
     protected String[] layers;
     private String crsCode;
     private double[] bbox;
@@ -51,72 +48,76 @@ public class GetMapDataRequest
     private int height;
     private String timeString;
     private String elevationString;
-    
+
     /**
      * Creates a new instance of GetMapDataRequest from the given parameters
-     * @throws WmsException if the request is invalid
+     * 
+     * @throws WmsException
+     *             if the request is invalid
      */
-    public GetMapDataRequest(RequestParams params, String version) throws WmsException
-    {
+    public GetMapDataRequest(RequestParams params, String version) throws WmsException {
         this.layers = params.getMandatoryString("layers").split(",");
         this.init(params, version);
     }
-    
+
     /**
      * Constructor called by GetFeatureInfoDataRequest
      */
-    protected GetMapDataRequest() {}
-    
+    protected GetMapDataRequest() {
+    }
+
     /**
      * Initializes the parameters that are common to GetMap and GetFeatureInfo
      */
-    protected void init(RequestParams params, String version) throws WmsException
-    {
-        // WMS1.3.0 uses "CRS", 1.1.1 uses "SRS".  This is a bit of a kludge
-        this.crsCode = params.getMandatoryString(version.equals("1.3.0") ? "crs" : "srs");
-        if(crsCode.equalsIgnoreCase("EPSG:4326") && version.equalsIgnoreCase("1.1.1")){
-            crsCode = "CRS:84";
+    protected void init(RequestParams params, String version) throws WmsException {
+        if (version.equals("1.3.0")) {
+            this.crsCode = params.getMandatoryString("crs");
+            if (crsCode.equalsIgnoreCase("EPSG:4326")) {
+                crsCode = "CRS:84";
+                this.bbox = WmsUtils.parseBbox(params.getMandatoryString("bbox"), false);
+            } else {
+                this.bbox = WmsUtils.parseBbox(params.getMandatoryString("bbox"), true);
+            }
+        } else {
+            this.crsCode = params.getMandatoryString("srs");
+            if (crsCode.equalsIgnoreCase("EPSG:4326")) {
+                crsCode = "CRS:84";
+            }
+            this.bbox = WmsUtils.parseBbox(params.getMandatoryString("bbox"), true);
         }
-        this.bbox = WmsUtils.parseBbox(params.getMandatoryString("bbox"), !crsCode.equalsIgnoreCase("epsg:4326"));
+
         this.width = params.getMandatoryPositiveInt("width");
         this.height = params.getMandatoryPositiveInt("height");
         this.timeString = params.getString("time");
         this.elevationString = params.getString("elevation");
     }
 
-    public String[] getLayers()
-    {
+    public String[] getLayers() {
         return layers;
     }
 
-    public String getCrsCode()
-    {
+    public String getCrsCode() {
         return crsCode;
     }
 
-    public double[] getBbox()
-    {
+    public double[] getBbox() {
         return bbox;
     }
 
-    public int getWidth()
-    {
+    public int getWidth() {
         return width;
     }
 
-    public int getHeight()
-    {
+    public int getHeight() {
         return height;
     }
 
-    public String getTimeString()
-    {
+    public String getTimeString() {
         return timeString;
     }
 
-    public String getElevationString()
-    {
+    public String getElevationString() {
         return elevationString;
     }
-    
+
 }
