@@ -485,6 +485,7 @@ public abstract class AbstractWmsController extends AbstractController {
         styleDescriptor.setTransparent(styleRequest.isTransparent());
         styleDescriptor.setLogarithmic(logScale);
         styleDescriptor.setOpacity(styleRequest.getOpacity());
+        styleDescriptor.setBgColor(styleRequest.getBackgroundColour());
         styleDescriptor.setNumColourBands(styleRequest.getNumColourBands());
         
         // Need to make sure that the images will be compatible with the
