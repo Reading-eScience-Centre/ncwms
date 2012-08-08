@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.cdm.feature.FeatureCollectionFactory;
+import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
 import uk.ac.rdg.resc.edal.position.TimePosition;
@@ -492,9 +493,9 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
             /*
              * First add all the scalar members
              */
-            for(String member : feature.getCoverage().getScalarMemberNames()){
-                String memberId = feature.getId()+"/"+member;
-             // Load the Variable object from the config file or create a new
+            for(RangeMetadata memberMetadata : WmsUtils.getPlottableLayers(feature)){
+                String memberId = feature.getId()+"/"+memberMetadata.getName();
+                // Load the Variable object from the config file or create a new
                 // one if it doesn't exist.
                 FeaturePlottingMetadata plottingMetadata = getPlottingMetadataMap().get(memberId);
                 
@@ -506,7 +507,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
                 // If there is no title set for this layer in the config file, we
                 // use the title that was read by the DataReader.
                 if (plottingMetadata.getTitle() == null)
-                    plottingMetadata.setTitle(feature.getCoverage().getScalarMetadata(member).getName());
+                    plottingMetadata.setTitle(memberMetadata.getName());
 
                 /*
                  * 
@@ -518,7 +519,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
                     appendLoadingProgress("Reading min-max data for layer " + memberId);
                     Extent<Float> valueRange;
                     try {
-                        valueRange = WmsUtils.estimateValueRange(feature, member);
+                        valueRange = WmsUtils.estimateValueRange(feature, memberMetadata.getName());
                         if (valueRange.isEmpty()) {
                             // We failed to get a valid range. Just guess at a scale
                             valueRange = Extents.newExtent(-50.0f, 50.0f);

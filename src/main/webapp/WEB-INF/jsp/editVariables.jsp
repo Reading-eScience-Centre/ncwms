@@ -1,17 +1,19 @@
 <%@page contentType="text/html"%>
 <%@page pageEncoding="UTF-8"%>
 <%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@taglib uri="/WEB-INF/taglib/wms/wmsUtils" prefix="utils"%>
 <%
 response.setHeader("Cache-Control","no-cache"); //HTTP 1.1
 response.setHeader("Pragma","no-cache"); //HTTP 1.0
 response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-   "http://www.w3.org/TR/html4/loose.dtd">
 <%-- Page for editing the variables in a dataset
      Data (models) passed in to this page:
          dataset      = Dataset to be edited (uk.ac.rdg.resc.ncwms.config.Dataset)
          paletteNames = Names of available colour palettes (Set of String) --%>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<link rel=StyleSheet href="../css/ncWMS.css" type="text/css"/>      
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -31,24 +33,26 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                     <tr><th>Min</th><th>Max</th></tr>
                 </thead>
                 <tbody>
-                    <c:forEach var="layer" items="${dataset.layers}">
+                    <c:forEach var="featureMetadata" items="${dataset.plottingMetadataMap}">
                         <tr>
-                            <td>${layer.id}</td>
-                            <td><input type="text" name="${layer.id}.title" value="${layer.title}"/></td>
-                            <td><input type="text" name="${layer.id}.scaleMin" value="${layer.approxValueRange.minimum}"/></td>
-                            <td><input type="text" name="${layer.id}.scaleMax" value="${layer.approxValueRange.maximum}"/></td>
+                            <c:set var="varId" value="${featureMetadata.key}" />
+                            <c:set var="metadata" value="${featureMetadata.value}" />
+                            <td>${varId}</td>
+                            <td><input type="text" name="${varId}.title" value="${metadata.title}"/></td>
+                            <td><input type="text" name="${varId}.scaleMin" value="${metadata.colorScaleRange.low}"/></td>
+                            <td><input type="text" name="${varId}.scaleMax" value="${metadata.colorScaleRange.high}"/></td>
                             <td>
-                                <select name="${layer.id}.palette">
+                                <select name="${varId}.palette">
                                     <c:forEach var="paletteName" items="${paletteNames}">
-                                        <option value="${paletteName}"<c:if test="${layer.defaultColorPalette.name == paletteName}"> selected="selected"</c:if>>${paletteName}</option>
+                                        <option value="${paletteName}"<c:if test="${metadata.paletteName == paletteName}"> selected="selected"</c:if>>${paletteName}</option>
                                     </c:forEach>
                                 </select>
                             </td>
-                            <td><input type="text" name="${layer.id}.numColorBands" value="${layer.defaultNumColorBands}"/></td>
+                            <td><input type="text" name="${varId}.numColorBands" value="${metadata.numColorBands}"/></td>
                             <td>
-                                <select name="${layer.id}.scaling">
-                                    <option value="linear"<c:if test="${not layer.logScaling}"> selected="selected"</c:if>>linear</option>
-                                    <option value="logarithmic"<c:if test="${layer.logScaling}"> selected="selected"</c:if>>logarithmic</option>
+                                <select name="${varId}.scaling">
+                                    <option value="linear"<c:if test="${not metadata.logScaling}"> selected="selected"</c:if>>linear</option>
+                                    <option value="logarithmic"<c:if test="${metadata.logScaling}"> selected="selected"</c:if>>logarithmic</option>
                                 </select>
                             </td>
                         </tr>

@@ -23,6 +23,12 @@
     <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
     <function-signature>java.lang.String formatUTCTimeOnly(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
   </function>
+  <function>
+    <description>Formats a TimePosition object as the date only</description>
+    <name>formatUTCDateOnly</name>
+    <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
+    <function-signature>java.lang.String formatUTCDateOnly(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
+  </function>
 
   <function>
     <description>Returns exception name</description>

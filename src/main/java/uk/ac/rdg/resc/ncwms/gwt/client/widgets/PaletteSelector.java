@@ -33,6 +33,7 @@ public class PaletteSelector implements PaletteSelectorIF {
 	private TextBox minScale;
 	private TextBox maxScale;
 	private ListBox nColorBands;
+	private ListBox styles;
 	private ListBox logScale;
 	private PushButton autoButton;
 	private ToggleButton lockButton;
@@ -121,6 +122,14 @@ public class PaletteSelector implements PaletteSelectorIF {
 		maxScale.setTitle("The maximum value of the colour range");
 		maxScale.setMaxLength(8);
 		
+		styles = new ListBox();
+		styles.addChangeHandler(new ChangeHandler() {
+            @Override
+            public void onChange(ChangeEvent event) {
+                paletteHandler.paletteChanged(PaletteSelector.this.id, currentPalette, getSelectedStyle(), getNumColorBands());
+            }
+        });
+		
 		logScale = new ListBox();
 		logScale.addItem("linear");
 		logScale.addItem("log");
@@ -199,11 +208,14 @@ public class PaletteSelector implements PaletteSelectorIF {
         vp.add(mhLabel);
         vp.setCellVerticalAlignment(mhLabel, HasVerticalAlignment.ALIGN_BOTTOM);
 
+        vp.add(styles);
+        vp.setCellHeight(styles, "40px");
+        vp.setCellVerticalAlignment(styles, HasVerticalAlignment.ALIGN_BOTTOM);
         vp.add(logScale);
-        vp.setCellHeight(logScale, "60px");
-        vp.setCellVerticalAlignment(logScale, HasVerticalAlignment.ALIGN_BOTTOM);
+        vp.setCellHeight(logScale, "40px");
+        vp.setCellVerticalAlignment(logScale, HasVerticalAlignment.ALIGN_MIDDLE);
         vp.add(buttonsPanel);
-        vp.setCellHeight(buttonsPanel, "60px");
+        vp.setCellHeight(buttonsPanel, "40px");
         vp.setCellVerticalAlignment(buttonsPanel, HasVerticalAlignment.ALIGN_TOP);
 
         vp.add(mlLabel);
@@ -231,6 +243,7 @@ public class PaletteSelector implements PaletteSelectorIF {
 	    
 	    VerticalPanel buttonsAndLogPanel = new VerticalPanel();
 	    buttonsAndLogPanel.add(buttonsPanel);
+	    buttonsAndLogPanel.add(styles);
 	    buttonsAndLogPanel.add(logScale);
 	    
 	    hp.add(minScale);
@@ -289,7 +302,7 @@ public class PaletteSelector implements PaletteSelectorIF {
             @Override
             public void onClose(CloseEvent<PopupPanel> event) {
                 selectPalette(currentPalette);
-                paletteHandler.paletteChanged(id, currentPalette, getNumColorBands());
+                paletteHandler.paletteChanged(id, currentPalette, getSelectedStyle(), getNumColorBands());
             }
         });
         popup.center();
@@ -332,16 +345,19 @@ public class PaletteSelector implements PaletteSelectorIF {
         this.id = id;
     }
     
+    @Override
     public void populatePalettes(List<String> availablePalettes){
 	    this.availablePalettes = availablePalettes;
 	    setEnabled(true);
 	}
 	
-	public String getSelectedPalette(){
+	@Override
+    public String getSelectedPalette(){
 	    return currentPalette;
 	}
 	
-	public void selectPalette(String paletteString){
+	@Override
+    public void selectPalette(String paletteString){
 	    currentPalette = paletteString;
 	    if(vertical)
 	        paletteImage.setUrl(getImageUrl(paletteString, height, 1));
@@ -349,7 +365,8 @@ public class PaletteSelector implements PaletteSelectorIF {
 	        paletteImage.setUrl(getImageUrl(paletteString, 1, width));
 	}
 	
-	public boolean setScaleRange(String scaleRange) {
+	@Override
+    public boolean setScaleRange(String scaleRange) {
 	    String[] vals = scaleRange.split(",");
 	    float minVal = Float.parseFloat(vals[0]);
 	    if(isLogScale() && minVal <= 0){
@@ -373,14 +390,17 @@ public class PaletteSelector implements PaletteSelectorIF {
 	    mhLabel.setText(format.format(sTwoThird));
 	}
 
+    @Override
     public String getScaleRange() {
         return minScale.getValue()+","+maxScale.getValue();
     }
 
+    @Override
     public int getNumColorBands() {
         return Integer.parseInt(nColorBands.getValue(nColorBands.getSelectedIndex()));
     }
     
+    @Override
     public void setNumColorBands(int nBands){
         int diff = 254*254;
         int minIndex = 0;
@@ -400,10 +420,12 @@ public class PaletteSelector implements PaletteSelectorIF {
         nColorBands.setSelectedIndex(minIndex);
     }
 
+    @Override
     public void setLogScale(boolean logScale) {
         this.logScale.setSelectedIndex(logScale ? 1 : 0);
     }
 
+    @Override
     public boolean isLogScale() {
         if (logScale.getSelectedIndex() == 0) {
             // Linear scale
@@ -414,15 +436,18 @@ public class PaletteSelector implements PaletteSelectorIF {
         }
     }
     
+    @Override
     public boolean isLocked() {
         return lockButton.getValue();
     }
 
+    @Override
     public void setEnabled(boolean enabled) {
         minScale.setEnabled(enabled);
         maxScale.setEnabled(enabled);
         autoButton.setEnabled(enabled);
         lockButton.setEnabled(enabled);
+        styles.setEnabled(enabled);
         logScale.setEnabled(enabled);
         this.enabled = enabled;
     }
@@ -430,5 +455,31 @@ public class PaletteSelector implements PaletteSelectorIF {
     @Override
     public Widget asWidget() {
         return mainPanel;
+    }
+
+    @Override
+    public void populateStyles(List<String> availableStyles) {
+        styles.clear();
+        for(String style : availableStyles)
+            styles.addItem(style);
+    }
+
+    @Override
+    public String getSelectedStyle() {
+        if(styles.getSelectedIndex() > 0)
+            return styles.getValue(styles.getSelectedIndex());
+        else
+            return "default";
+    }
+
+    @Override
+    public void selectStyle(String styleString) {
+        for(int i=0; i < styles.getItemCount(); i++){
+            String style = styles.getValue(i);
+            if(styleString.equals(style)){
+                styles.setSelectedIndex(i);
+                return;
+            }
+        }
     }
 }

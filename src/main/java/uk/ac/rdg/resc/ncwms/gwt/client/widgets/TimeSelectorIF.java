@@ -10,8 +10,10 @@ public interface TimeSelectorIF extends IsWidget {
     public void populateTimes(List<String> availableTimes);
     public String getSelectedDate();
     public String getSelectedDateTime();
+    public String getSelectedTime();
     public boolean selectDate(String dateString);
-    public boolean selectTime(String timeString);
+    public boolean selectDateTime(String timeString);
     public String returnTimes();
     public void setEnabled(boolean enabled);
+    public boolean hasMultipleTimes();
 }

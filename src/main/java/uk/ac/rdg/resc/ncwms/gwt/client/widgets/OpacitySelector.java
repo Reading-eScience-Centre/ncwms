@@ -19,6 +19,15 @@ public class OpacitySelector extends BaseSelector {
         add(opacity);
     }
 
+    public void setEnabled(boolean enabled){
+        opacity.setEnabled(enabled);
+        if(!opacity.isEnabled()){
+            label.setStylePrimaryName("inactiveLabelStyle");
+        } else {
+            label.setStylePrimaryName("labelStyle");
+        }
+    }
+    
     public float getOpacity() {
         return (opacity.getSelectedIndex()+1)/4.0f;
     }

@@ -95,6 +95,7 @@ import uk.ac.rdg.resc.ncwms.wms.Dataset;
  * </code>
  * 
  * @author Jon Blower
+ * @author Guy Griffiths
  */
 public class WmsUtils {
     /**
@@ -206,8 +207,9 @@ public class WmsUtils {
         return Extents.findMinMax(dataSample);
     }
 
-    private static List<Float> readDataSample(Feature feature, String member) throws IOException {
+    private static List<Float> readDataSample(Feature feature, String memberName) throws IOException {
         List<Float> ret = new ArrayList<Float>();
+        String member = WmsUtils.getPlottableMemberName(feature, memberName);
         Class<?> clazz = feature.getCoverage().getScalarMetadata(member).getValueType();
         if (!Number.class.isAssignableFrom(clazz)) {
             /*

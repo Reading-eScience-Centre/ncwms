@@ -24,6 +24,8 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
     private Tree tree;
     private Map<String, String> layerIdToTitle;
     private String selectedLayer;
+    private boolean firstUse = true;
+    private String firstTitle = null;
 
     public LayerSelectorCombo(LayerSelectionHandler layerHandler) {
         super("Loading");
@@ -45,9 +47,15 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
                 if (!popup.isShowing()) {
                     popup.show();
                 }
+                if(firstUse) {
+                    setHTML("<big>" + firstTitle + "</big>");
+                    firstUse = false;
+                }
             }
         });
 
+        setHTML("<big>Click here to start</big>");
+        
         VerticalPanel vPanel = new VerticalPanel();
         PushButton button = new PushButton("Refresh");
         button.setTitle("Click to refresh the layers list");
@@ -68,8 +76,12 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
     public void populateLayers(LayerMenuItem topItem){
         tree.clear();
         String nodeLabel = topItem.getTitle();
+        if(firstUse){
+            firstTitle = nodeLabel;
+        } else {
+            setHTML("<big>" + nodeLabel + "</big>");
+        }
         List<LayerMenuItem> children = topItem.getChildren();
-        setHTML("<big>" + nodeLabel + "</big>");
         if(children != null){
             for(LayerMenuItem child : children){
                 addNode(child, null);
@@ -102,7 +114,7 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
                 @Override
                 public void onClick(ClickEvent event) {
                     setSelectedLayer(id);
-                    layerSelectionHandler.layerSelected(id);
+                    layerSelectionHandler.layerSelected(id, true);
                 }
             });
         }
