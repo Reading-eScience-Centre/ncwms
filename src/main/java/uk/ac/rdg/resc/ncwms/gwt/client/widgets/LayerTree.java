@@ -37,7 +37,7 @@ public class LayerTree extends Tree {
             leaf.addClickHandler(new ClickHandler() {
                 @Override
                 public void onClick(ClickEvent event) {
-                    layerSelectionHandler.layerSelected(id);
+                    layerSelectionHandler.layerSelected(id, true);
                 }
             });
             parentNode.addItem(leaf);

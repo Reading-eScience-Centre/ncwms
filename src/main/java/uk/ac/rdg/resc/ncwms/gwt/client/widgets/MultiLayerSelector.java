@@ -5,26 +5,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import uk.ac.rdg.resc.ncwms.gwt.client.handlers.LayerSelectionHandler;
+import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
+
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.event.logical.shared.OpenEvent;
-import com.google.gwt.event.logical.shared.OpenHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
-import com.google.gwt.json.client.JSONArray;
-import com.google.gwt.json.client.JSONObject;
-import com.google.gwt.json.client.JSONValue;
-import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.CheckBox;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.PushButton;
 import com.google.gwt.user.client.ui.Tree;
 import com.google.gwt.user.client.ui.TreeItem;
 import com.google.gwt.user.client.ui.VerticalPanel;
-
-import uk.ac.rdg.resc.ncwms.gwt.client.handlers.LayerSelectionHandler;
-import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
 
 public class MultiLayerSelector extends VerticalPanel implements LayerSelectorIF {
     private LayerSelectionHandler layerSelectionHandler;
@@ -63,6 +55,7 @@ public class MultiLayerSelector extends VerticalPanel implements LayerSelectorIF
         add(tree);
         add(button);
     }
+    @Override
     public void populateLayers(LayerMenuItem topItem){
         tree.clear();
         String nodeLabel = topItem.getTitle();
@@ -99,7 +92,7 @@ public class MultiLayerSelector extends VerticalPanel implements LayerSelectorIF
                 @Override
                 public void onValueChange(ValueChangeEvent<Boolean> event) {
                     if(event.getValue()){
-                        layerSelectionHandler.layerSelected(id);
+                        layerSelectionHandler.layerSelected(id, true);
                     } else {
                         layerSelectionHandler.layerDeselected(id);
                     }

@@ -6,6 +6,7 @@ import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelectorIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerSelectorCombo;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerSelectorIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.MapArea;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.OpacitySelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.PaletteSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.PaletteSelectorIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.TimeSelector;
@@ -132,7 +133,9 @@ public class LayoutManager {
             Anchor screenshot,
             Image rescLogo,
             MapArea mapArea,
-            Image loadingImage){
+            Image loadingImage,
+            AnimationButton anim,
+            OpacitySelector opacitySelector){
         kmzLink.setStylePrimaryName("linkStyle");
         permalink.setStylePrimaryName("linkStyle");
         email.setStylePrimaryName("linkStyle");
@@ -144,6 +147,7 @@ public class LayoutManager {
         selectors.add(unitsInfo);
         selectors.add(timeSelector);
         selectors.add(elevationSelector);
+        selectors.add(opacitySelector);
         
         /*
          * The image height is hardcoded here, because when running with IE8, rescLogo.getHeight()
@@ -156,8 +160,8 @@ public class LayoutManager {
         
         HorizontalPanel bottomPanel = new HorizontalPanel();
         bottomPanel.setVerticalAlignment(HasVerticalAlignment.ALIGN_MIDDLE);
-//        anim.setWidth("16px");
-//        bottomPanel.add(anim);
+        anim.setWidth("16px");
+        bottomPanel.add(anim);
         bottomPanel.setWidth("100%");
         bottomPanel.add(kmzLink);
         bottomPanel.add(permalink);
@@ -197,7 +201,6 @@ public class LayoutManager {
         vPanel.add(topPanel);
         
         vPanel.setCellHeight(topPanel, logoHeight+"px");
-//        vPanel.setCellHeight(topPanel, myOceanLogo.getHeight()+"px");
         vPanel.setCellWidth(topPanel, ((int) mapArea.getMap().getSize().getWidth()+100)+"px");
         vPanel.add(mapPaletteLoaderPanel);
         

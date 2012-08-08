@@ -6,11 +6,12 @@ response.setHeader("Cache-Control","no-cache"); //HTTP 1.1
 response.setHeader("Pragma","no-cache"); //HTTP 1.0
 response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-   "http://www.w3.org/TR/html4/loose.dtd">
 <%-- Display of the error associated with a dataset
      Data (models) passed in to this page:
          dataset     = uk.ac.rdg.resc.ncwms.config.Dataset --%>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<link rel=StyleSheet href="../css/ncWMS.css" type="text/css"/>            
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">

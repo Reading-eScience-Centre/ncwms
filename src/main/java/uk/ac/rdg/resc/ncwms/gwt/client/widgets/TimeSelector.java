@@ -50,11 +50,13 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 		add(times);
 	}
 	
-	public void setId(String id){
+	@Override
+    public void setId(String id){
 	    this.id = id;
 	}
 	
-	public void populateDates(List<String> availableDates){
+	@Override
+    public void populateDates(List<String> availableDates){
 		dates.clear();
 		if(availableDates == null || availableDates.size() == 0){
 			dates.setEnabled(false);
@@ -70,7 +72,8 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 		}
 	}
 
-	public void populateTimes(List<String> availableTimes){
+	@Override
+    public void populateTimes(List<String> availableTimes){
 	    times.clear();
 	    
 	    if(availableTimes == null || availableTimes.size() == 0 || !dates.isEnabled()){
@@ -88,7 +91,8 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 	    }
 	}
 	
-	public String getSelectedDate(){
+	@Override
+    public String getSelectedDate(){
 	    int i = dates.getSelectedIndex();
 	    // TODO Look at this more carefully for case when no times are present
 	    if(i != -1){
@@ -98,7 +102,8 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 	    }
 	}
 	
-	public String getSelectedDateTime(){
+	@Override
+    public String getSelectedDateTime(){
 		int i = dates.getSelectedIndex();
 		int j = times.getSelectedIndex();
 		// TODO Look at this more carefully for case when no times are present
@@ -108,8 +113,20 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 			return null;
 		}
 	}
+	
+	@Override
+	public String getSelectedTime() {
+	    int i = times.getSelectedIndex();
+	    // TODO Look at this more carefully for case when no times are present
+	    if(i != -1){
+	        return times.getValue(i);
+	    } else {
+	        return null;
+	    }
+	}
 
-	public boolean selectDate(String dateString) {
+	@Override
+    public boolean selectDate(String dateString) {
 		for(int i=0; i<dates.getItemCount(); i++){
 			if(dates.getValue(i).equals(dateString)){
 				dates.setSelectedIndex(i);
@@ -119,7 +136,8 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 		return false;
 	}
 	
-	public boolean selectTime(String timeString) {
+	@Override
+    public boolean selectDateTime(String timeString) {
 	    if(selectDate(timeString.substring(0,10))){
 	        String time = timeString.substring(11);
 	        for(int i=0; i<times.getItemCount(); i++){
@@ -132,7 +150,8 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 	    return false;
 	}
 	
-	public String returnTimes(){
+	@Override
+    public String returnTimes(){
 	    StringBuilder s = new StringBuilder();
 	    for(int i=0; i < dates.getItemCount(); i++){
 	        s.append(dates.getValue(i)+"T"+times.getValue(0)+",");
@@ -140,7 +159,8 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 	    return s.toString();
 	}
 	
-	public void setEnabled(boolean enabled){
+	@Override
+    public void setEnabled(boolean enabled){
 	    if(times.getItemCount() > 1)
 	        times.setEnabled(enabled);
 	    else
@@ -155,6 +175,10 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 	    } else {
 	        label.setStylePrimaryName("labelStyle");
 	    }
-	        
+	}
+	
+	@Override
+	public boolean hasMultipleTimes() {
+	    return (dates.getItemCount() > 1) || (times.getItemCount() > 1);
 	}
 }

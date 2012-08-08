@@ -17,7 +17,7 @@ public class LayerSelector extends BaseSelector {
 		variables.addChangeHandler(new ChangeHandler() {
             @Override
             public void onChange(ChangeEvent event) {
-                handler.layerSelected(LayerSelector.this.getSelectedId());
+                handler.layerSelected(LayerSelector.this.getSelectedId(), true);
             }
         });
 		variables.setTitle("Choose the variable you wish to display");

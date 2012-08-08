@@ -1,21 +1,7 @@
-/** Add css rules here for your application. */
-
-
-h1 {
-  font-size: 2em;
-  font-weight: bold;
-  color: #777777;
-  margin: 40px 0px 70px;
-  text-align: center;
-}
+/* CSS Rules for the Godiva client */
 
 .loadingImage{
-  z-index: 1999;
-}
-
-.gwt-PushButton{
-  margin: 3px 10px 10px;
-  text-align: center;
+  z-index: 1499;
 }
 
 /* This is used for the labels which are actually buttons */
@@ -73,6 +59,7 @@ h1 {
   text-align: left;
 }
 
+/* Used by the links */
 .linkStyle {
   font-size: 1.0em;
   font-weight: normal;
@@ -102,24 +89,6 @@ h1 {
   text-align: left;
 }
 
-/* Not currently used */
-.olPopupContent {
-  font-size: 0.7em;
-  color: #111111;
-  margin: 3px 0px 0px 0px;
-  text-align: left;
-  z-index: 2100
-}
-
-/* Not currently used */
-.listBoxStyle {
-  font-size: 1em;
-  color: #000033;
-  background: #FFFFFF;
-  margin: 5px 5px 5px;
-  text-align: left;
-}
-
 /* Used for the map */
 .mapStyle{
 	float: right;
@@ -129,10 +98,11 @@ h1 {
 }
 
 /** Set ids using widget.getElement().setId("idOfElement") */
-#closeButton {
-  margin: 15px 6px 6px;
-}
+/* #closeButton { */
+/*   margin: 15px 6px 6px; */
+/* } */
 
+/* Hide all of the unused OpenLayers tools */
 .olControlDrawFeaturePointItemInactive {
     visibility: hidden;
 }
@@ -146,13 +116,13 @@ h1 {
     visibility: hidden;
 }
 
-/* This is used for the palette and animation popups */
+/* Used for palette, animation, getFeatureInfo popups */
 .gwt-DialogBox{
     z-index: 2000;
     width: 400px;
 }
 
-/* This is used for the palette and animation popups */
+/* Used for palette, animation, getFeatureInfo popups */
 .gwt-DialogBox .Caption{
   font-size: 1em;
   font-weight: bold;
@@ -160,6 +130,17 @@ h1 {
   text-align: center;
 }
 
+.gwt-PushButton{
+  margin: 3px 10px 10px;
+  text-align: center;
+}
+
+/* This needs to be larger than the OpenLayers widgets (around 1000-1010), but lower than any popups */
+.gwt-PopupPanelGlass{
+	z-index: 1500;
+}
+
+/* Used for layer selector */
 .gwt-PopupPanel{
 	z-index: 1999;
 }

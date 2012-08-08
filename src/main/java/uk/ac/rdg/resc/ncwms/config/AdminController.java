@@ -39,10 +39,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.multiaction.MultiActionController;
 
+import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
+import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 
 /**
  * Displays the administrative pages of the ncWMS application (i.e. /admin/*)
@@ -272,24 +274,26 @@ public class AdminController extends MultiActionController {
             FeatureCollection<Feature> features = ds.getFeatureCollection();
             for (String fId : features.getFeatureIds()) {
                 Feature feature = features.getFeatureById(fId);
-                String newTitle = request.getParameter(feature.getId() + ".title").trim();
-                // Find the min and max colour scale range for this variable
-                // TODO: nicer error handling
-                float min = Float.parseFloat(request.getParameter(feature.getId() + ".scaleMin").trim());
-                float max = Float.parseFloat(request.getParameter(feature.getId() + ".scaleMax")
-                        .trim());
-                /*
-                 * Get the variable config info. This should not be null, as we
-                 * will have created it in
-                 * MetadataLoader.checkAttributeOverrides() if it wasn't in the
-                 * config file itself.
-                 */
-                FeaturePlottingMetadata var = ds.getPlottingMetadataMap().get(feature.getId());
-                var.setTitle(newTitle);
-                var.setColorScaleRange(Extents.newExtent(min, max));
-                var.setPaletteName(request.getParameter(feature.getId() + ".palette"));
-                var.setNumColorBands(Integer.parseInt(request.getParameter(feature.getId() + ".numColorBands")));
-                var.setScaling(request.getParameter(feature.getId() + ".scaling"));
+                for(RangeMetadata memberMetadata : WmsUtils.getPlottableLayers(feature)){
+                    String featureId = feature.getId()+"/"+memberMetadata.getName();
+                    String newTitle = request.getParameter(featureId + ".title").trim();
+                    // Find the min and max colour scale range for this variable
+                    float min = Float.parseFloat(request.getParameter(featureId + ".scaleMin").trim());
+                    float max = Float.parseFloat(request.getParameter(featureId + ".scaleMax").trim());
+                    
+                    /*
+                     * Get the variable config info. This should not be null, as we
+                     * will have created it in
+                     * MetadataLoader.checkAttributeOverrides() if it wasn't in the
+                     * config file itself.
+                     */
+                    FeaturePlottingMetadata var = ds.getPlottingMetadataMap().get(featureId);
+                    var.setTitle(newTitle);
+                    var.setColorScaleRange(Extents.newExtent(min, max));
+                    var.setPaletteName(request.getParameter(featureId + ".palette"));
+                    var.setNumColorBands(Integer.parseInt(request.getParameter(featureId + ".numColorBands")));
+                    var.setScaling(request.getParameter(featureId + ".scaling"));
+                }
             }
             // Saves the new configuration information to disk
             this.config.save();
