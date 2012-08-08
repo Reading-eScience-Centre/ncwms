@@ -8,11 +8,11 @@ response.setHeader("Cache-Control","no-cache"); //HTTP 1.1
 response.setHeader("Pragma","no-cache"); //HTTP 1.0
 response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-   "http://www.w3.org/TR/html4/loose.dtd">
 <%-- Administrative page
      Data (models) passed in to this page:
          config     = Configuration of this server (uk.ac.rdg.resc.ncwms.config.Config) --%>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<link rel=StyleSheet href="../css/ncWMS.css" type="text/css" />
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -33,7 +33,6 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
             on this server is disabled: see Server Settings below.</em>
         </c:otherwise>
     </c:choose>
-    <p><a href="usage.jsp">Usage monitor</a></p>
     <p><a href="../">ncWMS Front page</a></p>
     
     <form id="config" action="updateConfig" method="POST">
@@ -42,7 +41,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
         
         <h2>Datasets</h2>
         <table border="1">
-        <tr><th>Edit variables</th><th>Unique ID</th><th>Title</th><th>Location</th><th>State</th><th>Last update</th><th>Auto refresh frequency</th><th>Force refresh?</th><th>Disabled?</th><th>Queryable?</th><th>Remove?</th><th>Data reading class</th><th>Link to more info</th><th>Copyright statement</th></tr>
+        <tr><th>Edit variables</th><th>Required Data</th><th>Optional Metadata</th><th>Status</th><th>Refresh</th><th>Options</th><th>Data reading class</th><th>Remove?</th></tr>
 
             <c:forEach var="datasetEntry" items="${config.allDatasets}">
                 <c:set var="dataset" value="${datasetEntry.value}"/>
@@ -52,10 +51,25 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                             <a href="editVariables?dataset=${dataset.id}">edit</a>
                         </c:if>
                     </td>
-                    <td><input type="text" name="dataset.${dataset.id}.id" value="${dataset.id}"/></td>
-                    <td><input type="text" name="dataset.${dataset.id}.title" value="${dataset.title}"/></td>
-                    <td><input type="text" name="dataset.${dataset.id}.location" value="${dataset.location}"/></td>
-                    <td>
+                    <td align="right" width="270px">
+	                    ID:
+	                    <input type="text" name="dataset.${dataset.id}.id" value="${dataset.id}" size="22"/>
+	                    <br />
+	                    Title:
+	                    <input type="text" name="dataset.${dataset.id}.title" value="${dataset.title}" size="22"/>
+	                    <br />
+	                    Location:
+	                    <input type="text" name="dataset.${dataset.id}.location" value="${dataset.location}"size="22"/>
+                    </td>
+                    <td align="right" width="220px">
+                        More Info URL:
+                        <input type="text" name="dataset.${dataset.id}.moreinfo" value="${dataset.moreInfoUrl}" size="10"/>
+	                    <br />
+                        Copyright:
+                        <input type="text" name="dataset.${dataset.id}.copyright" value="${dataset.copyrightStatement}" size="10"/>
+                    </td>
+                    <td width="200px">
+                        State:
                         <c:choose>
                             <c:when test="${dataset.error or dataset.loading}">
                                 <a target="_blank" href="datasetStatus.jsp?dataset=${dataset.id}">${dataset.state}</a>
@@ -64,62 +78,90 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                                 ${dataset.state}
                             </c:otherwise>
                         </c:choose>
-                    </td>
-                    <td>
+                        <br />
+                        Last update date:
                         <c:choose>
                             <c:when test="${empty dataset.lastUpdateTime}">never</c:when>
-                            <c:otherwise>${utils:dateTimeToISO8601(dataset.lastUpdateTime)}</c:otherwise>
+                            <c:otherwise>${utils:formatUTCDateOnly(dataset.lastUpdateTime)}</c:otherwise>
+                        </c:choose>
+                        <br />
+                        Last update time:
+                        <c:choose>
+                            <c:when test="${empty dataset.lastUpdateTime}">never</c:when>
+                            <c:otherwise>${utils:formatUTCTimeOnly(dataset.lastUpdateTime)}</c:otherwise>
                         </c:choose>
                     </td>
-                    <td>
+                    <td align="right" width="190px">
+                        Auto-refresh rate:
                         <select name="dataset.${dataset.id}.updateinterval">
                             <option value="-1"<c:if test="${dataset.updateInterval < 0}"> selected="selected"</c:if>>Never</option>
-                            <option value="1"<c:if test="${dataset.updateInterval == 1}"> selected="selected"</c:if>>Every minute</option>
-                            <option value="10"<c:if test="${dataset.updateInterval == 10}"> selected="selected"</c:if>>Every 10 minutes</option>
-                            <option value="30"<c:if test="${dataset.updateInterval == 30}"> selected="selected"</c:if>>Every half hour</option>
-                            <option value="60"<c:if test="${dataset.updateInterval == 60}"> selected="selected"</c:if>>Hourly</option>
-                            <option value="360"<c:if test="${dataset.updateInterval == 360}"> selected="selected"</c:if>>Every 6 hours</option>
-                            <option value="720"<c:if test="${dataset.updateInterval == 720}"> selected="selected"</c:if>>Every 12 hours</option>
-                            <option value="1440"<c:if test="${dataset.updateInterval == 1440}"> selected="selected"</c:if>>Daily</option>
+                            <option value="1"<c:if test="${dataset.updateInterval == 1}"> selected="selected"</c:if>>1 min</option>
+                            <option value="10"<c:if test="${dataset.updateInterval == 10}"> selected="selected"</c:if>>10 min</option>
+                            <option value="30"<c:if test="${dataset.updateInterval == 30}"> selected="selected"</c:if>>30 min</option>
+                            <option value="60"<c:if test="${dataset.updateInterval == 60}"> selected="selected"</c:if>>1 hr</option>
+                            <option value="360"<c:if test="${dataset.updateInterval == 360}"> selected="selected"</c:if>>6 hr</option>
+                            <option value="720"<c:if test="${dataset.updateInterval == 720}"> selected="selected"</c:if>>12 hr</option>
+                            <option value="1440"<c:if test="${dataset.updateInterval == 1440}"> selected="selected"</c:if>>24 hr</option>
                         </select>
+                        <br />
+                        Force refresh:
+                        <input type="checkbox" name="dataset.${dataset.id}.refresh"/>
                     </td>
-                    <td><input type="checkbox" name="dataset.${dataset.id}.refresh"/></td>
-                    <td><input type="checkbox" name="dataset.${dataset.id}.disabled"<c:if test="${dataset.disabled}"> checked="checked"</c:if>/></td>
-                    <td><input type="checkbox" name="dataset.${dataset.id}.queryable"<c:if test="${dataset.queryable}"> checked="checked"</c:if>/></td>
+                    <td align="right" width="100px">
+                        Disabled:
+                        <input type="checkbox" name="dataset.${dataset.id}.disabled"<c:if test="${dataset.disabled}"> checked="checked"</c:if>/>
+                        <br />
+                        Queryable:
+                        <input type="checkbox" name="dataset.${dataset.id}.queryable"<c:if test="${dataset.queryable}"> checked="checked"</c:if>/>
+                    </td>
+                    <td><input type="text" name="dataset.${dataset.id}.reader" value="${dataset.dataReaderClass}" size="10"/></td>
                     <td><input type="checkbox" name="dataset.${dataset.id}.remove"/></td>
-                    <td><input type="text" name="dataset.${dataset.id}.reader" value="${dataset.dataReaderClass}"/></td>
-                    <td><input type="text" name="dataset.${dataset.id}.moreinfo" value="${dataset.moreInfoUrl}"/></td>
-                    <td><input type="text" name="dataset.${dataset.id}.copyright" value="${dataset.copyrightStatement}"/></td>
                 </tr>
             </c:forEach>
             <%-- Now add lines for the user to add new datasets --%>
             <c:forEach var="i" begin="0" end="2">
                 <tr>
                     <td></td><%-- Corresponds with "Edit variables" --%>
-                    <td><input type="text" name="dataset.new${i}.id" value=""/></td>
-                    <td><input type="text" name="dataset.new${i}.title" value=""/></td>
-                    <td><input type="text" name="dataset.new${i}.location" value=""/></td>
-                    <td>N/A</td>
-                    <td>N/A</td>
-                    <td>
-                        <select name="dataset.new${i}.updateinterval">
-                            <option value="-1">Never</option>
-                            <option value="1">Every minute</option>
-                            <option value="10">Every 10 minutes</option>
-                            <option value="30">Every half hour</option>
-                            <option value="60">Hourly</option>
-                            <option value="360">Every 6 hours</option>
-                            <option value="720">Every 12 hours</option>
-                            <option value="1440">Daily</option>
-                        </select>
+                    <td align="right">
+                        ID:
+                        <input type="text" name="dataset.new${i}.id" value="" size="22"/>
+                        <br />
+                        Title:
+                        <input type="text" name="dataset.new${i}.title" value="" size="22"/>
+                        <br />
+                        Location:
+                        <input type="text" name="dataset.new${i}.location" value="" size="22"/>
+                    </td>
+                    <td align="right">
+                        More Info URL:
+                        <input type="text" name="dataset.new${i}.moreinfo" value="" size="10"/>
+                        <br />
+                        Copyright:
+                        <input type="text" name="dataset.new${i}.copyright" value="" size="10"/>
                     </td>
                     <td>N/A</td>
-                    <td><input type="checkbox" name="dataset.new${i}.disabled"/></td>
-                    <td><input type="checkbox" name="dataset.new${i}.queryable" checked="checked"/></td>
+                    <td align="right">
+                        Auto-refresh rate:
+                        <select name="dataset.new${i}.updateinterval">
+                            <option value="-1">Never</option>
+                            <option value="1">1 min</option>
+                            <option value="10">10 min</option>
+                            <option value="30">30 min</option>
+                            <option value="60">1 hr</option>
+                            <option value="360">6 hr</option>
+                            <option value="720">12 hr</option>
+                            <option value="1440">24 hr</option>
+                        </select>
+                    </td>
+                    <td align="right">
+                        Disabled:
+                        <input type="checkbox" name="dataset.new${i}.disabled"/>
+                        <br />
+                        Queryable:
+                        <input type="checkbox" name="dataset.new${i}.queryable" checked="checked"/>
+                    </td>
+                    <td><input type="text" name="dataset.new${i}.reader" value="" size="10"/></td>
                     <td>N/A</td>
-                    <td><input type="text" name="dataset.new${i}.reader" value=""/></td>
-                    <td><input type="text" name="dataset.new${i}.moreinfo" value=""/></td>
-                    <td><input type="text" name="dataset.new${i}.copyright" value=""/></td>
                 </tr>
             </c:forEach>
         </table>
