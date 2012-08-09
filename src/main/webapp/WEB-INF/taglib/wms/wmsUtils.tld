@@ -18,6 +18,13 @@
   </function>
   <function>
     <description>Formats a TimePosition object as the time only
+      in ISO8601 format.  Time zone offset is zero (UTC).</description>
+    <name>formatISOTimeOnly</name>
+    <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
+    <function-signature>java.lang.String formatUTCIsoTimeOnly(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
+  </function>
+  <function>
+    <description>Formats a TimePosition object as the time only
       in the format "HH:mm:ss", e.g. "14:53:03".  Time zone offset is zero (UTC).</description>
     <name>formatUTCTimeOnly</name>
     <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>

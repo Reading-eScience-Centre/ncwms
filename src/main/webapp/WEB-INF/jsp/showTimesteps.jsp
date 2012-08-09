@@ -14,6 +14,6 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
          timesteps = list of times (in milliseconds since the epoch) that fall on this day --%>
 <json:object>
     <json:array name="timesteps" items="${timesteps}" var="t">
-        ${utils:formatUTCTimeOnly(t)}
+        ${utils:formatISOTimeOnly(t)}
     </json:array>
 </json:object>
