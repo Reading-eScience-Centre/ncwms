@@ -115,7 +115,7 @@
 		<dependency>
 			<groupId>org.gwtopenmaps.openlayers</groupId>
 			<artifactId>gwt-openlayers-client</artifactId>
-			<version>0.7</version>
+			<version>0.8</version>
 		</dependency>
 		<dependency>
 			<groupId>org.geotoolkit</groupId>
@@ -177,13 +177,6 @@
 			<id>EDAL</id>
 			<name>EDAL's repository of JARs</name>
 			<url>http://edal-java.googlecode.com/hg/repository/</url>
-		</repository>
-		<repository>
-			<!-- This is for the newest gwt-openlayers stuff (i.e. SNAPSHOT, which 
-				is needed for our app) -->
-			<id>sonatype-nexus-snapshots</id>
-			<name>Sonatype Nexus Snapshots</name>
-			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
 		</repository>
 		<repository>
 			<!-- This has the JSON taglib in it -->
