@@ -54,7 +54,7 @@ import uk.ac.rdg.resc.edal.coverage.grid.impl.VerticalAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
-import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorDirection;
+import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorComponentType;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
@@ -400,7 +400,7 @@ public class WmsUtils {
                     for (String vectorComponentName : vectorComponentNames) {
                         VectorComponent vectorComponent = vectorMetadata
                                 .getMemberMetadata(vectorComponentName);
-                        if (vectorComponent.getDirection() == VectorDirection.MAGNITUDE) {
+                        if (vectorComponent.getComponentType() == VectorComponentType.MAGNITUDE) {
                             return vectorComponentName;
                         }
                     }
@@ -608,7 +608,7 @@ public class WmsUtils {
          */
         stylesAndUsesPalettes.put("gridpoint", false);
         if (scalarMetadata instanceof VectorComponent
-                && (((VectorComponent) scalarMetadata).getDirection() == VectorDirection.DIRECTION)) {
+                && (((VectorComponent) scalarMetadata).getComponentType() == VectorComponentType.DIRECTION)) {
             /*
              * If we have a vector direction, we can plot it as a gridpoint or a
              * vector.
