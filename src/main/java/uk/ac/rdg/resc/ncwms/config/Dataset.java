@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.cdm.feature.FeatureCollectionFactory;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
+import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
 import uk.ac.rdg.resc.edal.position.TimePosition;
@@ -490,10 +491,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
     private void readLayerConfig() {
         for (String featureId : features.getFeatureIds()) {
             Feature feature = features.getFeatureById(featureId);
-            /*
-             * First add all the scalar members
-             */
-            for(RangeMetadata memberMetadata : WmsUtils.getPlottableLayers(feature)){
+            for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
                 String memberId = feature.getId()+"/"+memberMetadata.getName();
                 // Load the Variable object from the config file or create a new
                 // one if it doesn't exist.

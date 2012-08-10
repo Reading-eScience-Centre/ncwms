@@ -110,13 +110,15 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
             /*
              * We don't want to be able to plot the top layer item
              */
-            node.addClickHandler(new ClickHandler() {
-                @Override
-                public void onClick(ClickEvent event) {
-                    setSelectedLayer(id);
-                    layerSelectionHandler.layerSelected(id, true);
-                }
-            });
+            if(item.isPlottable()){
+                node.addClickHandler(new ClickHandler() {
+                    @Override
+                    public void onClick(ClickEvent event) {
+                        setSelectedLayer(id);
+                        layerSelectionHandler.layerSelected(id, true);
+                    }
+                });
+            }
         }
         
         if(item.isLeaf()){

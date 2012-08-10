@@ -140,7 +140,7 @@ public class Godiva3 extends BaseWmsClient {
     @Override
     public void menuLoaded(LayerMenuItem menuTree) {
         if (menuTree.isLeaf()) {
-            menuTree.addChildItem(new LayerMenuItem("No georeferencing data found!", null));
+            menuTree.addChildItem(new LayerMenuItem("No georeferencing data found!", null, false));
         }
         layerSelector.populateLayers(menuTree);
 

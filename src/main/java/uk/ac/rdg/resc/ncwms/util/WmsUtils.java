@@ -55,8 +55,6 @@ import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorComponentType;
-import uk.ac.rdg.resc.edal.coverage.metadata.VectorMetadata;
-import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
@@ -207,10 +205,13 @@ public class WmsUtils {
         return Extents.findMinMax(dataSample);
     }
 
-    private static List<Float> readDataSample(Feature feature, String memberName) throws IOException {
+    private static List<Float> readDataSample(Feature feature, String member) throws IOException {
         List<Float> ret = new ArrayList<Float>();
-        String member = WmsUtils.getPlottableMemberName(feature, memberName);
-        Class<?> clazz = feature.getCoverage().getScalarMetadata(member).getValueType();
+        ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(member);
+        if(scalarMetadata == null){
+            throw new IllegalArgumentException(member+" is not scalar - cannot read data sample");
+        }
+        Class<?> clazz = scalarMetadata.getValueType();
         if (!Number.class.isAssignableFrom(clazz)) {
             /*
              * TODO a more elegant solution? Some kind of None value for scale
@@ -363,72 +364,6 @@ public class WmsUtils {
 
         String featureAndVarId = featureId + "/" + memberId;
         return dataset.getPlottingMetadataMap().get(featureAndVarId);
-    }
-
-    /**
-     * This method returns a member of the feature which is plottable.
-     * 
-     * If the memberName is a scalar member of the feature, it is returned.
-     * Otherwise, the metadata tree is searched to find the parent metadata with
-     * the name {@code memberName}. A scalar child member of this metadata is
-     * then returned
-     * 
-     * For example, if memberName is an instance of {@link VectorMetadata}, then
-     * the name of the {@link VectorComponent} corresponding to the magnitude
-     * will be returned.
-     * 
-     * This method is the one to modify if new metadata types are added
-     * 
-     * @param feature
-     *            the feature containing the plottable member
-     * @param memberName
-     *            the name of the desired member
-     */
-    public static String getPlottableMemberName(Feature feature, String memberName) {
-        if (feature.getCoverage().getScalarMemberNames().contains(memberName)) {
-            return memberName;
-        } else {
-            RangeMetadata descendentMetadata = MetadataUtils.getDescendentMetadata(feature
-                    .getCoverage().getRangeMetadata(), memberName);
-            if (descendentMetadata == null) {
-                return null;
-            } else {
-                if (descendentMetadata instanceof VectorMetadata) {
-                    VectorMetadata vectorMetadata = (VectorMetadata) descendentMetadata;
-
-                    Set<String> vectorComponentNames = vectorMetadata.getMemberNames();
-                    for (String vectorComponentName : vectorComponentNames) {
-                        VectorComponent vectorComponent = vectorMetadata
-                                .getMemberMetadata(vectorComponentName);
-                        if (vectorComponent.getComponentType() == VectorComponentType.MAGNITUDE) {
-                            return vectorComponentName;
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * This method returns a layer name which is plottable.
-     * 
-     * It uses getPlottableMemberName, but checks the layer name format
-     * 
-     * @param feature
-     *            the feature containing the plottable member
-     * @param layerName
-     *            the name of the desired layer
-     * @throws WmsException
-     */
-    public static String getPlottableLayerName(Feature feature, String layerName)
-            throws WmsException {
-        String[] layerParts = layerName.split("/");
-        if (layerParts.length != 3) {
-            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
-        }
-        return layerParts[0] + "/" + layerParts[1] + "/"
-                + getPlottableMemberName(feature, layerParts[2]);
     }
 
     /**
@@ -664,16 +599,6 @@ public class WmsUtils {
      */
     public static RangeMetadata getChildMetadata(RangeMetadata metadata, String memberName) {
         return metadata.getMemberMetadata(memberName);
-    }
-
-    /**
-     * Gets all plottable layers of a feature.
-     * 
-     * @param feature
-     * @return
-     */
-    public static List<RangeMetadata> getPlottableLayers(Feature feature) {
-        return MetadataUtils.getAllTreeMembers(feature.getCoverage().getRangeMetadata());
     }
 
     /*

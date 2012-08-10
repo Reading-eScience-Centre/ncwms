@@ -71,6 +71,8 @@ import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinates2DImpl;
+import uk.ac.rdg.resc.edal.coverage.metadata.PlotStyle;
+import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.exceptions.InvalidCrsException;
 import uk.ac.rdg.resc.edal.exceptions.InvalidLineStringException;
 import uk.ac.rdg.resc.edal.feature.Feature;
@@ -85,7 +87,6 @@ import uk.ac.rdg.resc.edal.graphics.Charting;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.graphics.MapPlotter;
 import uk.ac.rdg.resc.edal.graphics.MapStyleDescriptor;
-import uk.ac.rdg.resc.edal.graphics.PlotStyle;
 import uk.ac.rdg.resc.edal.graphics.formats.ImageFormat;
 import uk.ac.rdg.resc.edal.graphics.formats.KmzFormat;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
@@ -428,8 +429,7 @@ public abstract class AbstractWmsController extends AbstractController {
         // Create an object that will turn data into BufferedImages
         Extent<Float> scaleRange = styleRequest.getColorScaleRange();
 
-        FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig,
-                WmsUtils.getPlottableLayerName(feature, layerName));
+        FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
 
         if (scaleRange == null)
             scaleRange = metadata.getColorScaleRange();
@@ -525,9 +525,7 @@ public abstract class AbstractWmsController extends AbstractController {
         // We only create a legend object if the image format requires it
         BufferedImage legend = imageFormat.requiresLegend() ? styleDescriptor.getLegend(
                 feature.getName(),
-                feature.getCoverage()
-                        .getScalarMetadata(WmsUtils.getPlottableMemberName(feature, memberName))
-                        .getUnits().getUnitString()) : null;
+                MetadataUtils.getUnitsString(feature, memberName)) : null;
 
         // Write the image to the client.
         // First we set the HTTP headers
@@ -574,11 +572,7 @@ public abstract class AbstractWmsController extends AbstractController {
         
         
         Feature feature = featureFactory.getFeature(layerName);
-        /*
-         * TODO check that this is definitely what we want. i.e. test some GFI
-         * and see...
-         */
-        memberName = WmsUtils.getPlottableMemberName(feature, memberName);
+        memberName = MetadataUtils.getScalarMemberName(feature, memberName);
         
         // Get the grid onto which the data is being projected
         RegularGrid grid = WmsUtils.getImageGrid(dr);
@@ -688,12 +682,9 @@ public abstract class AbstractWmsController extends AbstractController {
 
             String layerName = WmsUtils.getWmsLayerName(dr);
             Feature feature = featureFactory.getFeature(layerName);
+            String memberName = WmsUtils.getMemberName(layerName);
 
-            String plottableMemberName = WmsUtils.getPlottableMemberName(feature,
-                    WmsUtils.getMemberName(layerName));
-            String plottableLayerName = WmsUtils.getPlottableLayerName(feature, layerName);
-
-            FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, plottableLayerName);
+            FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
 
             // Layer layer = layerFactory.getLayer(layerName);
 
@@ -718,9 +709,10 @@ public abstract class AbstractWmsController extends AbstractController {
             }
 
             // Now create the legend image
-            legend = palette.createLegend(numColourBands, feature.getName(), feature.getCoverage()
-                    .getScalarMetadata(plottableMemberName).getUnits().getUnitString(), logarithmic,
-                    colorScaleRange);
+            legend = palette
+                    .createLegend(numColourBands, feature.getName(),
+                            MetadataUtils.getUnitsString(feature, memberName), logarithmic,
+                            colorScaleRange);
         }
         httpServletResponse.setContentType("image/png");
         ImageIO.write(legend, "png", httpServletResponse.getOutputStream());
@@ -739,7 +731,7 @@ public abstract class AbstractWmsController extends AbstractController {
         String memberName = WmsUtils.getMemberName(layerName);
         
         Feature feature = featureFactory.getFeature(layerName);
-        memberName = WmsUtils.getPlottableMemberName(feature, memberName);
+        memberName = MetadataUtils.getScalarMemberName(feature, memberName);;
         GridFeature gridFeature = null;
         boolean hasVerticalAxis = false;
         TimePosition tValue = null;
@@ -810,10 +802,8 @@ public abstract class AbstractWmsController extends AbstractController {
                 plot.add(chart.getXYPlot(), 1);
                 plot.add(verticalSectionChart.getXYPlot(), 1);
                 plot.setOrientation(PlotOrientation.VERTICAL);
-                String title = feature.getName()
-                        + " ("
-                        + feature.getCoverage().getScalarMetadata(memberName).getUnits()
-                                .getUnitString() + ")" + " at " + zValue
+                String title = feature.getName() + " ("
+                        + MetadataUtils.getUnitsString(feature, memberName) + ")" + " at " + zValue
                         + vAxis.getVerticalCrs().getUnits().getUnitString();
                 chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, false);
 
@@ -866,8 +856,7 @@ public abstract class AbstractWmsController extends AbstractController {
         
         PointSeriesFeature pointSeriesFeature = null;
         Feature feature = featureFactory.getFeature(layerName);
-        final String memberName = WmsUtils.getPlottableMemberName(feature,
-                WmsUtils.getMemberName(layerName));
+        final String memberName = MetadataUtils.getScalarMemberName(feature, WmsUtils.getMemberName(layerName));
         String outputFormat = params.getMandatoryString("format");
         if (!"image/png".equals(outputFormat) && !"image/jpeg".equals(outputFormat)
                 && !"image/jpg".equals(outputFormat)) {
@@ -947,8 +936,7 @@ public abstract class AbstractWmsController extends AbstractController {
 
         ProfileFeature profileFeature = null;
         Feature feature = featureFactory.getFeature(layerName);
-        final String memberName = WmsUtils.getPlottableMemberName(feature,
-                WmsUtils.getMemberName(layerName));
+        final String memberName = MetadataUtils.getScalarMemberName(feature, WmsUtils.getMemberName(layerName));
         String outputFormat = params.getMandatoryString("format");
         if (!"image/png".equals(outputFormat) && !"image/jpeg".equals(outputFormat)
                 && !"image/jpg".equals(outputFormat)) {
@@ -1023,7 +1011,7 @@ public abstract class AbstractWmsController extends AbstractController {
         
         // Parse the request parameters
         String layerName = params.getMandatoryString("layer");
-        String memberName = WmsUtils.getPlottableMemberName(feature, WmsUtils.getMemberName(layerName));
+        String memberName = MetadataUtils.getScalarMemberName(feature, WmsUtils.getMemberName(layerName));
 
         FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
         if (scaleRange == null)
@@ -1069,10 +1057,11 @@ public abstract class AbstractWmsController extends AbstractController {
             sectionData.add(pointProfile);
         }
 
-        // If the user has specified COLORSCALERANGE=auto, we will use the
-        // actual
-        // minimum and maximum values of the extracted data to generate the
-        // scale
+        /*
+         * If the user has specified COLORSCALERANGE=auto, we will use the
+         * actual minimum and maximum values of the extracted data to generate
+         * the scale
+         */
         float max = Float.NEGATIVE_INFINITY;
         float min = Float.POSITIVE_INFINITY;
         if (scaleRange.isEmpty()) {
