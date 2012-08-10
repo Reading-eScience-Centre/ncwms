@@ -40,11 +40,11 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.multiaction.MultiActionController;
 
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
+import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
-import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 
 /**
  * Displays the administrative pages of the ncWMS application (i.e. /admin/*)
@@ -274,7 +274,7 @@ public class AdminController extends MultiActionController {
             FeatureCollection<Feature> features = ds.getFeatureCollection();
             for (String fId : features.getFeatureIds()) {
                 Feature feature = features.getFeatureById(fId);
-                for(RangeMetadata memberMetadata : WmsUtils.getPlottableLayers(feature)){
+                for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
                     String featureId = feature.getId()+"/"+memberMetadata.getName();
                     String newTitle = request.getParameter(featureId + ".title").trim();
                     // Find the min and max colour scale range for this variable

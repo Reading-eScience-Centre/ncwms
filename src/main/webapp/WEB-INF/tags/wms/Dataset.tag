@@ -9,18 +9,18 @@
     <c:set var="title" value="${label}"/>
 </c:if>
 <c:if test="${empty dataset}">
-    <menu:folder label="Dataset does not exist"/>
+    <menu:folder label="Dataset does not exist" plottable="${false}"/>
 </c:if>
 <c:if test="${dataset.ready}">
-    <menu:folder label="${title}">
+    <menu:folder label="${title}" plottable="${false}">
         <c:forEach items="${dataset.featureCollection.features}" var="feature">
             <menu:rangemetadata metadata="${feature.coverage.rangeMetadata}" dataset="${dataset}" featureId="${feature.id}"/>
         </c:forEach>
     </menu:folder>
 </c:if>
 <c:if test="${dataset.loading}">
-    <menu:folder label="${title} (loading)"/>
+    <menu:folder label="${title} (loading)" plottable="${false}"/>
 </c:if>
 <c:if test="${dataset.error}">
-    <menu:folder label="${title} (error)"/>
+    <menu:folder label="${title} (error)" plottable="${false}"/>
 </c:if>

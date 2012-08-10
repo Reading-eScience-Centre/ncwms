@@ -19,7 +19,7 @@ import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.DiscreteCoverage;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
-import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
+import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
@@ -182,15 +182,9 @@ public abstract class AbstractMetadataController {
          * will have done so in the earlier getFeature call, so this point won't
          * be reached
          */
-        String plottableLayerName = WmsUtils.getPlottableLayerName(feature, layerName);
-        FeaturePlottingMetadata plottingMetadata = WmsUtils.getMetadata(config, plottableLayerName);
+        FeaturePlottingMetadata plottingMetadata = WmsUtils.getMetadata(config, layerName);
 
-        String units = "";
-        ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(
-                WmsUtils.getPlottableMemberName(feature, memberName));
-        if (scalarMetadata != null) {
-            units = scalarMetadata.getUnits().getUnitString();
-        }
+        String units = MetadataUtils.getUnitsString(feature, memberName);
         models.put("featureMetadata", plottingMetadata);
         models.put("memberName", memberName);
         models.put("dataset", WmsUtils.getDataset(config, request.getParameter("layerName")));
@@ -273,7 +267,7 @@ public abstract class AbstractMetadataController {
         String layerName = WmsUtils.getWmsLayerName(dr);
         String memberName = WmsUtils.getMemberName(layerName);
         Feature feature = featureFactory.getFeature(layerName);
-        memberName = WmsUtils.getPlottableMemberName(feature, memberName);
+        memberName = MetadataUtils.getScalarMemberName(feature, memberName);
 
         // Get the variable we're interested in
         if (feature instanceof GridSeriesFeature) {
