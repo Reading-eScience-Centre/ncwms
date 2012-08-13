@@ -456,29 +456,23 @@ public abstract class AbstractWmsController extends AbstractController {
              * We choose the plot style based on the request
              */
             String styleType = styleStrEls[0];
-            if (styleType.equalsIgnoreCase("boxfill")) {
-                plotStyle = PlotStyle.BOXFILL;
-            } else if (styleType.equalsIgnoreCase("vector")) {
-                plotStyle = PlotStyle.VECTOR;
-            } else if (styleType.equalsIgnoreCase("point")) {
-                plotStyle = PlotStyle.POINT;
-            } else if (styleType.equalsIgnoreCase("contour")) {
-                plotStyle = PlotStyle.CONTOUR;
-            } else if (styleType.equalsIgnoreCase("gridpoint")) {
-                plotStyle = PlotStyle.GRID_POINTS;
-            } else if (styleType.equalsIgnoreCase("trajectory")) {
-                plotStyle = PlotStyle.TRAJECTORY;
+            try{
+                plotStyle = PlotStyle.valueOf(styleType.toUpperCase());
+            } catch (IllegalArgumentException iae){
+                /*
+                 * Ignore this, and just use default
+                 */
             }
 
             /*
              * And set the palette
-             * 
-             * TODO Not every style has a palette.
              */
             String paletteName = null;
-            if (styleStrEls.length > 1)
-                paletteName = styleStrEls[1];
-            styleDescriptor.setColorPalette(paletteName);
+            if(plotStyle.usesPalette()){
+                if (styleStrEls.length > 1)
+                    paletteName = styleStrEls[1];
+                styleDescriptor.setColorPalette(paletteName);
+            }
         }
         
         styleDescriptor.setScaleRange(scaleRange);

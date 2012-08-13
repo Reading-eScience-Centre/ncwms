@@ -51,10 +51,12 @@ import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.RegularGridImpl;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.TimeAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.VerticalAxisImpl;
+import uk.ac.rdg.resc.edal.coverage.metadata.PlotStyle;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
 import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorComponentType;
+import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
@@ -491,18 +493,16 @@ public class WmsUtils {
      * @return A list of styles
      */
     public static List<StyleInfo> getStylesWithPalettes(Feature feature, String memberName, Set<String> palettes) {
-        Map<String, Boolean> stylesAndUsesPalettes = getStylesAndWhetherTheyUsePalettes(feature, memberName);
-        if(stylesAndUsesPalettes.size() == 0){
-            stylesAndUsesPalettes.put("default", true);
-        }
+        Set<PlotStyle> baseStyles = getBaseStyles(feature, memberName);
+
         List<StyleInfo> ret = new ArrayList<StyleInfo>();
-        for (String style : stylesAndUsesPalettes.keySet()) {
-            if (stylesAndUsesPalettes.get(style)) {
+        for (PlotStyle style : baseStyles) {
+            if (style.usesPalette()) {
                 for (String palette : palettes) {
-                    ret.add(new StyleInfo(style, palette));
+                    ret.add(new StyleInfo(style.name(), palette));
                 }
             } else {
-                ret.add(new StyleInfo(style, ""));
+                ret.add(new StyleInfo(style.name(), ""));
             }
         }
         return ret;
@@ -517,10 +517,16 @@ public class WmsUtils {
      *            the member of the coverage
      * @return A list of styles
      */
-    public static Set<String> getBaseStyles(Feature feature, String memberName) {
-        Set<String> styles = new LinkedHashSet<String>();
-        styles.add("default");
-        styles.addAll(getStylesAndWhetherTheyUsePalettes(feature, memberName).keySet());
+    public static Set<PlotStyle> getBaseStyles(Feature feature, String memberName) {
+        Set<PlotStyle> styles = new LinkedHashSet<PlotStyle>();
+        styles.add(PlotStyle.DEFAULT);
+        RangeMetadata metadata = MetadataUtils.getMetadataForFeatureMember(feature, memberName);
+        if(metadata instanceof ScalarMetadata){
+            ScalarMetadata scalarMetadata = (ScalarMetadata) metadata;
+            for(PlotStyle style : scalarMetadata.getAllowedPlotStyles()){
+                styles.add(style);
+            }
+        }
         return styles;
     }
     
