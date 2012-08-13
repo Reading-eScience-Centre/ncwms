@@ -110,7 +110,7 @@
   <function>
     <description>Gets plottable layer metadata for a given feature</description>
     <name>getPlottableLayers</name>
-    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-class>uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils</function-class>
     <function-signature>java.util.List getPlottableLayers(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
   </function>
 
