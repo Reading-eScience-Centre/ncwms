@@ -174,11 +174,6 @@
 	</build>
 	<repositories>
 		<repository>
-			<id>EDAL</id>
-			<name>EDAL's repository of JARs</name>
-			<url>http://edal-java.googlecode.com/hg/repository/</url>
-		</repository>
-		<repository>
 			<!-- This has the JSON taglib in it -->
 			<id>mvnsearch</id>
 			<name>Mvnsearch.org</name>
