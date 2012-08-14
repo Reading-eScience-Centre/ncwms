@@ -33,11 +33,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.geotoolkit.referencing.CRS;
@@ -51,11 +49,8 @@ import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.RegularGridImpl;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.TimeAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.VerticalAxisImpl;
-import uk.ac.rdg.resc.edal.coverage.metadata.PlotStyle;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
-import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent;
-import uk.ac.rdg.resc.edal.coverage.metadata.VectorComponent.VectorComponentType;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridFeature;
@@ -65,6 +60,7 @@ import uk.ac.rdg.resc.edal.feature.ProfileFeature;
 import uk.ac.rdg.resc.edal.feature.TrajectoryFeature;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
+import uk.ac.rdg.resc.edal.graphics.PlotStyle;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
@@ -523,49 +519,11 @@ public class WmsUtils {
         RangeMetadata metadata = MetadataUtils.getMetadataForFeatureMember(feature, memberName);
         if(metadata instanceof ScalarMetadata){
             ScalarMetadata scalarMetadata = (ScalarMetadata) metadata;
-            for(PlotStyle style : scalarMetadata.getAllowedPlotStyles()){
+            for(PlotStyle style : PlotStyle.getAllowedPlotStyles(feature, scalarMetadata)){
                 styles.add(style);
             }
         }
         return styles;
-    }
-    
-    private static Map<String, Boolean> getStylesAndWhetherTheyUsePalettes(Feature feature, String memberName){
-        Map<String, Boolean> stylesAndUsesPalettes = new HashMap<String, Boolean>();
-        ScalarMetadata scalarMetadata;
-        try{
-            scalarMetadata = feature.getCoverage().getScalarMetadata(memberName);
-        } catch (IllegalArgumentException iae){
-            /*
-             * We don't have scalar metadata for this member. We can only plot
-             * using the default style.
-             */
-            return stylesAndUsesPalettes;
-        }
-            
-        boolean numerical = Number.class.isAssignableFrom(scalarMetadata.getValueType());
-        /*
-         * All feature types can plot as gridpoints
-         */
-        stylesAndUsesPalettes.put("gridpoint", false);
-        if (scalarMetadata instanceof VectorComponent
-                && (((VectorComponent) scalarMetadata).getComponentType() == VectorComponentType.DIRECTION)) {
-            /*
-             * If we have a vector direction, we can plot it as a gridpoint or a
-             * vector.
-             */
-            stylesAndUsesPalettes.put("vector", false);
-        } else {
-            if (numerical) {
-                stylesAndUsesPalettes.put("point", true);
-                if ((feature instanceof GridSeriesFeature || feature instanceof GridFeature)) {
-                    stylesAndUsesPalettes.put("boxfill", true);
-                } else if ((feature instanceof TrajectoryFeature)) {
-                    stylesAndUsesPalettes.put("trajectory", false);
-                }
-            }
-        }
-        return stylesAndUsesPalettes;
     }
 
     /**
