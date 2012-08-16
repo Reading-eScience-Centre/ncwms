@@ -12,17 +12,24 @@ public class UnitsInfo extends BaseSelector implements UnitsInfoIF {
         add(units);
     }
     
+    @Override
     public void setUnits(String units){
         this.units.setText(units);
         this.units.setTitle("The units of the data are "+units);
         setEnabled(true);
     }
     
+    @Override
     public void setEnabled(boolean enabled){
         if(enabled){
             label.setStylePrimaryName("labelStyle");
         } else {
             label.setStylePrimaryName("inactiveLabelStyle");
         }
+    }
+    
+    @Override
+    public String getUnits(){
+        return units.getText();
     }
 }

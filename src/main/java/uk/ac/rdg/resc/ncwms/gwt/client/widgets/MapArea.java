@@ -39,7 +39,6 @@ import uk.ac.rdg.resc.ncwms.gwt.client.handlers.StartEndTimeHandler;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.http.client.URL;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.DialogBox;
@@ -87,6 +86,7 @@ public class MapArea extends MapWidget {
     private GodivaActionsHandler widgetDisabler;
 
     private String baseUrlForExport;
+    private String layersForExport;
 
     private WMSGetFeatureInfo getFeatureInfo;
 
@@ -312,7 +312,7 @@ public class MapArea extends MapWidget {
                         @Override
                         public void onClick(ClickEvent event) {
                             final StartEndTimePopup timeSelector = new StartEndTimePopup(layer,
-                                    baseUrl);
+                                    baseUrl, null);
                             timeSelector.setButtonLabel("Plot");
                             timeSelector
                                     .setErrorMessage("You can only plot a time series when you have multiple times available");
@@ -423,7 +423,12 @@ public class MapArea extends MapWidget {
     }
 
     public String getBaseLayerUrl() {
+        System.out.println(baseUrlForExport);
         return baseUrlForExport;
+    }
+    
+    public String getBaseLayerLayers() {
+        return layersForExport;
     }
 
     private void addBaseLayers() {
@@ -527,8 +532,8 @@ public class MapArea extends MapWidget {
                 String url = eventObject.getLayer().getJSObject().getPropertyAsString("url");
                 String layers = eventObject.getLayer().getJSObject().getPropertyAsArray("params")[0]
                         .getPropertyAsString("LAYERS");
-                baseUrlForExport = url + (url.contains("?") ? "&" : "?") + "LAYERS="
-                        + URL.encode(layers);
+                baseUrlForExport = url + (url.contains("?") ? "&" : "?");
+                layersForExport = layers;
                 if (!map.getProjection().equals(currentProjection)) {
                     currentProjection = map.getProjection();
                     for (String internalLayerId : wmsLayers.keySet()) {

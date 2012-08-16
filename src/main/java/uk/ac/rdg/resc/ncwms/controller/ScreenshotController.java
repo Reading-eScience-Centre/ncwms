@@ -31,370 +31,327 @@ package uk.ac.rdg.resc.ncwms.controller;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Random;
+import java.net.URLConnection;
+import java.text.DecimalFormat;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.multiaction.MultiActionController;
+
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
+import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
 
 /**
  * Controller for generating screenshots from the Godiva2 site.
- * @author Abdul Rauf Butt
- * @author Jon Blower
+ * 
+ * @author Guy Griffiths
  */
-public class ScreenshotController extends MultiActionController
-{
-    private static final Logger log = LoggerFactory.getLogger(ScreenshotController.class);
-
-    /** We only need one random number generator */
-    private static final Random RANDOM = new Random();
-
-    /** Directory where the screenshots will be stored (full path) */
-    private File screenshotCache;
-
-    /**
-     * Called by Spring to initialize the controller: this method creates a
-     * directory for screenshots in the ncWMS working directory.
-     * @throws Exception if the directory for the screenshots could not be created.
-     */
-    public void init() throws Exception
-    {
-        if (this.screenshotCache.exists())
-        {
-            if (this.screenshotCache.isDirectory())
-            {
-                log.debug("Screenshots directory already exists");
-            }
-            else
-            {
-                throw new Exception(this.screenshotCache.getPath() + " already exists but is not a directory");
-            }
-        }
-        else
-        {
-            if (this.screenshotCache.mkdirs())
-            {
-                log.debug("Screenshots directory " + this.screenshotCache.getPath()
-                    + " created");
-            }
-            else
-            {
-                throw new Exception("Screenshots directory " + this.screenshotCache.getPath()
-                    + " could not be created");
-            }
-        }
-    }
-
-    private static final class BoundingBox
-    {
-        float minXValue;
-        float maxXValue;
-        float minYValue;
-        float maxYValue;
-    }
-
+public class ScreenshotController extends MultiActionController {
     /**
      * Creates a screenshot, saves it on the server and returns the URL to the
      * screenshot.
-     * @throws MetadataException (which is rendered as a JSON exception object)
+     * 
+     * @throws MetadataException
+     *             (which is rendered as a JSON exception object)
+     * @throws WmsException 
+     * @throws IOException 
      */
-    public ModelAndView createScreenshot(HttpServletRequest request, HttpServletResponse response) throws MetadataException
-    {
-        log.debug("Called createScreenshot");
-        try
-        {
-            return createScreenshot(request);
-        }
-        catch (Exception e)
-        {
-            log.error("Error creating screenshot", e);
-            throw new MetadataException(e);
-        }
-    }
+    public ModelAndView createScreenshot(HttpServletRequest request, HttpServletResponse response)
+            throws MetadataException, WmsException, IOException {
+        String fullRequest = request.getRequestURL().toString();
+        String servletUrl = fullRequest.substring(0,
+                fullRequest.indexOf(request.getServletPath()) + 1);
 
-    private ModelAndView createScreenshot(HttpServletRequest request) throws Exception
-    {
-		String title = request.getParameter("title").replaceAll("&gt;", ">"); //"Hello World";
-		String time = request.getParameter("time"); //"null";
-		String elevation = request.getParameter("elevation"); //"null";
-        String units = request.getParameter("units");
-		String upperValue = request.getParameter("upperValue"); //1.0967412;
-        String twoThirds = request.getParameter("twoThirds");
-        String oneThird = request.getParameter("oneThird");
-		String lowerValue = request.getParameter("lowerValue"); //-0.9546131;
-        boolean isLatLon = "true".equalsIgnoreCase(request.getParameter("latLon"));
+        int vPos = 0;
+        int hPos = 0;
+        int mapHeight = 384;
+        int mapWidth = 512;
 
-        // Find the URL of this server from the request
-        StringBuffer requestUrl = request.getRequestURL();
-        String server = requestUrl.substring(0, requestUrl.indexOf("screenshots"));
-
-        String BGparam = request.getParameter("urlBG");
-        String FGparam = request.getParameter("urlFG");
-        String urlStringPalette = request.getParameter("urlPalette");
-
-        if(BGparam == null || FGparam == null || urlStringPalette == null) {
-            // TODO: better error handling
-            throw new Exception("Null BG, FG or palette param");
+        RequestParams params = new RequestParams(request.getParameterMap());
+        String baseLayerUrl = params.getString("baseUrl");
+        String baseLayerNames = params.getString("baseLayers");
+        if (baseLayerUrl == null || baseLayerNames == null || baseLayerUrl.equals("")
+                || baseLayerNames.equals("")) {
+            baseLayerUrl = "http://www2.demis.nl/wms/wms.ashx?WMS=BlueMarble&LAYERS=Earth%20Image";
+        } else {
+            baseLayerUrl += "&LAYERS=" + baseLayerNames;
         }
 
-        String urlStringBG = BGparam;
-        String urlStringFG = server + FGparam;
+        if (params.getString("image") != null && params.getString("image").equalsIgnoreCase("true")) {
+            mapHeight = params.getPositiveInt("mapHeight", 384);
+            mapWidth = params.getPositiveInt("mapWidth", 512);
 
-        BoundingBox BBOX = new BoundingBox();
-        String[] serverName = urlStringBG.split("\\?");
-        StringBuffer result = buildURL(serverName[1], serverName[0], "BG", BBOX);
-        serverName = urlStringFG.split("\\?");
-        StringBuffer resultFG = buildURL(serverName[1], serverName[0], "FG", BBOX);
+            int textSpace = 25;
+            if (params.getString("layerTitle") != null) {
+                String[] titleElements = params.getString("layerTitle").split(",");
+                textSpace += 15 * titleElements.length;
+            }
+            if (params.getString("time") != null) {
+                textSpace += 20;
+            }
+            if (params.getString("elevation") != null) {
+                textSpace += 20;
+            }
 
-        float minX1 = 0;
-        float minX2 = 0;
-        float maxX1 = 0;
-        float maxX2 = 0;
-        int WIDTH_OF_BG_IMAGE1 = 0;
-        int WIDTH_OF_BG_IMAGE2 = 0;
-        int START_OF_IMAGE3 = 0;
-        int START_OF_IMAGE4 = 0;
-        final int WIDTH_TOTAL = 512;
-        final int HEIGHT_TOTAL = 400;
-        final int WIDTH_OF_FINAL_IMAGE = 650;
-        final int HEIGHT_OF_FINAL_IMAGE = 480;
-        String URL1 = "";
-        String URL2 = "";
-        float coverage = 0;
+            BufferedImage image = new BufferedImage(mapWidth + 180, mapHeight + textSpace,
+                    BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = image.createGraphics();
+            g.setPaint(Color.white);
+            g.fillRect(0, 0, image.getWidth(), image.getHeight());
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g.setBackground(Color.white);
 
-        boolean isGT180 = false;
-        boolean isReplicate = false;
+            // Draw labels on the image
+            Font font = new Font("SansSerif", Font.BOLD, 16);
+            g.setPaint(Color.black);
+            g.setFont(font);
+            vPos = 20;
+            hPos = 10;
 
-        String bboxParam = "&BBOX=" + BBOX.minXValue + "," + BBOX.minYValue + "," + BBOX.maxXValue + "," + BBOX.maxYValue;
-
-        if(isLatLon && (Float.compare(BBOX.minXValue,-180)<0 )) // means we need to generate two URLs
-		{
-
-			if( (Float.compare(BBOX.minXValue,-180) < 0 ) )
-			{
-				minX1 = -180; //minXValue;
-                if (Float.compare(BBOX.maxXValue,180) > 0) // It will only happen for the case of zoom out: when maxX > 180
-                {
-                    maxX1 = BBOX.maxXValue - 360;
-                    isReplicate = true;
+            String title = params.getString("layerTitle");
+            if (title != null) {
+                int indent = 0;
+                String[] titleElements = title.split(",");
+                if (titleElements.length >= 2) {
+                    for (int i = titleElements.length - 1; i > 0; i--) {
+                        g.drawString(titleElements[i], hPos + indent, vPos);
+                        vPos += 15;
+                        g.drawString("\u21b3", hPos + indent + 8, vPos - 2);
+                        indent += 20;
+                        font = new Font("SansSerif", Font.BOLD, 14);
+                        g.setFont(font);
+                    }
                 }
-                else{
-                    maxX1 = BBOX.maxXValue;
+                if (titleElements.length > 0) {
+                    g.drawString(titleElements[0], hPos + indent, vPos);
+                    vPos += 15;
                 }
-				minX2 = BBOX.minXValue + 360;
-				maxX2 = +180;
+            }
+            vPos += 5;
 
-                float rangeofImg1 =  Math.abs(maxX1 - minX1);
-                float rangeofImg2 =  Math.abs(maxX2 - minX2);
-                float totalSpan = rangeofImg1 + rangeofImg2;
+            font = new Font("SansSerif", Font.BOLD, 14);
+            g.setFont(font);
+            String t = params.getString("time");
+            if (t != null) {
+                g.drawString("Time: " + t, hPos, vPos);
+                vPos += 20;
+            }
 
-                // in normal viewing case, the span is 360
-                // with first zoom-in, the span becomes 180
-                // with first zoom out, the spam becoms 720
-                if (isReplicate) {
-                    coverage =  (rangeofImg1/(totalSpan*2));
+            String el = params.getString("elevation");
+            if (el != null) {
+                String depth = el;
+                String u = params.getString("zUnits");
+                String units = "";
+                if (u != null)
+                    units = u;
+                if (depth.startsWith("-"))
+                    g.drawString("Depth: " + el.substring(1) + units, hPos, vPos);
+                else
+                    g.drawString("Elevation: " + el + units, hPos, vPos);
+                vPos += 30;
+            }
+
+            Float minLon = Float.parseFloat(params.getString("bbox").split(",")[0]);
+            Float maxLon = Float.parseFloat(params.getString("bbox").split(",")[2]);
+            Float minLat = Float.parseFloat(params.getString("bbox").split(",")[1]);
+            Float maxLat = Float.parseFloat(params.getString("bbox").split(",")[3]);
+            Float lonRange = maxLon - minLon;
+
+            if (minLon >= -180 && maxLon <= 180) {
+                BufferedImage im = getImage(params, minLon, minLat, maxLon, maxLat, mapWidth,
+                        mapHeight, baseLayerUrl);
+                g.drawImage(im, 0, textSpace, null);
+            } else if (minLon < -180 && maxLon <= 180) {
+                int lefWidth = (int) (mapWidth * (-180 - minLon) / (lonRange));
+                BufferedImage im = getImage(params, minLon + 360, minLat, 180f, maxLat, lefWidth,
+                        mapHeight, baseLayerUrl);
+                g.drawImage(im, 0, textSpace, null);
+                im = getImage(params, -180f, minLat, maxLon, maxLat, mapWidth - lefWidth,
+                        mapHeight, baseLayerUrl);
+                g.drawImage(im, lefWidth, textSpace, null);
+            } else if (minLon >= -180 && maxLon > 180) {
+                int rightWidth = (int) (mapWidth * (maxLon - 180f) / (lonRange));
+                BufferedImage im = getImage(params, minLon, minLat, 180f, maxLat, mapWidth
+                        - rightWidth, mapHeight, baseLayerUrl);
+                g.drawImage(im, 0, textSpace, null);
+                im = getImage(params, -180f, minLat, maxLon - 360, maxLat, rightWidth, mapHeight,
+                        baseLayerUrl);
+                g.drawImage(im, mapWidth - rightWidth, textSpace, null);
+            } else if (minLon < -180 && maxLon > 180) {
+                int leftWidth = (int) (mapWidth * (-180 - minLon) / (lonRange));
+                BufferedImage im = getImage(params, minLon + 360, minLat, 180f, maxLat, leftWidth,
+                        mapHeight, baseLayerUrl);
+                g.drawImage(im, 0, textSpace, null);
+
+                int rightWidth = (int) (mapWidth * (maxLon - 180f) / (lonRange));
+                im = getImage(params, -180f, minLat, maxLon - 360, maxLat, rightWidth, mapHeight,
+                        baseLayerUrl);
+                g.drawImage(im, mapWidth - rightWidth, textSpace, null);
+
+                im = getImage(params, -180f, minLat, 180f, maxLat, mapWidth - leftWidth
+                        - rightWidth, mapHeight, baseLayerUrl);
+                g.drawImage(im, leftWidth, textSpace, null);
+            }
+
+            URL url = createWMSUrl(params, false, minLon, minLat, maxLon, maxLat, mapWidth,
+                    mapHeight, servletUrl);
+            BufferedImage wmsLayer;
+            if (url != null) {
+                wmsLayer = ImageIO.read(url);
+                g.drawImage(wmsLayer, 0, textSpace, null);
+            }
+
+            BufferedImage colorBar;
+            url = createColorbarUrl(params, mapHeight, servletUrl);
+            if (url != null) {
+                InputStream in = null;
+                try {
+                    URLConnection conn = url.openConnection();
+                    in = conn.getInputStream();
+                    colorBar = ImageIO.read(in);
+                    g.drawImage(colorBar, mapWidth, textSpace, mapWidth + 30,
+                            textSpace + mapHeight, 0, 0, 1, colorBar.getHeight(), null);
+                } finally {
+                    if (in != null)
+                        in.close();
+                }
+            }
+
+            String sr = params.getString("scaleRange");
+            int topPos = textSpace + 10;
+            int botPos = topPos + mapHeight - 10;
+            int midPos = botPos + (topPos - botPos) / 2;
+            hPos = mapWidth + 40;
+
+            String u = params.getString("units");
+            if (u != null && !u.equals("")) {
+                g.drawString("Units: " + u, hPos, midPos);
+            }
+
+            font = new Font("SansSerif", Font.PLAIN, 11);
+            g.setFont(font);
+            if (sr != null) {
+                String[] scaleVals = sr.split(",");
+                float topVal = Float.parseFloat(scaleVals[1]);
+                float botVal = Float.parseFloat(scaleVals[0]);
+                String log = params.getString("logScale");
+                double highMedVal;
+                double lowMedVal;
+                if (log != null && Boolean.parseBoolean(log)) {
+                    double aThird = Math.log(topVal / botVal) / 3.0;
+                    highMedVal = Math.exp(Math.log(botVal) + 2 * aThird);
+                    lowMedVal = Math.exp(Math.log(botVal) + aThird);
                 } else {
-                    coverage =  (rangeofImg1/totalSpan);
+                    highMedVal = botVal + 2 * (topVal - botVal) / 3;
+                    lowMedVal = botVal + (topVal - botVal) / 3;
                 }
-
-                WIDTH_OF_BG_IMAGE1 = Math.round(((float) (WIDTH_TOTAL)*coverage));   // RHS Image
-
-                if (isReplicate)
-                {
-                    WIDTH_OF_BG_IMAGE2 =  (WIDTH_TOTAL/2) - WIDTH_OF_BG_IMAGE1;
-                    START_OF_IMAGE3 = WIDTH_OF_BG_IMAGE1 + WIDTH_OF_BG_IMAGE2;
-                    START_OF_IMAGE4 = START_OF_IMAGE3 + WIDTH_OF_BG_IMAGE2;
-                }
-                else{
-                    WIDTH_OF_BG_IMAGE2 =  WIDTH_TOTAL - WIDTH_OF_BG_IMAGE1;          // LHS Image
-                }
-			}
-
-        String bboxParam1 = "&BBOX=" + minX1 + "," + BBOX.minYValue + "," + maxX1 + "," + BBOX.maxYValue;
-        String bboxParam2 = "&BBOX=" + minX2 + "," + BBOX.minYValue + "," + maxX2 + "," + BBOX.maxYValue;
-
-        URL1 = result.toString() + "WIDTH=" + WIDTH_OF_BG_IMAGE1 + "&HEIGHT=" + HEIGHT_TOTAL + bboxParam1;
-        URL2 = result.toString() + "WIDTH=" + WIDTH_OF_BG_IMAGE2 + "&HEIGHT=" + HEIGHT_TOTAL + bboxParam2;
-        isGT180 = true;
-        }
-
-        else
-        {
-            URL1 = result.toString() + "WIDTH=" + WIDTH_TOTAL + "&HEIGHT=" + HEIGHT_TOTAL + bboxParam;
-        }
-
-
-        String URL3 = resultFG.toString() + "WIDTH=" + WIDTH_TOTAL + "&HEIGHT=" + HEIGHT_TOTAL + bboxParam;
-
-		BufferedImage bimgBG1 = null;
-        BufferedImage bimgBG2 = null;
-
-		BufferedImage bimgFG = null;
-		BufferedImage bimgPalette = null;
-        if(isGT180){
-            bimgBG1 = downloadImage(URL1); //(path[0]);  // right-hand side
-            bimgBG2 = downloadImage(URL2); //(path[1]);  // left-hand side
-        }
-        else{
-            bimgBG1 = downloadImage(URL1);
-        }
-        bimgFG = downloadImage(URL3);
-        bimgPalette = downloadImage(urlStringPalette);//(path[2]);
-
-        /* Prepare the final Image */
-        int type = BufferedImage.TYPE_INT_RGB;
-        BufferedImage image = new BufferedImage(WIDTH_OF_FINAL_IMAGE, HEIGHT_OF_FINAL_IMAGE, type);
-        Graphics2D g = image.createGraphics();
-
-        // The Font and Text
-        Font font = new Font("SansSerif", Font.BOLD, 12);
-        g.setFont(font);
-        g.setBackground(Color.white);
-        g.fillRect(0, 0, WIDTH_OF_FINAL_IMAGE, HEIGHT_OF_FINAL_IMAGE);
-
-        g.setColor(Color.black);
-        g.drawString(title, 0, 10);
-        if (time != null) {
-            g.drawString("Time: " + time, 0, 30);
-        }
-        if (elevation != null) {
-            g.drawString(elevation, 0, 50);
-        }
-
-        // Now draw the image
-        if(isGT180){
-            g.drawImage(bimgBG1, null, WIDTH_OF_BG_IMAGE2, 60);
-            g.drawImage(bimgBG2, null, 0, 60);
-            if(isReplicate) {
-                g.drawImage(bimgBG2, null, START_OF_IMAGE3, 60);
-                g.drawImage(bimgBG1, null, START_OF_IMAGE4, 60);
-            }
-        }
-        else{
-            g.drawImage(bimgBG1, null, 0, 60);
-        }
-        g.drawImage(bimgFG, null, 0, 60);
-        g.drawImage(bimgPalette, WIDTH_TOTAL, 60, 45, HEIGHT_TOTAL, null);
-
-        g.drawString(upperValue, 560, 63);
-        g.drawString(twoThirds, 560, 192);
-        if (units != null) {
-            g.drawString("Units: " + units, 560, 258);
-        }
-        g.drawString(oneThird, 560, 325);
-        g.drawString(lowerValue, 560, 460);
-
-        g.dispose();
-
-        String imageName = "snapshot" + RANDOM.nextLong() + System.currentTimeMillis() + ".png";
-        ImageIO.write(image, "png", getImageFile(imageName));	// write the image to the screenshots directory
-        String screenshotUrl = "screenshots/getScreenshot?img="+ imageName;
-        return new ModelAndView("showScreenshotUrl", "url", screenshotUrl);
-    }
-
-    private static StringBuffer buildURL(String url, String serverName, String type, BoundingBox bb) {
-
-        String[] params = url.split("&");
-        StringBuffer result = new StringBuffer();
-        result.append(serverName);
-        result.append("?");
-        String separator = "&";
-
-        for (int i=0; i< params.length; i++){
-            if(params[i].startsWith("BBOX")){
-                String tempParam = params[i];
-                String bbValues = tempParam.substring(5); // to remove BBOX= from the start of the string
-                String [] bbox = bbValues.split(",");
-                if(type.equals("BG")==true){
-                    bb.minXValue = (float) Double.parseDouble(bbox[0]);
-                    bb.maxXValue = (float) Double.parseDouble(bbox[2]);
-                    bb.minYValue = (float) Double.parseDouble(bbox[1]);
-                    bb.maxYValue = (float) Double.parseDouble(bbox[3]);
-                }
-                for (int indx=0; indx< bbox.length; indx++){
-                    //out.print("bbox param " + indx + ": " + bbox[indx]);
-                }
-                continue;
-            }
-            if(params[i].startsWith("WIDTH") || params[i].startsWith("HEIGHT")){
-                continue;
+                int highMedPos = botPos + 2 * (topPos - botPos) / 3;
+                int lowMedPos = botPos + (topPos - botPos) / 3;
+                DecimalFormat format = new DecimalFormat("##0.00");
+                g.drawString(format.format(topVal), hPos, topPos);
+                g.drawString(format.format(highMedVal), hPos, highMedPos);
+                g.drawString(format.format(lowMedVal), hPos, lowMedPos);
+                g.drawString(format.format(botVal), hPos, botPos);
             }
 
-            result.append(params[i]);
-            result.append(separator);
-        }
-        return result;
-    }
-
-	private static BufferedImage downloadImage(String path) throws IOException {
-	    return ImageIO.read(new URL(path));
-	}
-
-    /**
-     * Downloads a screenshot from the server
-     * @param request
-     * @param response
-     */
-    public void getScreenshot(HttpServletRequest request, HttpServletResponse response)
-        throws Exception
-    {
-        log.debug("Called getScreenshot with params {}", request.getParameterMap());
-        String imageName = request.getParameter("img");
-        if (imageName == null) throw new Exception("Must give a screenshot image name");
-        File screenshotFile = this.getImageFile(imageName);
-        InputStream in = null;
-        OutputStream out = null;
-        try
-        {
-            in = new FileInputStream(screenshotFile);
-            byte[] imageBytes = new byte[1024]; // read 1MB at a time
             response.setContentType("image/png");
-            out = response.getOutputStream();
-            int n;
-            do
-            {
-                n = in.read(imageBytes);
-                if (n >= 0)
-                {
-                    out.write(imageBytes);
-                }
-            } while (n >= 0);
-        }
-        catch (FileNotFoundException fnfe)
-        {
-            // rethrow this exception
-            throw new Exception(imageName + " not found");
-        }
-        finally
-        {
-            if (in != null) in.close();
-            if (out != null) out.close();
+            OutputStream output = response.getOutputStream();
+            ImageIO.write(image, "png", output);
+            return null;
+        } else {
+            PrintWriter out = response.getWriter();
+            String url = request.getRequestURL() + "?" + request.getQueryString() + "&image=true";
+            out.println("<html><body>To save the image, right click and select \"Save As\"<br>"
+                    + "Note: The image may take a long time to appear, depending on the speed of the data servers<br>"
+                    + "<img src=\"" + url + "\"</body></html>");
+            return null;
         }
     }
 
-    private File getImageFile(String imageName)
-    {
-        return new File(this.screenshotCache, imageName);
+    private BufferedImage getImage(RequestParams params, Float minLon, Float minLat, Float maxLon,
+            Float maxLat, int width, int height, String bgUrl) throws IOException {
+        BufferedImage image = null;
+        URL baseUrl = createWMSUrl(params, true, minLon, minLat, maxLon, maxLat, width, height,
+                bgUrl);
+        image = ImageIO.read(baseUrl);
+        ImageIO.write(image, "png", new File("/home/guy/00wtf.png"));
+        return image;
     }
 
-    /**
-     * Called by Spring to inject the location of the cache of screenshot images
-     */
-    public void setScreenshotCache(File screenshotCache)
-    {
-        this.screenshotCache = screenshotCache;
+    private URL createWMSUrl(RequestParams params, boolean baseLayer, Float minLon, Float minLat,
+            Float maxLon, Float maxLat, int width, int height, String baseWmsUrl) {
+        StringBuilder url = new StringBuilder();
+        if (baseLayer) {
+            Pattern p = Pattern.compile(" ");
+            if (baseWmsUrl != null) {
+                Matcher m = p.matcher(baseWmsUrl);
+                if (m != null)
+                    baseWmsUrl = m.replaceAll("%20");
+            }
+            url.append(baseWmsUrl);
+        } else {
+            url.append(baseWmsUrl);
+            url.append(params.getString("dataset") + "?SERVICE=WMS&LAYERS="
+                    + params.getString("layer"));
+            String style = params.getString("style");
+            String palette = params.getString("palette");
+            if (style != null && palette != null)
+                url.append("&STYLES=" + style + "/" + palette);
+            String scaleRange = params.getString("scaleRange");
+            if (scaleRange != null)
+                url.append("&COLORSCALERANGE=" + scaleRange);
+            String numColorBands = params.getString("numColorBands");
+            if (numColorBands != null)
+                url.append("&NUMCOLORBANDS=" + numColorBands);
+            String time = params.getString("time");
+            if (time != null)
+                url.append("&TIME=" + time);
+            String elevation = params.getString("elevation");
+            if (elevation != null)
+                url.append("&ELEVATION=" + elevation);
+        }
+
+        url.append("&TRANSPARENT=true");
+        url.append("&VERSION=1.1.1&SERVICE=WMS&REQUEST=GetMap&FORMAT=image/png&WIDTH=" + width
+                + "&HEIGHT=" + height);
+        url.append("&BBOX=" + minLon + "," + minLat + "," + maxLon + "," + maxLat);
+        url.append("&SRS=" + params.getString("crs"));
+        try {
+            return new URL(url.toString().replaceAll(" ", "%20"));
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
+    private URL createColorbarUrl(RequestParams params, int mapHeight, String baseUrl) {
+        String url = baseUrl + params.getString("dataset")
+                + "?REQUEST=GetLegendGraphic&COLORBARONLY=true&WIDTH=1&HEIGHT=" + mapHeight;
+        String numColorBands = params.getString("numColorBands");
+        if (numColorBands != null)
+            url += "&NUMCOLORBANDS=" + numColorBands;
+        String palette = params.getString("palette");
+        if (palette != null)
+            url += "&PALETTE=" + palette;
+        try {
+            return new URL(url);
+        } catch (MalformedURLException e) {
+            return null;
+        }
+    }
 }

@@ -11,4 +11,5 @@ public interface LayerSelectorIF extends IsWidget {
     public List<String> getSelectedIds();
     public void setSelectedLayer(String id);
     public void setEnabled(boolean enabled);
+    public List<String> getTitleElements();
 }

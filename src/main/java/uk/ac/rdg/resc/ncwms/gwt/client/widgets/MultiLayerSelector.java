@@ -137,4 +137,9 @@ public class MultiLayerSelector extends VerticalPanel implements LayerSelectorIF
     @Override
     public void setSelectedLayer(String id) {
     }
+    @Override
+    public List<String> getTitleElements() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

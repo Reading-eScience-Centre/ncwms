@@ -12,6 +12,7 @@ public class LayerMenuItem {
     private String id = null;
     private boolean plottable = true;
     private List<LayerMenuItem> childItems = null;
+    private LayerMenuItem parent = null;
     
     public LayerMenuItem(String title, String id, boolean plottable) {
         this.title = title;
@@ -24,6 +25,11 @@ public class LayerMenuItem {
             childItems = new ArrayList<LayerMenuItem>();
         }
         childItems.add(item);
+        item.parent = this;
+    }
+    
+    public LayerMenuItem getParent() {
+        return parent;
     }
     
     public String getTitle(){

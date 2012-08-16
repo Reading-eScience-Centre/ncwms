@@ -26,6 +26,8 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
     private String selectedLayer;
     private boolean firstUse = true;
     private String firstTitle = null;
+    
+    private LayerMenuItem selectedNode;
 
     public LayerSelectorCombo(LayerSelectionHandler layerHandler) {
         super("Loading");
@@ -89,7 +91,7 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
         }
     }
     
-    private void addNode(LayerMenuItem item, final TreeItem parentNode) {
+    private void addNode(final LayerMenuItem item, final TreeItem parentNode) {
         if(parentNode == null && item.isLeaf()){
             /*
              * This is an empty dataset (probably it is still loading)
@@ -116,6 +118,7 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
                     public void onClick(ClickEvent event) {
                         setSelectedLayer(id);
                         layerSelectionHandler.layerSelected(id, true);
+                        selectedNode = item;
                     }
                 });
             }
@@ -168,4 +171,21 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
         else
             setStylePrimaryName("inactiveHiddenButton");
     }
+    
+    @Override
+    public List<String> getTitleElements(){
+        List<String> title = new ArrayList<String>();
+        LayerMenuItem currentNode = selectedNode;
+        LayerMenuItem parentNode;
+        if(currentNode != null) {
+            while((parentNode = currentNode.getParent()) != null){
+                title.add(currentNode.getTitle());
+                currentNode = parentNode;
+            }
+        }
+        return title;
+    }
+    
+    
+    
 }

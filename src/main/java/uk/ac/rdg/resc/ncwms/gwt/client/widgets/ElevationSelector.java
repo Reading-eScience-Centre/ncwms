@@ -17,6 +17,7 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
     private final NumberFormat format = NumberFormat.getFormat("#0.##");
     private Map<String, String> formattedValuesToRealValues;
     private String id;
+    private String units;
     
 	public ElevationSelector(String id, String title, final ElevationSelectionHandler handler) {
 		super(title);
@@ -66,6 +67,7 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
 	
 	@Override
     public void setUnitsAndDirection(String units, boolean positive){
+	    this.units = units;
 	    this.positive = positive;
 	    if(positive) {
 	        label.setText("Elevation");
@@ -118,5 +120,10 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
     @Override
     public int getNElevations() {
         return elevations.getItemCount();
+    }
+
+    @Override
+    public String getVerticalUnits() {
+        return units;
     }
 }

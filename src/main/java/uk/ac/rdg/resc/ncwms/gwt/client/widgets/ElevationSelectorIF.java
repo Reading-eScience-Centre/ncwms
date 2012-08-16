@@ -12,4 +12,5 @@ public interface ElevationSelectorIF extends IsWidget {
     public void setSelectedElevation(String currentElevation);
     public void setEnabled(boolean enabled);
     public int getNElevations();
+    public String getVerticalUnits();
 }
