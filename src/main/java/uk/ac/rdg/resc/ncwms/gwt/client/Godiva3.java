@@ -8,6 +8,8 @@ import org.gwtopenmaps.openlayers.client.LonLat;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerDetails;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.AnimationButton;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.CopyrightInfo;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.CopyrightInfoIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelectorIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.GodivaWidgets;
@@ -60,7 +62,7 @@ public class Godiva3 extends BaseWmsClient {
 
     // Button to create animations
     private AnimationButton anim;
-
+    
     @Override
     public void init() {
         String permalinkString = Window.Location.getParameter("permalinking");
@@ -87,7 +89,7 @@ public class Godiva3 extends BaseWmsClient {
         email.setTitle("Email a link to the current view");
 
         screenshot = new Anchor("Export to PNG");
-        screenshot.setHref("/screenshot?");
+        screenshot.setHref("/screenshots/getScreenshot?");
         screenshot.setStylePrimaryName("labelStyle");
         screenshot.setTarget("_blank");
         screenshot.setTitle("Open a downloadable image in a new window - may be slow to load");
@@ -105,9 +107,10 @@ public class Godiva3 extends BaseWmsClient {
         PaletteSelectorIF paletteSelector = new PaletteSelector("mainLayer", getMapHeight(), 30,
                 this, wmsUrl, true);
         UnitsInfoIF unitsInfo = new UnitsInfo();
+        CopyrightInfoIF copyrightInfo = new CopyrightInfo();
 
         widgetCollection = new GodivaWidgets(elevationSelector, timeSelector, paletteSelector,
-                unitsInfo);
+                unitsInfo, copyrightInfo);
 
         opacitySelector = new OpacitySelector(new ChangeHandler() {
             @Override
@@ -122,18 +125,19 @@ public class Godiva3 extends BaseWmsClient {
         loadingImage.setVisible(false);
         loadingImage.setStylePrimaryName("loadingImage");
 
-        anim = new AnimationButton(mapArea, proxyUrl + wmsUrl);
+        anim = new AnimationButton(mapArea, proxyUrl + wmsUrl, timeSelector);
 
         RootLayoutPanel mainWindow = RootLayoutPanel.get();
 
         mainWindow.add(LayoutManager.getGodiva3Layout(layerSelector, unitsInfo, timeSelector,
                 elevationSelector, paletteSelector, kmzLink, permalink, email, screenshot, logo,
                 mapArea, loadingImage, anim, opacitySelector));
-
+        
         timeSelector.setEnabled(false);
         elevationSelector.setEnabled(false);
         paletteSelector.setEnabled(false);
         unitsInfo.setEnabled(false);
+        copyrightInfo.setEnabled(false);
         opacitySelector.setEnabled(false);
     }
 
@@ -158,6 +162,7 @@ public class Godiva3 extends BaseWmsClient {
     @Override
     public void layerDetailsLoaded(LayerDetails layerDetails, boolean autoUpdate) {
         populateWidgets(layerDetails, widgetCollection);
+        
         /*
          * We populate our widgets here, but in a multi-layer system, we may
          * want to create new widgets here
@@ -363,6 +368,8 @@ public class Godiva3 extends BaseWmsClient {
 
         TimeSelectorIF timeSelector = widgetCollection.getTimeSelector();
         ElevationSelectorIF elevationSelector = widgetCollection.getElevationSelector();
+        
+        UnitsInfoIF unitsInfo = widgetCollection.getUnitsInfo();
 
         String currentLayer = null;
         String currentElevation = null;
@@ -405,30 +412,28 @@ public class Godiva3 extends BaseWmsClient {
         email.setHref("mailto:?subject=MyOcean Data Link&body="
                 + URL.encodeQueryString(baseurl + urlParams));
 
-//        // Screenshot-only stuff
-//        urlParams += "&bbox=" + mapArea.getMap().getExtent().toBBox(6);
-//        /*
-//         * TODO This is only for screenshots. look into it more
-//         */
-//        if (layerIdToTitle != null)
-//            urlParams += "&layerName=" + layerIdToTitle.get(currentLayer);
-//        // TODO this too
-//        urlParams += "&datasetName=" + datasetTitle;
-//        urlParams += "&crs=EPSG:4326";
-//        urlParams += "&mapHeight=" + mapHeight;
-//        urlParams += "&mapWidth=" + mapWidth;
-//        urlParams += "&style=" + currentStyle;
-//        // urlParams += "&baseUrl="+mapArea.getBaseLayerUrl();
-//        // TODO this too
-//        if (zUnits != null)
-//            urlParams += "&zUnits=" + zUnits;
-//        /*
-//         * TODO also only for screenshots. this should be gettable from the
-//         * subclass somehow
-//         */
-//        if (units != null)
-//            urlParams += "&units=" + units;
-//        screenshot.setHref("screenshot?" + urlParams);
-
+        // Screenshot-only stuff
+        urlParams += "&bbox=" + mapArea.getMap().getExtent().toBBox(6);
+        if(layerSelector != null) {
+            StringBuilder title = new StringBuilder();
+            if(layerSelector.getTitleElements() != null && layerSelector.getTitleElements().size() > 0) {
+                for(String element : layerSelector.getTitleElements()){
+                    title.append(element+",");
+                }
+                title.deleteCharAt(title.length()-1);
+                urlParams += "&layerTitle=" + title;
+            }
+        }
+        urlParams += "&crs=EPSG:4326";
+        urlParams += "&mapHeight=" + mapHeight;
+        urlParams += "&mapWidth=" + mapWidth;
+        urlParams += "&style=" + currentStyle;
+        if(elevationSelector != null)
+            urlParams += "&zUnits=" + elevationSelector.getVerticalUnits();
+        if (unitsInfo != null)
+            urlParams += "&units=" + unitsInfo.getUnits();
+        urlParams += "&baseUrl="+mapArea.getBaseLayerUrl();
+        urlParams += "&baseLayers="+mapArea.getBaseLayerLayers();
+        screenshot.setHref("screenshots/createScreenshot?" + urlParams);
     }
 }

@@ -51,8 +51,8 @@ public class StartEndTimePopup extends DialogBoxWithCloseButton {
 
     private VerticalPanel timeSelectionPanel;
     private Label loadingLabel = new Label("Loading");
-
-    public StartEndTimePopup(String layer, String baseUrl) {
+    
+    public StartEndTimePopup(String layer, String baseUrl, final TimeSelectorIF currentTimeSelector) {
         this.jsonProxyUrl = baseUrl;
         this.layer = layer;
 
@@ -88,6 +88,9 @@ public class StartEndTimePopup extends DialogBoxWithCloseButton {
                  */
                 Collections.sort(availableDates);
                 getStartTimeSelector().populateDates(availableDates);
+                if (currentTimeSelector != null) {
+                    getStartTimeSelector().selectDate(currentTimeSelector.getSelectedDate());
+                }
                 getEndTimeSelector().populateDates(availableDates);
                 getEndTimeSelector().selectDate(availableDates.get(availableDates.size() - 1));
                 for (final String date : availableDates) {
@@ -99,10 +102,6 @@ public class StartEndTimePopup extends DialogBoxWithCloseButton {
                             super.onResponseReceived(request, response);
                             availableTimes.put(date, getAvailableTimesteps());
                             if (date.equals(startTimeSelector.getSelectedDate())) {
-                                /*
-                                 * TODO don't add the final time on the final
-                                 * date...
-                                 */
                                 if (date.equals(availableDates.get(availableDates.size() - 1))
                                         && getAvailableTimesteps().size() > 1) {
                                     startTimeSelector.populateTimes(getAvailableTimesteps()
@@ -115,6 +114,10 @@ public class StartEndTimePopup extends DialogBoxWithCloseButton {
                                 endTimeSelector.populateTimes(getAvailableTimesteps());
                                 endTimeSelector.selectDateTime(getAvailableTimesteps().get(
                                         getAvailableTimesteps().size() - 1));
+                            }
+                            if (currentTimeSelector != null) {
+                                getStartTimeSelector().selectDateTime(
+                                        currentTimeSelector.getSelectedDateTime());
                             }
                         }
 

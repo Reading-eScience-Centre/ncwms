@@ -565,6 +565,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
         widgetCollection.getPaletteSelector().setId(layerDetails.getId());
 
         widgetCollection.getUnitsInfo().setUnits(layerDetails.getUnits());
+        widgetCollection.getCopyrightInfo().setCopyrightInfo(layerDetails.getCopyright());
 
         widgetCollection.getElevationSelector().setUnitsAndDirection(layerDetails.getZUnits(),
                 layerDetails.isZPositive());

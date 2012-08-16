@@ -39,6 +39,8 @@ public class AnimationButton extends ToggleButton {
     private boolean logScale;
     private Button goButton;
     private Button cancelButton;
+    
+    private final TimeSelectorIF currentTimeSelector;
 
     private VerticalPanel granularitySelectionPanel;
     private ListBox granularitySelector;
@@ -46,12 +48,13 @@ public class AnimationButton extends ToggleButton {
     private boolean completed;
     private String style;
 
-    public AnimationButton(final MapArea map, final String jsonProxyUrl) {
+    public AnimationButton(final MapArea map, final String jsonProxyUrl, final TimeSelectorIF currentTimeSelector) {
         super(new Image("img/film.png"), new Image("img/stop.png"));
         super.setTitle("Open the animation wizard");
 
         this.map = map;
         this.jsonProxyUrl = jsonProxyUrl;
+        this.currentTimeSelector = currentTimeSelector;
 
         this.addClickHandler(new ClickHandler() {
             @Override
@@ -101,18 +104,16 @@ public class AnimationButton extends ToggleButton {
     }
 
     private StartEndTimePopup getWizard() {
-        if (popup == null) {
-            popup = new StartEndTimePopup(animLayer, jsonProxyUrl);
-            popup.setErrorMessage("Can only create animation where there are multiple times");
-            popup.setButtonLabel("Next >");
-            popup.addCloseHandler(new CloseHandler<PopupPanel>() {
-                @Override
-                public void onClose(CloseEvent<PopupPanel> event) {
-                    if (!completed)
-                        AnimationButton.this.setDown(false);
-                }
-            });
-        }
+        popup = new StartEndTimePopup(animLayer, jsonProxyUrl, currentTimeSelector);
+        popup.setErrorMessage("Can only create animation where there are multiple times");
+        popup.setButtonLabel("Next >");
+        popup.addCloseHandler(new CloseHandler<PopupPanel>() {
+            @Override
+            public void onClose(CloseEvent<PopupPanel> event) {
+                if (!completed)
+                    AnimationButton.this.setDown(false);
+            }
+        });
 
         if (animLayer == null) {
             setNoAnimationPossible("Please select a layer before trying to create an animation");
