@@ -111,7 +111,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
                 <c:forEach var="metadata" items="${utils:getPlottableLayers(layer)}">
                 <Layer<c:if test="${dataset.queryable}"> queryable="1"</c:if>>
                     <Name>${dataset.id}/${layer.id}/${metadata.name}</Name>
-                    <Title><c:out value="${metadata.description}" /></Title>
+                    <Title><c:out value="${metadata.title}" /></Title>
                     <Abstract><c:out value="${layer.description}"/></Abstract>
                     <c:set var="bbox" value="${utils:getWmsBoundingBox(layer)}"/>
                     <LatLonBoundingBox minx="${bbox.minX}" maxx="${bbox.maxX}" miny="${bbox.minY}" maxy="${bbox.maxY}"/>

@@ -8,7 +8,7 @@
 
 <Layer <c:if test="${utils:isPlottable(metadata)}"> queryable="1"</c:if>>
     <Name>${dataset.id}/${feature.id}/${metadata.name}</Name>
-    <Title><c:out value="${metadata.description}" /></Title>
+    <Title><c:out value="${metadata.title}" /></Title>
     <c:if test="${utils:isPlottable(metadata)}">
 	    <Abstract>
 	        <c:out value="${feature.description}" />

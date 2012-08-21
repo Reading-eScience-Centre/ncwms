@@ -288,6 +288,7 @@ public class AdminController extends MultiActionController {
                      * config file itself.
                      */
                     FeaturePlottingMetadata var = ds.getPlottingMetadataMap().get(featureId);
+                    memberMetadata.setTitle(newTitle);
                     var.setTitle(newTitle);
                     var.setColorScaleRange(Extents.newExtent(min, max));
                     var.setPaletteName(request.getParameter(featureId + ".palette"));

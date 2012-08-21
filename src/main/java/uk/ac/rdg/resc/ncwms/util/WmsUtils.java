@@ -205,7 +205,11 @@ public class WmsUtils {
 
     private static List<Float> readDataSample(Feature feature, String member) throws IOException {
         List<Float> ret = new ArrayList<Float>();
-        ScalarMetadata scalarMetadata = feature.getCoverage().getScalarMetadata(member);
+        /*
+         * This will throw an IllegalArgumentException if this member isn't plottable.
+         */
+        String scalarMemberName = MetadataUtils.getScalarMemberName(feature, member);
+        ScalarMetadata scalarMetadata = (ScalarMetadata) MetadataUtils.getMetadataForFeatureMember(feature, scalarMemberName);
         if(scalarMetadata == null){
             throw new IllegalArgumentException(member+" is not scalar - cannot read data sample");
         }
@@ -228,7 +232,7 @@ public class WmsUtils {
         if (feature instanceof GridFeature) {
             GridFeature gridFeature = (GridFeature) feature;
             feature = gridFeature.extractGridFeature(new RegularGridImpl(gridFeature.getCoverage()
-                    .getDomain().getCoordinateExtent(), 100, 100), CollectionUtils.setOf(member));
+                    .getDomain().getCoordinateExtent(), 100, 100), CollectionUtils.setOf(scalarMemberName));
         } else if (feature instanceof GridSeriesFeature) {
             GridSeriesFeature gridSeriesFeature = (GridSeriesFeature) feature;
             feature = gridSeriesFeature.extractGridFeature(
@@ -236,13 +240,13 @@ public class WmsUtils {
                             .getHorizontalGrid().getCoordinateExtent(), 100, 100),
                     getUppermostElevation(gridSeriesFeature),
                     getClosestToCurrentTime(gridSeriesFeature.getCoverage().getDomain()
-                            .getTimeAxis()), CollectionUtils.setOf(member));
+                            .getTimeAxis()), CollectionUtils.setOf(scalarMemberName));
         }
 
         if (feature.getCoverage() instanceof DiscreteCoverage) {
             DiscreteCoverage<?, ?> discreteCoverage = (DiscreteCoverage<?, ?>) feature
                     .getCoverage();
-            values = discreteCoverage.getValues(member);
+            values = discreteCoverage.getValues(scalarMemberName);
         } else {
             throw new UnsupportedOperationException("Currently we only support discrete coverages");
         }
@@ -493,25 +497,11 @@ public class WmsUtils {
 
         List<StyleInfo> ret = new ArrayList<StyleInfo>();
         for (PlotStyle style : baseStyles) {
-            boolean usesPalette;
+            boolean usesPalette = false;
             if(style == PlotStyle.DEFAULT){
-                try{
-                    String scalarMemberName = MetadataUtils.getScalarMemberName(feature, memberName);
-                    ScalarMetadata scalarMetadata = (ScalarMetadata) MetadataUtils
-                            .getMetadataForFeatureMember(feature, scalarMemberName);
+                ScalarMetadata scalarMetadata = MetadataUtils.getScalarMetadata(feature, memberName);
+                if(scalarMetadata != null){
                     usesPalette = PlotStyle.getDefaultPlotStyle(feature, scalarMetadata).usesPalette();
-                } catch (IllegalArgumentException iae){
-                    /*
-                     * This gets thrown if there is no scalar member
-                     * corresponding to memberName (i.e. if memberName is not
-                     * scalar OR it doesn't have a representative child
-                     * metadata)
-                     * 
-                     * We shouldn't be asking for this feature's style if it's
-                     * not plottable, but in case anything falls through, this
-                     * will at least make the list of styles shorter
-                     */
-                    usesPalette = false;
                 }
             } else {
                 usesPalette = style.usesPalette();
