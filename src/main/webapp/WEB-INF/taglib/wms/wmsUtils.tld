@@ -128,5 +128,10 @@
     <function-signature>java.util.Set getBaseStyles(uk.ac.rdg.resc.edal.feature.Feature, java.lang.String)</function-signature>
   </function>
 
-  
+  <function>
+    <description>Checks whether the given metadata represents a plottable layer</description>
+    <name>isPlottable</name>
+    <function-class>uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils</function-class>
+    <function-signature>boolean isPlottable(uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata)</function-signature>
+  </function>
 </taglib>
