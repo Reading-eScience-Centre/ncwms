@@ -493,7 +493,30 @@ public class WmsUtils {
 
         List<StyleInfo> ret = new ArrayList<StyleInfo>();
         for (PlotStyle style : baseStyles) {
-            if (style.usesPalette()) {
+            boolean usesPalette;
+            if(style == PlotStyle.DEFAULT){
+                try{
+                    String scalarMemberName = MetadataUtils.getScalarMemberName(feature, memberName);
+                    ScalarMetadata scalarMetadata = (ScalarMetadata) MetadataUtils
+                            .getMetadataForFeatureMember(feature, scalarMemberName);
+                    usesPalette = PlotStyle.getDefaultPlotStyle(feature, scalarMetadata).usesPalette();
+                } catch (IllegalArgumentException iae){
+                    /*
+                     * This gets thrown if there is no scalar member
+                     * corresponding to memberName (i.e. if memberName is not
+                     * scalar OR it doesn't have a representative child
+                     * metadata)
+                     * 
+                     * We shouldn't be asking for this feature's style if it's
+                     * not plottable, but in case anything falls through, this
+                     * will at least make the list of styles shorter
+                     */
+                    usesPalette = false;
+                }
+            } else {
+                usesPalette = style.usesPalette();
+            }
+            if (usesPalette) {
                 for (String palette : palettes) {
                     ret.add(new StyleInfo(style.name(), palette));
                 }

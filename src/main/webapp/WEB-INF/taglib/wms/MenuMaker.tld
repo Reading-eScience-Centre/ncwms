@@ -7,22 +7,22 @@
   <uri>/WEB-INF/taglib/wms/MenuMaker</uri>
   <tag-file>
     <name>layer</name>
-    <path>/WEB-INF/tags/wms/Layer.tag</path>
+    <path>/WEB-INF/tags/menu/Layer.tag</path>
   </tag-file>
   <tag-file>
     <name>remoteLayer</name>
-    <path>/WEB-INF/tags/wms/RemoteLayer.tag</path>
+    <path>/WEB-INF/tags/menu/RemoteLayer.tag</path>
   </tag-file>
   <tag-file>
     <name>folder</name>
-    <path>/WEB-INF/tags/wms/Folder.tag</path>
+    <path>/WEB-INF/tags/menu/Folder.tag</path>
   </tag-file>
   <tag-file>
     <name>dataset</name>
-    <path>/WEB-INF/tags/wms/Dataset.tag</path>
+    <path>/WEB-INF/tags/menu/Dataset.tag</path>
   </tag-file>
   <tag-file>
     <name>rangemetadata</name>
-    <path>/WEB-INF/tags/wms/RangeMetadata.tag</path>
+    <path>/WEB-INF/tags/menu/RangeMetadata.tag</path>
   </tag-file>
 </taglib>
