@@ -103,7 +103,7 @@
 			<version>1.2</version>
 		</dependency>
 		<dependency>
-			<groupId>json-taglib</groupId>
+			<groupId>json</groupId>
 			<artifactId>json-taglib</artifactId>
 			<version>0.4.1</version>
 		</dependency>
@@ -176,9 +176,9 @@
 	<repositories>
 		<repository>
 			<!-- This has the JSON taglib in it -->
-			<id>mvnsearch</id>
-			<name>Mvnsearch.org</name>
-			<url>http://www.mvnsearch.org/maven2/</url>
+			<id>intalio-maven</id>
+			<name>Intalio maven repository</name>
+			<url>http://www.intalio.org/public/maven2/</url>
 		</repository>
 	</repositories>
 	<pluginRepositories>
