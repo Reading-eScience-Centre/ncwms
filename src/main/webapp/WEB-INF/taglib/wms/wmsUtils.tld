@@ -4,18 +4,25 @@
   <tlib-version>1.0</tlib-version>
   <short-name>wmsutils</short-name>
   <uri>/WEB-INF/taglib/wms/wmsUtils</uri>
-  <function>
-    <description>Converts a TimePosition object to an ISO8601-formatted String</description>
-    <name>dateTimeToISO8601</name>
-    <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
-    <function-signature>java.lang.String dateTimeToISO8601(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
-  </function>
+  
+  
+  <!-- Native Java -->
   <function>
     <description>Calculates the absolute value of a number</description>
     <name>abs</name>
     <function-class>java.lang.Math</function-class>
     <function-signature>double abs(double)</function-signature>
   </function>
+  
+  
+  <!-- TimeUtils -->
+  <function>
+    <description>Converts a TimePosition object to an ISO8601-formatted String</description>
+    <name>dateTimeToISO8601</name>
+    <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
+    <function-signature>java.lang.String dateTimeToISO8601(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
+  </function>
+  
   <function>
     <description>Formats a TimePosition object as the time only
       in ISO8601 format.  Time zone offset is zero (UTC).</description>
@@ -23,6 +30,7 @@
     <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
     <function-signature>java.lang.String formatUTCIsoTimeOnly(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
   </function>
+  
   <function>
     <description>Formats a TimePosition object as the time only
       in the format "HH:mm:ss", e.g. "14:53:03".  Time zone offset is zero (UTC).</description>
@@ -30,18 +38,12 @@
     <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
     <function-signature>java.lang.String formatUTCTimeOnly(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
   </function>
+  
   <function>
     <description>Formats a TimePosition object as the date only</description>
     <name>formatUTCDateOnly</name>
     <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
     <function-signature>java.lang.String formatUTCDateOnly(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
-  </function>
-
-  <function>
-    <description>Returns exception name</description>
-    <name>getExceptionName</name>
-    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
-    <function-signature>java.lang.String getExceptionName(java.lang.Exception)</function-signature>
   </function>
   
   <function>
@@ -56,6 +58,15 @@
     <name>getTimeStringForCapabilities</name>
     <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
     <function-signature>java.lang.String getTimeStringForCapabilities(java.util.List)</function-signature>
+  </function>
+  
+  
+  <!-- WmsUtils -->
+  <function>
+    <description>Returns exception name</description>
+    <name>getExceptionName</name>
+    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
+    <function-signature>java.lang.String getExceptionName(java.lang.Exception)</function-signature>
   </function>
 
   <function>
@@ -108,13 +119,6 @@
   </function>
 
   <function>
-    <description>Gets plottable layer metadata for a given feature</description>
-    <name>getPlottableLayers</name>
-    <function-class>uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils</function-class>
-    <function-signature>java.util.List getPlottableLayers(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
-  </function>
-
-  <function>
     <description>Gets the available styles for a given feature</description>
     <name>getFullStyles</name>
     <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
@@ -126,6 +130,15 @@
     <name>getBaseStyles</name>
     <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
     <function-signature>java.util.Set getBaseStyles(uk.ac.rdg.resc.edal.feature.Feature, java.lang.String)</function-signature>
+  </function>
+
+
+  <!-- MetadataUtils -->
+  <function>
+    <description>Gets plottable layer metadata for a given feature</description>
+    <name>getPlottableLayers</name>
+    <function-class>uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils</function-class>
+    <function-signature>java.util.List getPlottableLayers(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
   </function>
 
   <function>
