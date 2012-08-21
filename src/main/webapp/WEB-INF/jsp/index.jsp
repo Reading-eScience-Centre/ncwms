@@ -96,7 +96,7 @@
 			                    <c:if test="${empty exception}">
 				                    Standard Name: ${metadata.parameter.standardName}<br />
 			                    </c:if>
-				                Description: ${metadata.description}
+				                Title: ${metadata.title}
 				            </th>
 					        <td>
 								<a href="Godiva.html?layer=${dataset.id}/${feature.id}/${metadata.name}&amp;bbox=${bbox.minX},${bbox.minY},${bbox.maxX},${bbox.maxY}&amp;permalinking=true">View in Godiva 3</a>

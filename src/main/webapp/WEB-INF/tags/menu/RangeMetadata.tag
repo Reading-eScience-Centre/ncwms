@@ -7,17 +7,17 @@
 <%@attribute name="featureId" required="true" type="java.lang.String" description="The ID of the feature"%>
 
 <c:forEach items="${metadata.memberNames}" var="member">
+    <c:set var="thisMetadata" value="${utils:getChildMetadata(metadata, member)}"/>
 	<c:choose>
 		<c:when test="${utils:memberIsScalar(metadata, member)}">
-            <menu:layer dataset="${dataset}" name="${dataset.id}/${featureId}/${member}" label="${member}" plottable="${true}"/>
+            <menu:layer dataset="${dataset}" name="${dataset.id}/${featureId}/${member}" label="${thisMetadata.title}" plottable="${true}"/>
 		</c:when>
 		<c:otherwise>
-            <c:set var="thisMetadata" value="${utils:getChildMetadata(metadata, member)}"/>
             <c:set var="plottable" value="${false}"/>
             <c:if test="${not empty thisMetadata.representativeChildren}">
                 <c:set var="plottable" value="${true}"/>
             </c:if>
-		    <menu:folder label="${member}" id="${dataset.id}/${featureId}/${member}" plottable="${plottable}">
+		    <menu:folder label="${thisMetadata.title}" id="${dataset.id}/${featureId}/${member}" plottable="${plottable}">
 		        <c:forEach items="${metadata.memberNames}" var="childMember">
 		            <menu:rangemetadata metadata="${utils:getChildMetadata(metadata, childMember)}" dataset="${dataset}" featureId="${featureId}"/>
 		        </c:forEach>

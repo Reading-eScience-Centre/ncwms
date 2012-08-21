@@ -505,7 +505,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
                 // If there is no title set for this layer in the config file, we
                 // use the title that was read by the DataReader.
                 if (plottingMetadata.getTitle() == null)
-                    plottingMetadata.setTitle(memberMetadata.getName());
+                    plottingMetadata.setTitle(memberMetadata.getTitle());
 
                 /*
                  * 
