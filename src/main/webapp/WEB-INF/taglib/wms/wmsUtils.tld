@@ -70,20 +70,6 @@
   </function>
 
   <function>
-    <description>Returns the uppermost elevation (i.e. the default)</description>
-    <name>getDefaultElevation</name>
-    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
-    <function-signature>java.lang.Double getUppermostElevation(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
-  </function>
-
-  <function>
-    <description>Returns the closest time to the current one (i.e. the default)</description>
-    <name>getDefaultTime</name>
-    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
-    <function-signature>uk.ac.rdg.resc.edal.position.TimePosition getClosestToCurrentTime(uk.ac.rdg.resc.edal.coverage.grid.TimeAxis)</function-signature>
-  </function>
-
-  <function>
     <description>Sets the bounding box to conform with GIS standards</description>
     <name>getWmsBoundingBox</name>
     <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
@@ -102,20 +88,6 @@
     <name>getChildMetadata</name>
     <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
     <function-signature>uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata getChildMetadata(uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata, java.lang.String)</function-signature>
-  </function>
-
-  <function>
-    <description>Gets the vertical axis, if available</description>
-    <name>getVerticalAxis</name>
-    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
-    <function-signature>uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis getVerticalAxis(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
-  </function>
-
-  <function>
-    <description>Gets the time axis, if available</description>
-    <name>getTimeAxis</name>
-    <function-class>uk.ac.rdg.resc.ncwms.util.WmsUtils</function-class>
-    <function-signature>uk.ac.rdg.resc.edal.coverage.grid.TimeAxis getTimeAxis(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
   </function>
 
   <function>
@@ -146,5 +118,35 @@
     <name>isPlottable</name>
     <function-class>uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils</function-class>
     <function-signature>boolean isPlottable(uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata)</function-signature>
+  </function>
+  
+  
+  <!-- GISUtils -->
+  <function>
+    <description>Returns the uppermost elevation (i.e. the default)</description>
+    <name>getDefaultElevation</name>
+    <function-class>uk.ac.rdg.resc.edal.util.GISUtils</function-class>
+    <function-signature>java.lang.Double getUppermostElevation(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
+  </function>
+
+  <function>
+    <description>Returns the closest time to the current one (i.e. the default)</description>
+    <name>getDefaultTime</name>
+    <function-class>uk.ac.rdg.resc.edal.util.GISUtils</function-class>
+    <function-signature>uk.ac.rdg.resc.edal.position.TimePosition getClosestToCurrentTime(uk.ac.rdg.resc.edal.coverage.grid.TimeAxis)</function-signature>
+  </function>
+  
+  <function>
+    <description>Gets the vertical axis, if available</description>
+    <name>getVerticalAxis</name>
+    <function-class>uk.ac.rdg.resc.edal.util.GISUtils</function-class>
+    <function-signature>uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis getVerticalAxis(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
+  </function>
+
+  <function>
+    <description>Gets the time axis, if available</description>
+    <name>getTimeAxis</name>
+    <function-class>uk.ac.rdg.resc.edal.util.GISUtils</function-class>
+    <function-signature>uk.ac.rdg.resc.edal.coverage.grid.TimeAxis getTimeAxis(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
   </function>
 </taglib>

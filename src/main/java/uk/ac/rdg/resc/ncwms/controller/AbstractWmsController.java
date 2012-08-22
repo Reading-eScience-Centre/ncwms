@@ -1167,7 +1167,7 @@ public abstract class AbstractWmsController extends AbstractController {
                 return ((PointSeriesFeature) feature).getVerticalPosition();
             }
         }
-        VerticalAxis vAxis = WmsUtils.getVerticalAxis(feature);
+        VerticalAxis vAxis = GISUtils.getVerticalAxis(feature);
 
         if (vAxis == null || vAxis.size() == 0) {
             return new VerticalPositionImpl(Double.NaN, null);
@@ -1197,7 +1197,7 @@ public abstract class AbstractWmsController extends AbstractController {
 
     private static Extent<TimePosition> getTimeRange(String timeString, Feature feature)
             throws InvalidDimensionValueException {
-        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
+        TimeAxis tAxis = GISUtils.getTimeAxis(feature);
         
         // If the layer does not have a time axis return an extent
         if (tAxis == null)
@@ -1239,7 +1239,7 @@ public abstract class AbstractWmsController extends AbstractController {
     static List<TimePosition> getTimeValues(String timeString, Feature feature)
             throws InvalidDimensionValueException {
 
-        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
+        TimeAxis tAxis = GISUtils.getTimeAxis(feature);
         // If the layer does not have a time axis return an empty list
         if (tAxis == null)
             return Collections.emptyList();
@@ -1301,7 +1301,7 @@ public abstract class AbstractWmsController extends AbstractController {
             throws InvalidDimensionValueException {
         TimePosition target;
         if (isoDateTime.equalsIgnoreCase("current")) {
-            target = WmsUtils.getClosestToCurrentTime(tAxis);
+            target = GISUtils.getClosestToCurrentTime(tAxis);
         } else {
             try {
                 /*

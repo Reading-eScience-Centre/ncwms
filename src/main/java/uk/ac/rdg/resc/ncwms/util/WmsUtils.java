@@ -29,10 +29,7 @@
 package uk.ac.rdg.resc.ncwms.util;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,14 +38,8 @@ import java.util.Set;
 import org.geotoolkit.referencing.CRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import uk.ac.rdg.resc.edal.Extent;
-import uk.ac.rdg.resc.edal.coverage.DiscreteCoverage;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
-import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
-import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.RegularGridImpl;
-import uk.ac.rdg.resc.edal.coverage.grid.impl.TimeAxisImpl;
-import uk.ac.rdg.resc.edal.coverage.grid.impl.VerticalAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
@@ -65,11 +56,6 @@ import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
-import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
-import uk.ac.rdg.resc.edal.position.impl.VerticalPositionImpl;
-import uk.ac.rdg.resc.edal.util.CollectionUtils;
-import uk.ac.rdg.resc.edal.util.Extents;
-import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.config.Config;
 import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
 import uk.ac.rdg.resc.ncwms.controller.GetMapDataRequest;
@@ -189,80 +175,6 @@ public class WmsUtils {
     }
 
     /**
-     * Estimate the range of values in this layer by reading a sample of data
-     * from the default time and elevation. Works for both Scalar and Vector
-     * layers.
-     * 
-     * @return
-     * @throws IOException
-     *             if there was an error reading from the source data
-     */
-    public static Extent<Float> estimateValueRange(Feature feature, String member)
-            throws IOException {
-        List<Float> dataSample = readDataSample(feature, member);
-        return Extents.findMinMax(dataSample);
-    }
-
-    private static List<Float> readDataSample(Feature feature, String member) throws IOException {
-        List<Float> ret = new ArrayList<Float>();
-        /*
-         * This will throw an IllegalArgumentException if this member isn't plottable.
-         */
-        String scalarMemberName = MetadataUtils.getScalarMemberName(feature, member);
-        ScalarMetadata scalarMetadata = (ScalarMetadata) MetadataUtils.getMetadataForFeatureMember(feature, scalarMemberName);
-        if(scalarMetadata == null){
-            throw new IllegalArgumentException(member+" is not scalar - cannot read data sample");
-        }
-        Class<?> clazz = scalarMetadata.getValueType();
-        if (!Number.class.isAssignableFrom(clazz)) {
-            /*
-             * TODO a more elegant solution? Some kind of None value for scale
-             * ranges?
-             * 
-             * We want a non-numerical value range. Return whatever you like
-             */
-            ret.add(0.0f);
-            ret.add(100.0f);
-            return ret;
-        }
-        /*
-         * Read a low-resolution grid of data covering the entire spatial extent
-         */
-        List<?> values = null;
-        if (feature instanceof GridFeature) {
-            GridFeature gridFeature = (GridFeature) feature;
-            feature = gridFeature.extractGridFeature(new RegularGridImpl(gridFeature.getCoverage()
-                    .getDomain().getCoordinateExtent(), 100, 100), CollectionUtils.setOf(scalarMemberName));
-        } else if (feature instanceof GridSeriesFeature) {
-            GridSeriesFeature gridSeriesFeature = (GridSeriesFeature) feature;
-            feature = gridSeriesFeature.extractGridFeature(
-                    new RegularGridImpl(gridSeriesFeature.getCoverage().getDomain()
-                            .getHorizontalGrid().getCoordinateExtent(), 100, 100),
-                    getUppermostElevation(gridSeriesFeature),
-                    getClosestToCurrentTime(gridSeriesFeature.getCoverage().getDomain()
-                            .getTimeAxis()), CollectionUtils.setOf(scalarMemberName));
-        }
-
-        if (feature.getCoverage() instanceof DiscreteCoverage) {
-            DiscreteCoverage<?, ?> discreteCoverage = (DiscreteCoverage<?, ?>) feature
-                    .getCoverage();
-            values = discreteCoverage.getValues(scalarMemberName);
-        } else {
-            throw new UnsupportedOperationException("Currently we only support discrete coverages");
-        }
-
-        for (Object r : values) {
-            Number num = (Number) r;
-            if (num == null || num.equals(Float.NaN) || num.equals(Double.NaN)) {
-                ret.add(null);
-            } else {
-                ret.add(num.floatValue());
-            }
-        }
-        return ret;
-    }
-
-    /**
      * Finds a {@link CoordinateReferenceSystem} with the given code, forcing
      * longitude-first axis order.
      * 
@@ -297,52 +209,6 @@ public class WmsUtils {
         CoordinateReferenceSystem crs = getCrs(dr.getCrsCode());
         BoundingBox bbox = new BoundingBoxImpl(dr.getBbox(), crs);
         return new RegularGridImpl(bbox, dr.getWidth(), dr.getHeight());
-    }
-
-    public static TimePosition getClosestToCurrentTime(TimeAxis tAxis) {
-        if (tAxis == null)
-            return null; // no time axis
-        int index = TimeUtils.findTimeIndex(tAxis.getCoordinateValues(), new TimePositionJoda());
-        if (index < 0) {
-            // We can calculate the insertion point
-            int insertionPoint = -(index + 1);
-            // We set the index to the most recent past time
-            if (insertionPoint > 0)
-                index = insertionPoint - 1; // The most recent past time
-            else
-                index = 0; // All DateTimes on the axis are in the future, so we
-                           // take the earliest
-        }
-
-        return tAxis.getCoordinateValue(index);
-    }
-
-    public static VerticalPosition getUppermostElevation(Feature feature) {
-        VerticalAxis vAxis = getVerticalAxis(feature);
-        // We must access the elevation values via the accessor method in case
-        // subclasses override it.
-        if (vAxis == null) {
-            return new VerticalPositionImpl(Double.NaN, null);
-        }
-
-        double value;
-        if (vAxis.getVerticalCrs().isPressure()) {
-            // The vertical axis is pressure. The default (closest to the
-            // surface)
-            // is therefore the maximum value.
-            value = Collections.max(vAxis.getCoordinateValues());
-        } else {
-            // The vertical axis represents linear height, so we find which
-            // value is closest to zero (the surface), i.e. the smallest
-            // absolute value
-            value = Collections.min(vAxis.getCoordinateValues(), new Comparator<Double>() {
-                @Override
-                public int compare(Double d1, Double d2) {
-                    return Double.compare(Math.abs(d1), Math.abs(d2));
-                }
-            });
-        }
-        return new VerticalPositionImpl(value, vAxis.getVerticalCrs());
     }
 
     public static Dataset getDataset(Config serverConfig, String layerName) {
@@ -409,44 +275,6 @@ public class WmsUtils {
             throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
         }
         return layerParts[2];
-    }
-
-    /**
-     * Utility to get the vertical axis of a feature, if it exists
-     * 
-     * @param feature
-     *            the feature to check
-     * @return the {@link VerticalAxis}, or <code>null</code> if none exists
-     */
-    public static VerticalAxis getVerticalAxis(Feature feature) {
-        if (feature instanceof GridSeriesFeature) {
-            return ((GridSeriesFeature) feature).getCoverage().getDomain().getVerticalAxis();
-        } else if (feature instanceof ProfileFeature) {
-            ProfileFeature profileFeature = (ProfileFeature) feature;
-            return new VerticalAxisImpl("z", profileFeature.getCoverage().getDomain().getZValues(),
-                    profileFeature.getCoverage().getDomain().getVerticalCrs());
-
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Utility to get the time axis of a feature, if it exists
-     * 
-     * @param feature
-     *            the feature to check
-     * @return the {@link TimeAxis}, or <code>null</code> if none exists
-     */
-    public static TimeAxis getTimeAxis(Feature feature) {
-        if (feature instanceof GridSeriesFeature) {
-            return ((GridSeriesFeature) feature).getCoverage().getDomain().getTimeAxis();
-        } else if (feature instanceof PointSeriesFeature) {
-            return new TimeAxisImpl("time", ((PointSeriesFeature) feature).getCoverage()
-                    .getDomain().getTimes());
-        } else {
-            return null;
-        }
     }
 
     /*
