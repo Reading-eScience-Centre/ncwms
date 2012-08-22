@@ -31,6 +31,7 @@ import uk.ac.rdg.resc.edal.position.impl.TimePeriodImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.util.CollectionUtils;
 import uk.ac.rdg.resc.edal.util.Extents;
+import uk.ac.rdg.resc.edal.util.GISUtils;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.config.Config;
 import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
@@ -103,7 +104,7 @@ public abstract class AbstractMetadataController {
         String layerName = request.getParameter("layerName");
         String memberName = WmsUtils.getMemberName(layerName);
 
-        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
+        TimeAxis tAxis = GISUtils.getTimeAxis(feature);
 
         // Find the time the user has requested (this is the time that is
         // currently displayed on the Godiva2 site). If no time has been
@@ -213,7 +214,7 @@ public abstract class AbstractMetadataController {
     private ModelAndView showTimesteps(HttpServletRequest request) throws Exception {
         Feature feature = getFeature(request);
 
-        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
+        TimeAxis tAxis = GISUtils.getTimeAxis(feature);
         if (tAxis == null || tAxis.getCoordinateValues().isEmpty())
             return null; // return no data if no time axis present
 
@@ -351,7 +352,7 @@ public abstract class AbstractMetadataController {
      */
     private ModelAndView showAnimationTimesteps(HttpServletRequest request) throws WmsException {
         Feature feature = getFeature(request);
-        TimeAxis tAxis = WmsUtils.getTimeAxis(feature);
+        TimeAxis tAxis = GISUtils.getTimeAxis(feature);
 
         String startStr = request.getParameter("start");
         String endStr = request.getParameter("end");

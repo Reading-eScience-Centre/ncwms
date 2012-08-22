@@ -23,7 +23,7 @@ import uk.ac.rdg.resc.edal.feature.FeatureCollection;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.util.Extents;
-import uk.ac.rdg.resc.ncwms.util.WmsUtils;
+import uk.ac.rdg.resc.edal.util.GISUtils;
 
 /**
  * A dataset object in the ncWMS configuration system: contains a number of
@@ -517,7 +517,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
                     appendLoadingProgress("Reading min-max data for layer " + memberId);
                     Extent<Float> valueRange;
                     try {
-                        valueRange = WmsUtils.estimateValueRange(feature, memberMetadata.getName());
+                        valueRange = GISUtils.estimateValueRange(feature, memberMetadata.getName());
                         if (valueRange.isEmpty()) {
                             // We failed to get a valid range. Just guess at a scale
                             valueRange = Extents.newExtent(-50.0f, 50.0f);
