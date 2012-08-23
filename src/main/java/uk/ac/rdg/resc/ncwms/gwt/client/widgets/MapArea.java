@@ -423,7 +423,6 @@ public class MapArea extends MapWidget {
     }
 
     public String getBaseLayerUrl() {
-        System.out.println(baseUrlForExport);
         return baseUrlForExport;
     }
     

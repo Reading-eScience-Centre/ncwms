@@ -15,7 +15,8 @@ public class BaseSelector extends HorizontalPanel {
 		add(label);
 	}
 	
-	public void setTitle(String title){
+	@Override
+    public void setTitle(String title){
 		label.setText(title+":");
 	}
 }

@@ -10,9 +10,12 @@ import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.AnimationButton;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.CopyrightInfo;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.CopyrightInfoIF;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.DialogBoxWithCloseButton;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelectorIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.GodivaWidgets;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.Info;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.InfoIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerSelectorCombo;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.LayerSelectorIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.MapArea;
@@ -27,11 +30,16 @@ import uk.ac.rdg.resc.ncwms.gwt.shared.CaseInsensitiveParameterMap;
 
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.http.client.URL;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Anchor;
+import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Image;
+import com.google.gwt.user.client.ui.PushButton;
 import com.google.gwt.user.client.ui.RootLayoutPanel;
+import com.google.gwt.user.client.ui.VerticalPanel;
 
 public class Godiva3 extends BaseWmsClient {
     private static final String WMS_LAYER_ID = "singleLayer";
@@ -62,6 +70,8 @@ public class Godiva3 extends BaseWmsClient {
 
     // Button to create animations
     private AnimationButton anim;
+    
+    private PushButton infoButton;
     
     @Override
     public void init() {
@@ -107,10 +117,11 @@ public class Godiva3 extends BaseWmsClient {
         PaletteSelectorIF paletteSelector = new PaletteSelector("mainLayer", getMapHeight(), 30,
                 this, wmsUrl, true);
         UnitsInfoIF unitsInfo = new UnitsInfo();
-        CopyrightInfoIF copyrightInfo = new CopyrightInfo();
+        final CopyrightInfoIF copyrightInfo = new CopyrightInfo();
+        final InfoIF moreInfo = new Info();
 
         widgetCollection = new GodivaWidgets(elevationSelector, timeSelector, paletteSelector,
-                unitsInfo, copyrightInfo);
+                unitsInfo, copyrightInfo, moreInfo);
 
         opacitySelector = new OpacitySelector(new ChangeHandler() {
             @Override
@@ -126,12 +137,31 @@ public class Godiva3 extends BaseWmsClient {
         loadingImage.setStylePrimaryName("loadingImage");
 
         anim = new AnimationButton(mapArea, proxyUrl + wmsUrl, timeSelector);
+        
+        infoButton = new PushButton(new Image("img/info.png"));
+        infoButton.addClickHandler(new ClickHandler() {
+            @Override
+            public void onClick(ClickEvent event) {
+                DialogBoxWithCloseButton popup = new DialogBoxWithCloseButton();
+                popup.setHTML("<b>Information</b>");
+                VerticalPanel vPanel = new VerticalPanel();
+                if(copyrightInfo.hasCopyright()){
+                    vPanel.add(new HTML("<b>Copyright:</b> "+copyrightInfo.getCopyrightInfo()));
+                }
+                if(moreInfo.hasInfo()){
+                    vPanel.add(new HTML("<b>Info:</b> "+moreInfo.getInfo()));
+                }
+                popup.add(vPanel);
+                popup.center();
+            }
+        });
+        infoButton.setEnabled(false);
 
         RootLayoutPanel mainWindow = RootLayoutPanel.get();
 
         mainWindow.add(LayoutManager.getGodiva3Layout(layerSelector, unitsInfo, timeSelector,
                 elevationSelector, paletteSelector, kmzLink, permalink, email, screenshot, logo,
-                mapArea, loadingImage, anim, opacitySelector));
+                mapArea, loadingImage, anim, opacitySelector, infoButton));
         
         timeSelector.setEnabled(false);
         elevationSelector.setEnabled(false);
@@ -162,6 +192,12 @@ public class Godiva3 extends BaseWmsClient {
     @Override
     public void layerDetailsLoaded(LayerDetails layerDetails, boolean autoUpdate) {
         populateWidgets(layerDetails, widgetCollection);
+        
+        if(widgetCollection.getCopyrightInfo().hasCopyright() || widgetCollection.getMoreInfo().hasInfo()){
+            infoButton.setEnabled(true);
+        } else {
+            infoButton.setEnabled(false);
+        }
         
         /*
          * We populate our widgets here, but in a multi-layer system, we may

@@ -4,6 +4,7 @@ import com.google.gwt.user.client.ui.IsWidget;
 
 public interface CopyrightInfoIF extends IsWidget {
     public void setCopyrightInfo(String copyright);
+    public String getCopyrightInfo();
     public void setEnabled(boolean enabled);
     public boolean hasCopyright();
 }
