@@ -8,7 +8,7 @@ public class CopyrightInfo extends BaseSelector implements CopyrightInfoIF {
         super("Copyright");
         copyright = new Label();
         copyright.setStylePrimaryName("lightLabel");
-        label.setTitle("Units of measurement for the data");
+        label.setTitle("Information about the copyright of this dataset");
         add(copyright);
     }
     
@@ -31,5 +31,10 @@ public class CopyrightInfo extends BaseSelector implements CopyrightInfoIF {
     @Override
     public boolean hasCopyright() {
         return (copyright.getText() != null && !copyright.getText().equals(""));
+    }
+
+    @Override
+    public String getCopyrightInfo() {
+        return copyright.getText();
     }
 }

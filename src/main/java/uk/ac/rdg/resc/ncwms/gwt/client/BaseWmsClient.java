@@ -559,13 +559,14 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
      *            a collection of widgets to populated.
      */
     protected void populateWidgets(LayerDetails layerDetails, GodivaWidgets widgetCollection) {
-        // TODO Deal with null case
+        // TODO Deal with null cases
         widgetCollection.getElevationSelector().setId(layerDetails.getId());
         widgetCollection.getTimeSelector().setId(layerDetails.getId());
         widgetCollection.getPaletteSelector().setId(layerDetails.getId());
 
         widgetCollection.getUnitsInfo().setUnits(layerDetails.getUnits());
         widgetCollection.getCopyrightInfo().setCopyrightInfo(layerDetails.getCopyright());
+        widgetCollection.getMoreInfo().setInfo(layerDetails.getMoreInfo());
 
         widgetCollection.getElevationSelector().setUnitsAndDirection(layerDetails.getZUnits(),
                 layerDetails.isZPositive());

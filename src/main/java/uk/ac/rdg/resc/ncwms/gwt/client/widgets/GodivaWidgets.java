@@ -6,15 +6,17 @@ public class GodivaWidgets {
     private PaletteSelectorIF paletteSelector;
     private UnitsInfoIF unitsInfo;
     private CopyrightInfoIF copyrightInfo;
+    private InfoIF moreInfo;
 
     public GodivaWidgets(ElevationSelectorIF elevationSelector, TimeSelectorIF timeSelector,
-            PaletteSelectorIF paletteSelector, UnitsInfoIF unitsInfo, CopyrightInfoIF copyrightInfo) {
+            PaletteSelectorIF paletteSelector, UnitsInfoIF unitsInfo, CopyrightInfoIF copyrightInfo, InfoIF moreInfo) {
         super();
         this.elevationSelector = elevationSelector;
         this.timeSelector = timeSelector;
         this.paletteSelector = paletteSelector;
         this.unitsInfo = unitsInfo;
         this.copyrightInfo = copyrightInfo;
+        this.moreInfo = moreInfo;
     }
 
     public ElevationSelectorIF getElevationSelector() {
@@ -35,5 +37,9 @@ public class GodivaWidgets {
     
     public CopyrightInfoIF getCopyrightInfo() {
         return copyrightInfo;
+    }
+    
+    public InfoIF getMoreInfo() {
+        return moreInfo;
     }
 }

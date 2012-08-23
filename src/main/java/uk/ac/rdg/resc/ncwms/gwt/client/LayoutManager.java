@@ -19,6 +19,7 @@ import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.HasVerticalAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Image;
+import com.google.gwt.user.client.ui.PushButton;
 import com.google.gwt.user.client.ui.ScrollPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
@@ -135,7 +136,8 @@ public class LayoutManager {
             MapArea mapArea,
             Image loadingImage,
             AnimationButton anim,
-            OpacitySelector opacitySelector){
+            OpacitySelector opacitySelector,
+            PushButton infoButton){
         kmzLink.setStylePrimaryName("linkStyle");
         permalink.setStylePrimaryName("linkStyle");
         email.setStylePrimaryName("linkStyle");
@@ -167,6 +169,7 @@ public class LayoutManager {
         bottomPanel.add(permalink);
         bottomPanel.add(email);
         bottomPanel.add(screenshot);
+        bottomPanel.add(infoButton);
 //        bottomPanel.add(docLink);
         
         HorizontalPanel topPanel = new HorizontalPanel();
