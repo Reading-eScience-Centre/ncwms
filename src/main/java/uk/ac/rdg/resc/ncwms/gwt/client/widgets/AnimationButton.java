@@ -1,5 +1,6 @@
 package uk.ac.rdg.resc.ncwms.gwt.client.widgets;
 
+import uk.ac.rdg.resc.ncwms.gwt.client.handlers.AviExportHandler;
 import uk.ac.rdg.resc.ncwms.gwt.client.handlers.StartEndTimeHandler;
 
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -16,13 +17,16 @@ import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONValue;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
+import com.google.gwt.user.client.ui.HasVerticalAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.PopupPanel;
+import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.ToggleButton;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
@@ -42,19 +46,26 @@ public class AnimationButton extends ToggleButton {
     
     private final TimeSelectorIF currentTimeSelector;
 
-    private VerticalPanel granularitySelectionPanel;
+    private VerticalPanel detailsSelectionPanel;
     private ListBox granularitySelector;
+    private ListBox fpsSelector;
+    private VerticalPanel formatSelector;
+    private RadioButton overlayRadioButton;
+    private RadioButton aviRadioButton;
 
     private boolean completed;
     private String style;
+    
+    private final AviExportHandler aviExporter;
 
-    public AnimationButton(final MapArea map, final String jsonProxyUrl, final TimeSelectorIF currentTimeSelector) {
+    public AnimationButton(final MapArea map, final String jsonProxyUrl, final TimeSelectorIF currentTimeSelector, AviExportHandler aviExporter) {
         super(new Image("img/film.png"), new Image("img/stop.png"));
         super.setTitle("Open the animation wizard");
 
         this.map = map;
         this.jsonProxyUrl = jsonProxyUrl;
         this.currentTimeSelector = currentTimeSelector;
+        this.aviExporter = aviExporter;
 
         this.addClickHandler(new ClickHandler() {
             @Override
@@ -67,9 +78,27 @@ public class AnimationButton extends ToggleButton {
                 } else {
                     AnimationButton.this.setTitle("Open the animation wizard");
                     map.stopAnimation();
+                    AnimationButton.this.aviExporter.animationStopped();
                 }
             }
         });
+        
+        formatSelector = new VerticalPanel();
+        overlayRadioButton = new RadioButton("formatSelector", "Overlay");
+        overlayRadioButton.setValue(true);
+        aviRadioButton = new RadioButton("formatSelector", "Export to AVI");
+        formatSelector.add(overlayRadioButton);
+        formatSelector.add(aviRadioButton);
+        
+        fpsSelector = new ListBox();
+        fpsSelector.addItem("1fps", "1");
+        fpsSelector.addItem("2fps", "2");
+        fpsSelector.addItem("5fps", "5");
+        fpsSelector.addItem("10fps", "10");
+        fpsSelector.addItem("15fps", "15");
+        fpsSelector.addItem("24fps", "24");
+        fpsSelector.addItem("30fps", "30");
+        fpsSelector.setSelectedIndex(3);
         
         /*
          * We disable the animation button until we have a layer selected
@@ -92,15 +121,21 @@ public class AnimationButton extends ToggleButton {
         this.logScale = logScale;
     }
 
-    private void startAnimation(String times) {
-        map.addAnimationLayer(animLayer, times, currentElevation, palette, style, scaleRange,
-                nColorBands, logScale);
+    private void startAnimation(String times, String frameRate, boolean overlay) {
+        if(overlay){
+            map.addAnimationLayer(animLayer, times, currentElevation, palette, style, scaleRange,
+                    nColorBands, logScale, frameRate);
+            this.setTitle("Stop animation");
+        } else {
+            Window.open(aviExporter.getAviUrl(times, frameRate), null, null);
+            this.setDown(false);
+        }
         popup.removeFromParent();
         popup = null;
-        granularitySelectionPanel = null;
+        detailsSelectionPanel = null;
         granularitySelector = null;
         goButton = null;
-        this.setTitle("Stop animation");
+        aviExporter.animationStarted(times, frameRate);
     }
 
     private StartEndTimePopup getWizard() {
@@ -145,7 +180,8 @@ public class AnimationButton extends ToggleButton {
                                 granularitySelector.addItem(title, value);
                             }
                         }
-                        setGranularitySelector();
+                        
+                        setDetailsSelector();
                     }
 
                     @Override
@@ -173,8 +209,9 @@ public class AnimationButton extends ToggleButton {
                 @Override
                 public void onClick(ClickEvent event) {
                     completed = true;
-                    startAnimation(granularitySelector.getValue(granularitySelector
-                            .getSelectedIndex()));
+                    String times = granularitySelector.getValue(granularitySelector.getSelectedIndex());
+                    String frameRate = fpsSelector.getValue(fpsSelector.getSelectedIndex());
+                    startAnimation(times, frameRate, overlayRadioButton.getValue());
                 }
             });
         }
@@ -215,25 +252,52 @@ public class AnimationButton extends ToggleButton {
         popup.setWidget(vP);
     }
 
-    private void setGranularitySelector() {
-        granularitySelectionPanel = new VerticalPanel();
+    private void setDetailsSelector() {
+        detailsSelectionPanel = new VerticalPanel();
         Label infoLabel = new Label(
                 "The more frames you choose the longer your animation will take to load."
                         + " Please choose the smallest number you think you need!");
-        granularitySelectionPanel.add(infoLabel);
-        granularitySelectionPanel.add(granularitySelector);
+        detailsSelectionPanel.add(infoLabel);
+        
+        HorizontalPanel granPan = new HorizontalPanel();
+        Label granLabel = new Label("Granularity:");
+        granPan.add(granLabel);
+        granPan.add(granularitySelector);
+        granPan.setCellWidth(granLabel, "40%");
+        granPan.setCellHorizontalAlignment(granLabel, HasHorizontalAlignment.ALIGN_RIGHT);
+        granPan.setCellHorizontalAlignment(granularitySelector, HasHorizontalAlignment.ALIGN_LEFT);
+        granPan.setWidth("100%");
+        detailsSelectionPanel.add(granPan);
+        
+        HorizontalPanel formatPan = new HorizontalPanel();
+        Label formatLabel = new Label("Type of animation:");
+        formatPan.add(formatLabel);
+        formatPan.add(formatSelector);
+        formatPan.setCellWidth(formatLabel, "40%");
+        formatPan.setCellVerticalAlignment(formatLabel, HasVerticalAlignment.ALIGN_MIDDLE);
+        formatPan.setCellHorizontalAlignment(formatLabel, HasHorizontalAlignment.ALIGN_RIGHT);
+        formatPan.setCellHorizontalAlignment(formatSelector, HasHorizontalAlignment.ALIGN_LEFT);
+        formatPan.setWidth("100%");
+        detailsSelectionPanel.add(formatPan);
+        
+        HorizontalPanel fpsPan = new HorizontalPanel();
+        Label fpsLabel = new Label("Frame Rate:");
+        fpsPan.add(fpsLabel);
+        fpsPan.add(fpsSelector);
+        fpsPan.setCellWidth(fpsLabel, "40%");
+        fpsPan.setCellHorizontalAlignment(fpsLabel, HasHorizontalAlignment.ALIGN_RIGHT);
+        fpsPan.setCellHorizontalAlignment(fpsSelector, HasHorizontalAlignment.ALIGN_LEFT);
+        fpsPan.setWidth("100%");
+        detailsSelectionPanel.add(fpsPan);
+        
         HorizontalPanel buttonPanel = new HorizontalPanel();
         buttonPanel.add(getCancelButton());
         buttonPanel.add(getGoButton());
-        granularitySelectionPanel.add(buttonPanel);
-        granularitySelectionPanel.setCellHorizontalAlignment(infoLabel,
+        detailsSelectionPanel.add(buttonPanel);
+        detailsSelectionPanel.setCellHorizontalAlignment(buttonPanel,
                 HasHorizontalAlignment.ALIGN_CENTER);
-        granularitySelectionPanel.setCellHorizontalAlignment(granularitySelector,
-                HasHorizontalAlignment.ALIGN_CENTER);
-        granularitySelectionPanel.setCellHorizontalAlignment(buttonPanel,
-                HasHorizontalAlignment.ALIGN_CENTER);
-        granularitySelectionPanel.setSize("350px", "150px");
+        detailsSelectionPanel.setSize("350px", "150px");
         popup.setText("Select the time resolution");
-        popup.setWidget(granularitySelectionPanel);
+        popup.setWidget(detailsSelectionPanel);
     }
 }

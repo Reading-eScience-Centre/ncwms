@@ -137,12 +137,14 @@
     <bean id="screenshotController" class="uk.ac.rdg.resc.ncwms.controller.ScreenshotController">
         <property name="supportedMethods" value="GET,POST"/>
         <property name="methodNameResolver"><ref local="screenshotMethodNameResolver"/></property>
+        <property name="featureFactory"><ref local="featureFactory"/></property>
     </bean>
     <!-- This maps URL patterns to the methods of the screenshot controller -->
     <bean id="screenshotMethodNameResolver" class="org.springframework.web.servlet.mvc.multiaction.PropertiesMethodNameResolver">
         <property name="mappings">
             <value>
                 /createScreenshot = createScreenshot
+                /createVideo = createAvi
             </value>
         </property>
     </bean>

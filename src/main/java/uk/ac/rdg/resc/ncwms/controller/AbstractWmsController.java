@@ -530,9 +530,22 @@ public abstract class AbstractWmsController extends AbstractController {
             httpServletResponse.setHeader("Content-Disposition", "inline; filename=" + feature.getFeatureCollection().getId() + "_"
                     + feature.getId() + ".kmz");
         }
+        
+        Integer frameRate = null;
+        String fpsString = params.getString("frameRate");
+        if(fpsString != null){
+            try{
+                frameRate = Integer.parseInt(fpsString);
+            } catch(NumberFormatException nfe){
+                /*
+                 * Ignore this and just use the default
+                 */
+            }
+        }
+            
         // Render the images and write to the output stream
         imageFormat.writeImage(mapPlotter.getRenderedFrames(), httpServletResponse.getOutputStream(), feature, dr.getBbox(),
-                tValueStrings, dr.getElevationString(), legend);
+                tValueStrings, dr.getElevationString(), legend, frameRate);
 
         return null;
     }

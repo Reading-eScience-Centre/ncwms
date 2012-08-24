@@ -88,8 +88,13 @@ public class StartEndTimePopup extends DialogBoxWithCloseButton {
                  */
                 Collections.sort(availableDates);
                 getStartTimeSelector().populateDates(availableDates);
-                if (currentTimeSelector != null) {
+                final boolean setTimeToCurrent = (currentTimeSelector != null && !currentTimeSelector
+                        .getSelectedDate().equals(availableDates.get(availableDates.size() - 1)));
+                
+                if (setTimeToCurrent) {
                     getStartTimeSelector().selectDate(currentTimeSelector.getSelectedDate());
+                } else {
+                    getStartTimeSelector().selectDate(availableDates.get(0));
                 }
                 getEndTimeSelector().populateDates(availableDates);
                 getEndTimeSelector().selectDate(availableDates.get(availableDates.size() - 1));
@@ -115,7 +120,7 @@ public class StartEndTimePopup extends DialogBoxWithCloseButton {
                                 endTimeSelector.selectDateTime(getAvailableTimesteps().get(
                                         getAvailableTimesteps().size() - 1));
                             }
-                            if (currentTimeSelector != null) {
+                            if (setTimeToCurrent) {
                                 getStartTimeSelector().selectDateTime(
                                         currentTimeSelector.getSelectedDateTime());
                             }

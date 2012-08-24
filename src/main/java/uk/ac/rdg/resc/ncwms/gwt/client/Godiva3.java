@@ -5,6 +5,7 @@ import java.util.List;
 import org.gwtopenmaps.openlayers.client.Bounds;
 import org.gwtopenmaps.openlayers.client.LonLat;
 
+import uk.ac.rdg.resc.ncwms.gwt.client.handlers.AviExportHandler;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerDetails;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.AnimationButton;
@@ -41,7 +42,7 @@ import com.google.gwt.user.client.ui.PushButton;
 import com.google.gwt.user.client.ui.RootLayoutPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
-public class Godiva3 extends BaseWmsClient {
+public class Godiva3 extends BaseWmsClient implements AviExportHandler {
     private static final String WMS_LAYER_ID = "singleLayer";
 
     private LayerSelectorIF layerSelector;
@@ -136,7 +137,7 @@ public class Godiva3 extends BaseWmsClient {
         loadingImage.setVisible(false);
         loadingImage.setStylePrimaryName("loadingImage");
 
-        anim = new AnimationButton(mapArea, proxyUrl + wmsUrl, timeSelector);
+        anim = new AnimationButton(mapArea, proxyUrl + wmsUrl, timeSelector, this);
         
         infoButton = new PushButton(new Image("img/info.png"));
         infoButton.addClickHandler(new ClickHandler() {
@@ -471,5 +472,88 @@ public class Godiva3 extends BaseWmsClient {
         urlParams += "&baseUrl="+mapArea.getBaseLayerUrl();
         urlParams += "&baseLayers="+mapArea.getBaseLayerLayers();
         screenshot.setHref("screenshots/createScreenshot?" + urlParams);
+    }
+
+    @Override
+    public String getAviUrl(String times, String frameRate) {
+        PaletteSelectorIF paletteSelector = widgetCollection.getPaletteSelector();
+
+        String urlParams = "dataset=" + wmsUrl + "&numColorBands="
+                + paletteSelector.getNumColorBands() + "&logScale=" + paletteSelector.isLogScale()
+                + "&zoom=" + zoom + "&centre=" + centre.lon() + "," + centre.lat();
+
+        ElevationSelectorIF elevationSelector = widgetCollection.getElevationSelector();
+        
+        UnitsInfoIF unitsInfo = widgetCollection.getUnitsInfo();
+
+        String currentLayer = null;
+        String currentElevation = null;
+        String currentPalette = null;
+        String currentStyle = null;
+        String scaleRange = null;
+
+        urlParams += "&time=" + times;
+        
+        List<String> selectedIds = layerSelector.getSelectedIds();
+        if (selectedIds != null && selectedIds.size() > 0) {
+            currentLayer = selectedIds.get(0);
+            urlParams += "&layer=" + currentLayer;
+        }
+
+        if (elevationSelector.getSelectedElevation() != null) {
+            currentElevation = elevationSelector.getSelectedElevation();
+            urlParams += "&elevation=" + currentElevation;
+        }
+        if (paletteSelector.getSelectedPalette() != null) {
+            currentPalette = paletteSelector.getSelectedPalette();
+            urlParams += "&palette=" + currentPalette;
+        }
+        if (paletteSelector.getSelectedStyle() != null) {
+            currentStyle = paletteSelector.getSelectedStyle();
+            urlParams += "&style=" + currentStyle;
+        }
+        if (paletteSelector.getScaleRange() != null) {
+            scaleRange = paletteSelector.getScaleRange();
+            urlParams += "&scaleRange=" + scaleRange;
+        }
+
+        urlParams += "&bbox=" + mapArea.getMap().getExtent().toBBox(6);
+        if(layerSelector != null) {
+            StringBuilder title = new StringBuilder();
+            if(layerSelector.getTitleElements() != null && layerSelector.getTitleElements().size() > 0) {
+                for(String element : layerSelector.getTitleElements()){
+                    title.append(element+",");
+                }
+                title.deleteCharAt(title.length()-1);
+                urlParams += "&layerTitle=" + title;
+            }
+        }
+        urlParams += "&crs=EPSG:4326";
+        urlParams += "&mapHeight=" + mapHeight;
+        urlParams += "&mapWidth=" + mapWidth;
+        urlParams += "&style=" + currentStyle;
+        if(elevationSelector != null)
+            urlParams += "&zUnits=" + elevationSelector.getVerticalUnits();
+        if (unitsInfo != null)
+            urlParams += "&units=" + unitsInfo.getUnits();
+        urlParams += "&baseUrl="+mapArea.getBaseLayerUrl();
+        urlParams += "&baseLayers="+mapArea.getBaseLayerLayers();
+        if(frameRate != null)
+            urlParams += "&frameRate="+frameRate;
+        
+        return "screenshots/createVideo?"+urlParams;
+    }
+
+    @Override
+    public void animationStarted(String times, String fps) {
+        updateLinksEtc();
+        screenshot.setHref(getAviUrl(times, fps));
+        screenshot.setText("Export to AVI");
+    }
+
+    @Override
+    public void animationStopped() {
+        updateLinksEtc();
+        screenshot.setText("Export to PNG");
     }
 }

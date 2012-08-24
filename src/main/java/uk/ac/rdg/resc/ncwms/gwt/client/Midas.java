@@ -11,6 +11,8 @@ import uk.ac.rdg.resc.ncwms.gwt.client.widgets.CopyrightInfoIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.ElevationSelectorIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.GodivaWidgets;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.Info;
+import uk.ac.rdg.resc.ncwms.gwt.client.widgets.InfoIF;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.MapArea;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.MultiLayerSelector;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.PaletteSelector;
@@ -106,7 +108,8 @@ public class Midas extends BaseWmsClient {
         PaletteSelectorIF paletteSelector = new PaletteSelector(id, 30, 400, this, getBaseWmsUrl(), false);
         UnitsInfoIF unitsInfo = new UnitsInfo();
         CopyrightInfoIF copyrightInfo = new CopyrightInfo();
-        GodivaWidgets widgets = new GodivaWidgets(elevationSelector, timeSelector, paletteSelector, unitsInfo, copyrightInfo);
+        InfoIF moreInfo = new Info();
+        GodivaWidgets widgets = new GodivaWidgets(elevationSelector, timeSelector, paletteSelector, unitsInfo, copyrightInfo, moreInfo);
         populateWidgets(layerDetails, widgets);
         if(autoUpdate){
             paletteSelector.selectPalette(layerDetails.getSelectedPalette());
