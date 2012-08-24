@@ -1,7 +1,7 @@
 package uk.ac.rdg.resc.ncwms.gwt.client.widgets;
 
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 
 import org.gwtopenmaps.openlayers.client.Bounds;
 import org.gwtopenmaps.openlayers.client.LonLat;
@@ -93,7 +93,7 @@ public class MapArea extends MapWidget {
     public MapArea(String baseUrl, int width, int height, final GodivaActionsHandler godivaListener) {
         super(width + "px", height + "px", getDefaultMapOptions());
 
-        wmsLayers = new HashMap<String, WmsDetails>();
+        wmsLayers = new LinkedHashMap<String, WmsDetails>();
 
         this.baseUrl = baseUrl;
         loadStartListener = new LayerLoadStartListener() {
@@ -124,7 +124,7 @@ public class MapArea extends MapWidget {
     }
 
     public void addAnimationLayer(String layerId, String timeList, String currentElevation,
-            String palette, String style, String scaleRange, int nColorBands, boolean logScale) {
+            String palette, String style, String scaleRange, int nColorBands, boolean logScale, String frameRate) {
         StringBuilder url = new StringBuilder(baseUrl + "?service=WMS&request=GetMap&version=1.1.1");
         url.append("&format=image/gif" + "&transparent=true" + "&styles=" + style + "/" + palette
                 + "&layers=" + layerId + "&time=" + timeList + "&logscale=" + logScale + "&srs="
@@ -136,6 +136,8 @@ public class MapArea extends MapWidget {
             url.append("&elevation=" + currentElevation.toString());
         if (nColorBands > 0)
             url.append("&numcolorbands=" + nColorBands);
+        if (frameRate != null)
+            url.append("&frameRate=" + frameRate);
         ImageOptions opts = new ImageOptions();
         opts.setAlwaysInRange(true);
         animLayer = new Image("Animation Layer", url.toString(), map.getExtent(), map.getSize(),
@@ -377,14 +379,21 @@ public class MapArea extends MapWidget {
     }
 
     public String getKMZUrl() {
+        
         String url;
         WmsDetails wmsAndParams = wmsLayers.get(getTransectLayerId());
         if (wmsAndParams != null) {
-            url = wmsAndParams.wms.getFullRequestString(wmsAndParams.params, null);
-            url = url + "&height=" + (int) map.getSize().getHeight() + "&width="
-                    + (int) map.getSize().getWidth() + "&bbox=" + map.getExtent().toBBox(6);
-            url = url.replaceAll("image/png", "application/vnd.google-earth.kmz");
-            url = url.replaceAll("image%2Fpng", "application%2Fvnd.google-earth.kmz");
+            if(animLayer != null){
+                url = animLayer.getUrl();
+                url = url.replaceAll("image/gif", "application/vnd.google-earth.kmz");
+                url = url.replaceAll("image%2Fgif", "application%2Fvnd.google-earth.kmz");
+            } else {
+                url = wmsAndParams.wms.getFullRequestString(wmsAndParams.params, null);
+                url = url + "&height=" + (int) map.getSize().getHeight() + "&width="
+                        + (int) map.getSize().getWidth() + "&bbox=" + map.getExtent().toBBox(6);
+                url = url.replaceAll("image/png", "application/vnd.google-earth.kmz");
+                url = url.replaceAll("image%2Fpng", "application%2Fvnd.google-earth.kmz");
+            }
         } else {
             url = null;
         }
