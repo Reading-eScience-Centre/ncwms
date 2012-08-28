@@ -9,4 +9,8 @@
     <name>layer</name>
     <path>/WEB-INF/tags/capabilities/Layer.tag</path>
   </tag-file>
+  <tag-file>
+    <name>layer111</name>
+    <path>/WEB-INF/tags/capabilities/Layer-1.1.1.tag</path>
+  </tag-file>
 </taglib>
