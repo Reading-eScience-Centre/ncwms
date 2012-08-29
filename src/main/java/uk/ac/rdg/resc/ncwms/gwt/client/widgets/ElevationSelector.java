@@ -51,7 +51,6 @@ public class ElevationSelector extends BaseSelector implements ElevationSelector
 		    int i=0;
 			for(String elevationStr : availableElevations){
 			    Float elevation = Float.parseFloat(elevationStr);
-			    if(!positive) elevation *= -1;
 			    String formattedElevationStr = format.format(elevation); 
 				elevations.addItem(formattedElevationStr);
 				formattedValuesToRealValues.put(formattedElevationStr, elevationStr);
