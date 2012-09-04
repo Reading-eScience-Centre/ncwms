@@ -86,7 +86,7 @@ public interface Dataset
     /**
      * Gets the {@link FeatureCollection} that comprises this dataset
      */
-    public FeatureCollection<Feature> getFeatureCollection();
+    public FeatureCollection<? extends Feature> getFeatureCollection();
 
     /**
      * Returns true if the dataset is ready for use.  If the dataset is ready,

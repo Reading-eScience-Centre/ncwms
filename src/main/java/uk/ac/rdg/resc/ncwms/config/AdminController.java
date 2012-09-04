@@ -271,7 +271,7 @@ public class AdminController extends MultiActionController {
         // We only take action if the user pressed "save"
         if (request.getParameter("save") != null) {
             Dataset ds = this.config.getAllDatasets().get(request.getParameter("dataset.id"));
-            FeatureCollection<Feature> features = ds.getFeatureCollection();
+            FeatureCollection<? extends Feature> features = ds.getFeatureCollection();
             for (String fId : features.getFeatureIds()) {
                 Feature feature = features.getFeatureById(fId);
                 for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
