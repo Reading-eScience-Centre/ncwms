@@ -116,7 +116,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     private TimePosition lastFailedUpdateTime = null;
 
-    private FeatureCollection<Feature> features;
+    private FeatureCollection<? extends Feature> features;
 
     /**
      * Checks that the data we have read are valid. Checks that there are no
@@ -293,7 +293,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      * @return a Collection of all the layers in this dataset.
      */
     @Override
-    public FeatureCollection<Feature> getFeatureCollection() {
+    public FeatureCollection<? extends Feature> getFeatureCollection() {
         return features;
     }
 
