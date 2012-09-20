@@ -98,7 +98,7 @@ public final class NcwmsController extends AbstractWmsController {
         } else if (request.equals("GetLegendGraphic")) {
             // This is a request for an image that contains the colour scale
             // and range for a given layer
-            return getLegendGraphic(params, featureFactory, httpServletResponse);
+            return getColorbar(params, featureFactory, httpServletResponse);
             /*
              * } else if (request.equals("GetKML")) { // This is a request for a
              * KML document that allows the selected // layer(s) to be displayed

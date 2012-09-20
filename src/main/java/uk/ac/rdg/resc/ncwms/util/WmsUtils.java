@@ -58,6 +58,7 @@ import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
 import uk.ac.rdg.resc.ncwms.config.Config;
 import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
+import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController;
 import uk.ac.rdg.resc.ncwms.controller.GetMapDataRequest;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidCrsException;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
@@ -84,11 +85,6 @@ public class WmsUtils {
      * The versions of the WMS standard that this server supports
      */
     public static final Set<String> SUPPORTED_VERSIONS = new HashSet<String>();
-    /**
-     * The maximum number of layers that can be requested in a single GetMap
-     * operation
-     */
-    public static final int LAYER_LIMIT = 1;
 
     static {
         SUPPORTED_VERSIONS.add("1.1.1");
@@ -231,7 +227,11 @@ public class WmsUtils {
         Dataset dataset = serverConfig.getDatasetById(datasetId);
 
         String featureAndVarId = featureId + "/" + memberId;
-        return dataset.getPlottingMetadataMap().get(featureAndVarId);
+        FeaturePlottingMetadata metadata = dataset.getPlottingMetadataMap().get(featureAndVarId);
+        if(metadata == null){
+            metadata = new FeaturePlottingMetadata();
+        }
+        return metadata;
     }
 
     /**
@@ -246,8 +246,8 @@ public class WmsUtils {
             throw new WmsException("Must provide a value for the LAYERS parameter");
         }
         // TODO: support more than one layer (superimposition, difference, mask)
-        if (layers.length > LAYER_LIMIT) {
-            throw new WmsException("You may only create a map from " + LAYER_LIMIT
+        if (layers.length > AbstractWmsController.LAYER_LIMIT) {
+            throw new WmsException("You may only create a map from " + AbstractWmsController.LAYER_LIMIT
                     + " layer(s) at a time");
         }
         return layers[0];
@@ -263,6 +263,18 @@ public class WmsUtils {
             throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
         }
         return layerParts[0];
+    }
+    
+    /**
+     * Utility method for getting the member name from the given layer name
+     */
+    public static String getFeatureName(String layerName) throws WmsException {
+        // Find which layer the user is requesting
+        String[] layerParts = layerName.split("/");
+        if (layerParts.length != 3) {
+            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
+        }
+        return layerParts[1];
     }
 
     /**

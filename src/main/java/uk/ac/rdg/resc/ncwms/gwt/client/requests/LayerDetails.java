@@ -21,6 +21,10 @@ public class LayerDetails {
     private List<String> availableDates = null;
     private String nearestTime = null;
     private String nearestDate = null;
+    
+    private boolean continuousTimeAxis = false;
+    private String startTime = null;
+    private String endTime = null;
 
     public LayerDetails(String layerId) {
         id = layerId;
@@ -118,7 +122,7 @@ public class LayerDetails {
         this.supportedStyles = supportedStyles;
     }
 
-    public void setzUnits(String zUnits) {
+    public void setZUnits(String zUnits) {
         this.zUnits = zUnits;
     }
 
@@ -156,5 +160,29 @@ public class LayerDetails {
 
     public void setNearestDate(String nearestDate) {
         this.nearestDate = nearestDate;
+    }
+
+    public boolean isContinuousTimeAxis() {
+        return continuousTimeAxis;
+    }
+
+    public void setContinuousTimeAxis(boolean continuousTimeAxis) {
+        this.continuousTimeAxis = continuousTimeAxis;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
     }
 }

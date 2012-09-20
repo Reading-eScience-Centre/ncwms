@@ -13,7 +13,13 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
      See MetadataController.showLayerDetails().
      
      Data (models) passed in to this page:
-         feature = feature object
+         bbox = the bounding box of the layer
+         vaxis = the vertical axis of the layer
+         continuousTimeAxis = true if we have a continuous time axis
+            startTime = the start of the continuous axis
+            endTime = the end of the continuous axis
+            tAxisUnits = the units of the time axis
+         styles = a Set of strings representing the supported styles
          featureMetadata = the plotting metadata
          memberName = the member to be plotted
          dataset = the dataset which the feature belongs to
@@ -29,7 +35,6 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 <json:object>
     <json:property name="units" value="${units}"/>
 
-    <c:set var="bbox" value="${utils:getWmsBoundingBox(feature)}"/>
     <c:if test="${not empty bbox}">
 	    <json:array name="bbox">
 	        <json:property>${bbox.minX}</json:property>
@@ -46,10 +51,8 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 
     <json:property name="numColorBands" value="${featureMetadata.numColorBands}"/>
 
-    <c:set var="styles" value="boxfill"/>
-    <json:array name="supportedStyles" items="${utils:getBaseStyles(feature, memberName)}"/>
+    <json:array name="supportedStyles" items="${styles}"/>
 
-    <c:set var="vaxis" value="${utils:getVerticalAxis(feature)}"/>
     <c:if test="${not empty vaxis}">
         <json:object name="zaxis">
             <json:property name="units" value="${vaxis.verticalCrs.units.unitString}"/>
@@ -58,24 +61,33 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
         </json:object>
     </c:if>
 
-    <c:set var="taxis" value="${utils:getTimeAxis(feature)}"/>
-    <c:if test="${not empty taxis}">
-        <json:object name="datesWithData">
-            <c:forEach var="year" items="${datesWithData}">
-                <json:object name="${year.key}">
-                    <c:forEach var="month" items="${year.value}">
-                        <json:array name="${month.key}" items="${month.value}"/>
-                    </c:forEach>
-                </json:object>
-            </c:forEach>
-        </json:object>
-        <%-- The nearest time on the time axis to the time that's currently
-             selected on the web interface, in ISO8601 format --%>
-        <json:property name="nearestTimeIso" value="${nearestTimeIso}"/>
-        <%-- The time axis units: "ISO8601" for "normal" axes, "360_day" for
-             axes that use the 360-day calendar, etc. --%>
-        <json:property name="timeAxisUnits" value="${utils:getTimeAxisUnits(taxis.calendarSystem)}"/>
-    </c:if>
+    <json:property name="continuousTimeAxis" value="${continuousTimeAxis}"/>
+    <c:choose>
+        <c:when test="${continuousTimeAxis}">
+            <json:property name="startTime" value="${startTime}"/>
+            <json:property name="endTime" value="${endTime}"/>
+	        <json:property name="timeAxisUnits" value="${tAxisUnits}"/>
+        </c:when>
+        <c:otherwise>
+		    <c:if test="${not empty datesWithData}">
+		        <json:object name="datesWithData">
+		            <c:forEach var="year" items="${datesWithData}">
+		                <json:object name="${year.key}">
+		                    <c:forEach var="month" items="${year.value}">
+		                        <json:array name="${month.key}" items="${month.value}"/>
+		                    </c:forEach>
+		                </json:object>
+		            </c:forEach>
+		        </json:object>
+		        <%-- The nearest time on the time axis to the time that's currently
+		             selected on the web interface, in ISO8601 format --%>
+		        <json:property name="nearestTimeIso" value="${nearestTimeIso}"/>
+		        <%-- The time axis units: "ISO8601" for "normal" axes, "360_day" for
+		             axes that use the 360-day calendar, etc. --%>
+		        <json:property name="timeAxisUnits" value="${tAxisUnits}"/>
+		    </c:if>
+        </c:otherwise>
+    </c:choose>
     
     <json:property name="moreInfo" value="${dataset.moreInfoUrl}"/>
     <json:property name="copyright" value="${dataset.copyrightStatement}"/>

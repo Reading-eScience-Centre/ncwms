@@ -333,6 +333,16 @@ public class Godiva3 extends BaseWmsClient implements AviExportHandler {
             }
             permalinking = false;
         }
+        
+        /*
+         * TODO Do we want to do this?  Currently we just set COLORBY/DEPTH and COLORBY/TIME for all requests
+         */
+//        boolean colorbyDepth = false;
+//        boolean colorbyTime = false;
+//        if(layerUpdated.contains("*")){
+//            
+//        }
+        
         String currentTime = widgetCollection.getTimeSelector().getSelectedDateTime();
         String currentElevation = widgetCollection.getElevationSelector().getSelectedElevation();
         String currentPalette = widgetCollection.getPaletteSelector().getSelectedPalette();

@@ -47,6 +47,13 @@
   </function>
   
   <function>
+    <description>Formats a TimePosition object as a human readable string</description>
+    <name>formatNiceDateTime</name>
+    <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
+    <function-signature>java.lang.String formatUTCHumanReadableDateTime(uk.ac.rdg.resc.edal.position.TimePosition)</function-signature>
+  </function>
+  
+  <function>
     <description>Returns the units for the time dimension for Capabilities documents</description>
     <name>getTimeAxisUnits</name>
     <function-class>uk.ac.rdg.resc.edal.util.TimeUtils</function-class>
@@ -148,5 +155,12 @@
     <name>getTimeAxis</name>
     <function-class>uk.ac.rdg.resc.edal.util.GISUtils</function-class>
     <function-signature>uk.ac.rdg.resc.edal.coverage.grid.TimeAxis getTimeAxis(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
+  </function>
+
+  <function>
+    <description>Gets the position in Lat/Lon</description>
+    <name>getLatLon</name>
+    <function-class>uk.ac.rdg.resc.edal.util.GISUtils</function-class>
+    <function-signature>uk.ac.rdg.resc.edal.position.LonLatPosition transformToWgs84LonLat(uk.ac.rdg.resc.edal.position.HorizontalPosition)</function-signature>
   </function>
 </taglib>

@@ -13,7 +13,9 @@ public interface TimeSelectorIF extends IsWidget {
     public String getSelectedTime();
     public boolean selectDate(String dateString);
     public boolean selectDateTime(String timeString);
-    public String returnTimes();
     public void setEnabled(boolean enabled);
     public boolean hasMultipleTimes();
+    
+    public void setContinuous(boolean continuous);
+    public boolean isContinuous();
 }

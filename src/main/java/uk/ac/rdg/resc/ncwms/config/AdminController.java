@@ -29,9 +29,12 @@
 package uk.ac.rdg.resc.ncwms.config;
 
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -42,7 +45,6 @@ import org.springframework.web.servlet.mvc.multiaction.MultiActionController;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
-import uk.ac.rdg.resc.edal.feature.FeatureCollection;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
 
@@ -271,29 +273,68 @@ public class AdminController extends MultiActionController {
         // We only take action if the user pressed "save"
         if (request.getParameter("save") != null) {
             Dataset ds = this.config.getAllDatasets().get(request.getParameter("dataset.id"));
-            FeatureCollection<? extends Feature> features = ds.getFeatureCollection();
-            for (String fId : features.getFeatureIds()) {
-                Feature feature = features.getFeatureById(fId);
-                for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
-                    String featureId = feature.getId()+"/"+memberMetadata.getName();
-                    String newTitle = request.getParameter(featureId + ".title").trim();
-                    // Find the min and max colour scale range for this variable
-                    float min = Float.parseFloat(request.getParameter(featureId + ".scaleMin").trim());
-                    float max = Float.parseFloat(request.getParameter(featureId + ".scaleMax").trim());
-                    
-                    /*
-                     * Get the variable config info. This should not be null, as we
-                     * will have created it in
-                     * MetadataLoader.checkAttributeOverrides() if it wasn't in the
-                     * config file itself.
-                     */
-                    FeaturePlottingMetadata var = ds.getPlottingMetadataMap().get(featureId);
-                    memberMetadata.setTitle(newTitle);
-                    var.setTitle(newTitle);
-                    var.setColorScaleRange(Extents.newExtent(min, max));
-                    var.setPaletteName(request.getParameter(featureId + ".palette"));
-                    var.setNumColorBands(Integer.parseInt(request.getParameter(featureId + ".numColorBands")));
-                    var.setScaling(request.getParameter(featureId + ".scaling"));
+            Set<String> layerIds = new HashSet<String>();
+            /*
+             * We suppress this warning, because request.getParameterNames()
+             * returns an Enumeration of Strings. It has to
+             */
+            @SuppressWarnings("unchecked")
+            Enumeration<String> parameterNames = request.getParameterNames();
+            while (parameterNames.hasMoreElements()) {
+                String parameterName = parameterNames.nextElement();
+                String[] parts = parameterName.split("\\.");
+                if (parts.length == 2) {
+                    if (!parts[0].equals("dataset")) {
+                        layerIds.add(parts[0]);
+                    }
+                } else {
+                    continue;
+                }
+            }
+
+            for (String layerId : layerIds) {
+                /*
+                 * layerId is of the form featureId/memberId
+                 */
+                String newTitle = request.getParameter(layerId + ".title").trim();
+                // Find the min and max colour scale range for this variable
+                float min = Float.parseFloat(request.getParameter(layerId + ".scaleMin").trim());
+                float max = Float.parseFloat(request.getParameter(layerId + ".scaleMax").trim());
+
+                /*
+                 * Get the plotting metadata for this layer, and save the
+                 * changes
+                 */
+                FeaturePlottingMetadata var = ds.getPlottingMetadataMap().get(layerId);
+                var.setTitle(newTitle);
+                var.setColorScaleRange(Extents.newExtent(min, max));
+                var.setPaletteName(request.getParameter(layerId + ".palette"));
+                var.setNumColorBands(Integer.parseInt(request.getParameter(layerId
+                        + ".numColorBands")));
+                var.setScaling(request.getParameter(layerId + ".scaling"));
+
+                /*
+                 * Now we need to set the title on the RangeMetadata
+                 */
+                String[] layerParts = layerId.split("/");
+                if (layerParts.length == 2) {
+                    if (layerParts[0].equals("*")) {
+                        for (Feature feature : ds.getFeatureCollection().getFeatures()) {
+                            RangeMetadata memberMetadata = MetadataUtils
+                                    .getMetadataForFeatureMember(feature, layerParts[1]);
+                            memberMetadata.setTitle(newTitle);
+                        }
+                    } else {
+                        Feature feature = ds.getFeatureById(layerParts[0]);
+                        if (feature != null) {
+                            RangeMetadata memberMetadata = MetadataUtils
+                                    .getMetadataForFeatureMember(feature, layerParts[1]);
+                            memberMetadata.setTitle(newTitle);
+                        }
+
+                    }
+                } else {
+                    continue;
                 }
             }
             // Saves the new configuration information to disk
@@ -303,9 +344,6 @@ public class AdminController extends MultiActionController {
          * This causes a client-side redirect, meaning that the user can safely
          * press refresh in their browser without resubmitting the new config
          * information.
-         * 
-         * TODO: ... although it probably doesn't really matter if
-         * they do. Does it?
          */
         response.sendRedirect("index.jsp");
     }
