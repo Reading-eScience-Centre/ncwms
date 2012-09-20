@@ -1,6 +1,7 @@
 package uk.ac.rdg.resc.ncwms.config;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
+import uk.ac.rdg.resc.edal.feature.ProfileFeatureCollection;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.util.Extents;
@@ -489,61 +491,120 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      * file.
      */
     private void readLayerConfig() {
-        for (String featureId : features.getFeatureIds()) {
-            Feature feature = features.getFeatureById(featureId);
-            for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
-                String memberId = feature.getId()+"/"+memberMetadata.getName();
-                // Load the Variable object from the config file or create a new
-                // one if it doesn't exist.
+        boolean featureCollectionIsLayer = (features instanceof ProfileFeatureCollection);
+        
+        if(featureCollectionIsLayer){
+            class TitleMinMax{
+                Float[] minmax;
+                String title;
+                public TitleMinMax(){
+                    minmax = new Float[2];
+                    minmax[0] = Float.MAX_VALUE;
+                    minmax[1] = Float.MIN_VALUE;
+                }
+                void maybeSetMin(Float min){
+                    if(min != null && min < minmax[0])
+                        minmax[0] = min;
+                }
+                void maybeSetMax(Float max){
+                    if(max != null && max > minmax[1])
+                        minmax[1] = max;
+                }
+                float getMin(){
+                    return minmax[0];
+                }
+                float getMax(){
+                    return minmax[1];
+                }
+             }
+            
+            Map<String, TitleMinMax> memberName2ScaleRange = new HashMap<String, TitleMinMax>();
+            for(Feature feature : features.getFeatures()){
+                for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
+                    
+                    TitleMinMax minmax = memberName2ScaleRange.get(memberMetadata.getName());
+                    if(minmax == null){
+                        minmax = new TitleMinMax();
+                    }
+                    minmax.title = memberMetadata.getTitle();
+                    
+                    Extent<Float> valueRange = GISUtils.estimateValueRange(feature, memberMetadata.getName());
+                    if(valueRange != null){
+                        minmax.maybeSetMin(valueRange.getLow());
+                        minmax.maybeSetMax(valueRange.getHigh());
+                        memberName2ScaleRange.put(memberMetadata.getName(), minmax);
+                    }
+                }
+            }
+            
+            for(String memberName : memberName2ScaleRange.keySet()){
+                String memberId = "*/"+memberName;
                 FeaturePlottingMetadata plottingMetadata = getPlottingMetadataMap().get(memberId);
-                
-                if (plottingMetadata == null) {
+                if(plottingMetadata == null){
                     plottingMetadata = new FeaturePlottingMetadata();
-                    plottingMetadata.setId(memberId);
                     addVariable(plottingMetadata);
                 }
-                // If there is no title set for this layer in the config file, we
-                // use the title that was read by the DataReader.
-                if (plottingMetadata.getTitle() == null)
-                    plottingMetadata.setTitle(memberMetadata.getTitle());
-
-                /*
-                 * 
-                 * Set the colour scale range. If this isn't specified in the
-                 * config information, load an "educated guess" at the scale
-                 * range from the source data.
-                 */
-                if (plottingMetadata.getColorScaleRange() == null) {
-                    appendLoadingProgress("Reading min-max data for layer " + memberId);
-                    Extent<Float> valueRange;
-                    try {
-                        valueRange = GISUtils.estimateValueRange(feature, memberMetadata.getName());
-                        if (valueRange.isEmpty()) {
-                            // We failed to get a valid range. Just guess at a scale
-                            valueRange = Extents.newExtent(-50.0f, 50.0f);
-                        } else if (valueRange.getLow().equals(valueRange.getHigh())) {
-                            /*
-                             * This happens occasionally if the above algorithm
-                             * happens to hit an area of uniform data. We make sure
-                             * that the max is greater than the min.
-                             */
-                            valueRange = Extents.newExtent(valueRange.getLow(),
-                                    valueRange.getHigh() + 1.0f);
-                        } else {
-                            /*
-                             * Set the scale range of the layer, factoring in a 10%
-                             * expansion to deal with the fact that the sample data
-                             * we read might not be representative
-                             */
-                            float diff = valueRange.getHigh() - valueRange.getLow();
-                            valueRange = Extents.newExtent(valueRange.getLow() - 0.05f * diff, valueRange.getHigh() + 0.05f
-                                    * diff);
-                        }
-                    } catch (Exception e) {
-                        logger.error("Error reading min-max from layer " + feature.getId() + " in dataset " + id, e);
-                        valueRange = Extents.newExtent(-50.0f, 50.0f);
+                plottingMetadata.setId(memberId);
+                TitleMinMax titleMinMax = memberName2ScaleRange.get(memberName);
+                plottingMetadata.setTitle(titleMinMax.title);
+                plottingMetadata.setColorScaleRange(Extents.newExtent(titleMinMax.getMin(), titleMinMax.getMax()));
+            }
+        } else {
+            for (Feature feature : features.getFeatures()) {
+                for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
+                    String memberId = feature.getId()+"/"+memberMetadata.getName();
+                    // Load the Variable object from the config file or create a new
+                    // one if it doesn't exist.
+                    FeaturePlottingMetadata plottingMetadata = getPlottingMetadataMap().get(memberId);
+                    
+                    if (plottingMetadata == null) {
+                        plottingMetadata = new FeaturePlottingMetadata();
+                        plottingMetadata.setId(memberId);
+                        addVariable(plottingMetadata);
                     }
-                    plottingMetadata.setColorScaleRange(valueRange);
+                    // If there is no title set for this layer in the config file, we
+                    // use the title that was read by the DataReader.
+                    if (plottingMetadata.getTitle() == null)
+                        plottingMetadata.setTitle(memberMetadata.getTitle());
+    
+                    /*
+                     * 
+                     * Set the colour scale range. If this isn't specified in the
+                     * config information, load an "educated guess" at the scale
+                     * range from the source data.
+                     */
+                    if (plottingMetadata.getColorScaleRange() == null) {
+                        appendLoadingProgress("Reading min-max data for layer " + memberId);
+                        Extent<Float> valueRange;
+                        try {
+                            valueRange = GISUtils.estimateValueRange(feature, memberMetadata.getName());
+                            if (valueRange.isEmpty()) {
+                                // We failed to get a valid range. Just guess at a scale
+                                valueRange = Extents.newExtent(-50.0f, 50.0f);
+                            } else if (valueRange.getLow().equals(valueRange.getHigh())) {
+                                /*
+                                 * This happens occasionally if the above algorithm
+                                 * happens to hit an area of uniform data. We make sure
+                                 * that the max is greater than the min.
+                                 */
+                                valueRange = Extents.newExtent(valueRange.getLow(),
+                                        valueRange.getHigh() + 1.0f);
+                            } else {
+                                /*
+                                 * Set the scale range of the layer, factoring in a 10%
+                                 * expansion to deal with the fact that the sample data
+                                 * we read might not be representative
+                                 */
+                                float diff = valueRange.getHigh() - valueRange.getLow();
+                                valueRange = Extents.newExtent(valueRange.getLow() - 0.05f * diff, valueRange.getHigh() + 0.05f
+                                        * diff);
+                            }
+                        } catch (Exception e) {
+                            logger.error("Error reading min-max from layer " + feature.getId() + " in dataset " + id, e);
+                            valueRange = Extents.newExtent(-50.0f, 50.0f);
+                        }
+                        plottingMetadata.setColorScaleRange(valueRange);
+                    }
                 }
             }
         }

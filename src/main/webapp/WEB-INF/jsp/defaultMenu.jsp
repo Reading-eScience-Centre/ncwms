@@ -15,8 +15,13 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
          serverTitle = String: title for this server
          datasets = Map<String, Dataset>: all the datasets in this server
 --%>
+<%-- <menu:folder label="${serverTitle}" plottable="${false}"> --%>
+<%--     <c:forEach var="dataset" items="${datasets}"> --%>
+<%--         <menu:dataset dataset="${dataset.value}"/> --%>
+<%--     </c:forEach> --%>
+<%-- </menu:folder> --%>
 <menu:folder label="${serverTitle}" plottable="${false}">
     <c:forEach var="dataset" items="${datasets}">
-        <menu:dataset dataset="${dataset.value}"/>
+        <menu:layerMenuItem dataset="${dataset.key}" item="${dataset.value}"/>
     </c:forEach>
 </menu:folder>

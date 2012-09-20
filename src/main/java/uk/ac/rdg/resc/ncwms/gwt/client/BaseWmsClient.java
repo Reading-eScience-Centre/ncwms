@@ -1,5 +1,6 @@
 package uk.ac.rdg.resc.ncwms.gwt.client;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerDetails;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerRequestBuilder;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerRequestCallback;
+import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerTreeJSONParser;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.TimeRequestBuilder;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.TimeRequestCallback;
 import uk.ac.rdg.resc.ncwms.gwt.client.widgets.GodivaWidgets;
@@ -254,7 +256,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                     }
                     JSONValue jsonMap = JSONParser.parseLenient(response.getText());
                     JSONObject parentObj = jsonMap.isObject();
-                    LayerMenuItem menuTree = LayerMenuItem.getTreeFromJson(parentObj);
+                    LayerMenuItem menuTree = LayerTreeJSONParser.getTreeFromJson(parentObj);
 
                     menuLoaded(menuTree);
                 } catch (Exception e) {
@@ -424,6 +426,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
         parameters.put("item", "minmax");
         parameters.put("layers", layerId);
         parameters.put("srs", mapArea.getMap().getProjection());
+        parameters.put("time", getWidgetCollection(layerId).getTimeSelector().getSelectedDateTime());
         parameters.put("height", "100");
         parameters.put("width", "100");
         parameters.put("version", "1.1.1");
@@ -575,10 +578,18 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
         widgetCollection.getPaletteSelector().populatePalettes(layerDetails.getAvailablePalettes());
         widgetCollection.getPaletteSelector().populateStyles(layerDetails.getSupportedStyles());
 
-        widgetCollection.getTimeSelector().populateDates(layerDetails.getAvailableDates());
-        if (layerDetails.getNearestTime() != null) {
-            nearestTime = layerDetails.getNearestTime();
-            widgetCollection.getTimeSelector().selectDate(layerDetails.getNearestDate());
+        widgetCollection.getTimeSelector().setContinuous(layerDetails.isContinuousTimeAxis());
+        if(layerDetails.isContinuousTimeAxis()){
+            List<String> startEndDates = new ArrayList<String>();
+            startEndDates.add(layerDetails.getStartTime());
+            startEndDates.add(layerDetails.getEndTime());
+            widgetCollection.getTimeSelector().populateDates(startEndDates);
+        } else {
+            widgetCollection.getTimeSelector().populateDates(layerDetails.getAvailableDates());
+            if (layerDetails.getNearestTime() != null) {
+                nearestTime = layerDetails.getNearestTime();
+                widgetCollection.getTimeSelector().selectDate(layerDetails.getNearestDate());
+            }
         }
 
         if (!widgetCollection.getPaletteSelector().isLocked()) {

@@ -16,30 +16,37 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
           crs = the code for the CRS
           data = Map of joda-time DateTime objects to data values (Map<DateTime, Float>) --%>
 <msGMLOutput xmlns:gml="http://www.opengis.net/gml" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">          
-	<${varName}_layer>
-		<${varName}_feature>
-			<gml:boundedBy>
-				<gml:Box srsName="${crs}">
-					<gml:coordinates>
-                        ${coords.x},${coords.y} ${coords.x},${coords.y}
-					</gml:coordinates>
-				</gml:Box>
-			</gml:boundedBy>
-			<longitude>${longitude}</longitude>
-			<latitude>${latitude}</latitude>
-			<values>
-				<c:if test="${not empty datapoint.key}">
-				    <time>${utils:dateTimeToISO8601(datapoint.key)}</time>
-				</c:if>
-                <c:choose>
-                    <c:when test="${empty datapoint.value}">
-                        <value>none</value>
-                    </c:when>
-	                <c:otherwise>
-	                    <value>${datapoint.value}</value>
-	                </c:otherwise>
-                </c:choose>
-            </values>
-        </${varName}_feature>
-    </${varName}_layer>
+    <c:forEach var="featureInfo" items="${data}">
+        <${featureInfo.featureId}>
+            <${featureInfo.memberId}>
+                <c:if test="${not empty featureInfo.actualPos}">
+                    <c:set value="${utils:getLatLon(featureInfo.actualPos)}" var="actualLatLon"/>
+                    <longitude>${actualLatLon.longitude}</longitude>
+                    <latitude>${actualLatLon.latitude}</latitude>
+					<gml:boundedBy>
+						<gml:Box srsName="${crs}">
+							<gml:coordinates>
+		                        ${featureInfo.actualPos.x},${featureInfo.actualPos.y},${featureInfo.actualPos.x},${featureInfo.actualPos.y}
+							</gml:coordinates>
+						</gml:Box>
+					</gml:boundedBy>
+                </c:if>
+	            <c:forEach var="datapoint" items="${featureInfo.timesAndValues}">
+	                <values>
+	                    <c:if test="${not empty datapoint.key}">
+				            <time>${utils:dateTimeToISO8601(datapoint.key)}</time>
+	                    </c:if>
+	                    <c:choose>
+	                        <c:when test="${empty datapoint.value}">
+	                            <value>none</value>
+	                        </c:when>
+	                        <c:otherwise>
+	                            <value>${datapoint.value}</value>
+	                        </c:otherwise>
+	                    </c:choose>
+	                </values>
+	            </c:forEach>
+            </${featureInfo.memberId}>
+        </${featureInfo.featureId}>
+    </c:forEach>
 </msGMLOutput>

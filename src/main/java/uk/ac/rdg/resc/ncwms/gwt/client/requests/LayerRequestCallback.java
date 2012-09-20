@@ -101,7 +101,7 @@ public abstract class LayerRequestCallback implements RequestCallback {
         JSONValue zvalsJson = parentObj.get("zaxis");
         if (zvalsJson != null) {
             JSONObject zvalsObj = zvalsJson.isObject();
-            layerDetails.setzUnits(zvalsObj.get("units").isString().stringValue());
+            layerDetails.setZUnits(zvalsObj.get("units").isString().stringValue());
             layerDetails.setzPositive(zvalsObj.get("positive").isBoolean().booleanValue());
             List<String> availableZs = new ArrayList<String>();
             JSONArray zvalsArr = zvalsObj.get("values").isArray();
@@ -136,37 +136,55 @@ public abstract class LayerRequestCallback implements RequestCallback {
                 layerDetails.setSelectedPalette(defaultPaletteJson.isString().stringValue());
             }
         }
-
-        JSONValue datesJson = parentObj.get("datesWithData");
-        if (datesJson != null) {
-            // TODO deal with timeAxisUnits (currently assume ISO8601)
-            JSONObject datesObj = datesJson.isObject();
-            List<String> availableDates = new ArrayList<String>();
-            for (String yearString : datesObj.keySet()) {
-                int year = Integer.parseInt(yearString);
-                JSONObject yearObj = datesObj.get(yearString).isObject();
-                for (String monthString : yearObj.keySet()) {
-                    // Months start from zero
-                    int month = Integer.parseInt(monthString);
-                    JSONArray daysArr = yearObj.get(monthString).isArray();
-                    for (int iDay = 0; iDay < daysArr.size(); iDay++) {
-                        int day = (int) daysArr.get(iDay).isNumber().doubleValue();
-                        availableDates
-                                .add(format4Digits.format(year) + "-"
-                                        + format2Digits.format(month + 1) + "-"
-                                        + format2Digits.format(day));
+        
+        boolean continuousTimeAxis = false;
+        JSONValue continuousJson = parentObj.get("continuousTimeAxis");
+        if(continuousJson != null) {
+            continuousTimeAxis = continuousJson.isBoolean().booleanValue();
+        }
+        layerDetails.setContinuousTimeAxis(continuousTimeAxis);
+        
+        if(continuousTimeAxis){
+            JSONValue startTimeJson = parentObj.get("startTime");
+            if(startTimeJson != null){
+                layerDetails.setStartTime(startTimeJson.isString().stringValue());
+            }
+            JSONValue endTimeJson = parentObj.get("endTime");
+            if(endTimeJson != null){
+                layerDetails.setEndTime(endTimeJson.isString().stringValue());
+            }
+        } else {
+            JSONValue datesJson = parentObj.get("datesWithData");
+            if (datesJson != null) {
+                // TODO deal with timeAxisUnits (currently assume ISO8601)
+                JSONObject datesObj = datesJson.isObject();
+                List<String> availableDates = new ArrayList<String>();
+                for (String yearString : datesObj.keySet()) {
+                    int year = Integer.parseInt(yearString);
+                    JSONObject yearObj = datesObj.get(yearString).isObject();
+                    for (String monthString : yearObj.keySet()) {
+                        // Months start from zero
+                        int month = Integer.parseInt(monthString);
+                        JSONArray daysArr = yearObj.get(monthString).isArray();
+                        for (int iDay = 0; iDay < daysArr.size(); iDay++) {
+                            int day = (int) daysArr.get(iDay).isNumber().doubleValue();
+                            availableDates
+                                    .add(format4Digits.format(year) + "-"
+                                            + format2Digits.format(month + 1) + "-"
+                                            + format2Digits.format(day));
+                        }
                     }
                 }
-            }
-            layerDetails.setAvailableDates(availableDates);
-
-            // If we have different times, we may (will?) have a nearest
-            // time string.
-            JSONValue nearestTimeJson = parentObj.get("nearestTimeIso");
-            if (nearestTimeJson != null) {
-                layerDetails.setNearestTime(nearestTimeJson.isString().stringValue());
-                layerDetails.setNearestDate(nearestTimeJson.isString().stringValue()
-                        .substring(0, 10));
+                layerDetails.setAvailableDates(availableDates);
+    
+                // If we have different times, we may (will?) have a nearest
+                // time string.
+                JSONValue nearestTimeJson = parentObj.get("nearestTimeIso");
+                if (nearestTimeJson != null) {
+                    layerDetails.setNearestTime(nearestTimeJson.isString().stringValue());
+                    layerDetails.setNearestDate(nearestTimeJson.isString().stringValue()
+                            .substring(0, 10));
+                }
             }
         }
     }

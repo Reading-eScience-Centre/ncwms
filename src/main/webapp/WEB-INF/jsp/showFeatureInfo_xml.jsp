@@ -11,31 +11,32 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
      Data (models) passed in to this page:
           longitude = longitude of the point of interest (float)
           latitude = latitude of the point of interest (float)
-          gridCoords = i,j indices of the data point in the source grid (GridCoordinates)
-          gridCentre = coordinates of centre of grid cell (LatLonPoint)
-          data = Map of joda-time DateTime objects to data values (Map<DateTime, Object>) --%>
+          data = List of FeatureInfo objects --%>
 <FeatureInfoResponse>
     <longitude>${longitude}</longitude>
     <latitude>${latitude}</latitude>
-    <c:if test="${not empty gridCoords}">
-        <iIndex>${gridCoords.XIndex}</iIndex>
-        <jIndex>${gridCoords.YIndex}</jIndex>
-        <gridCentreLon>${gridCentre.longitude}</gridCentreLon>
-        <gridCentreLat>${gridCentre.latitude}</gridCentreLat>
-    </c:if>
-    <c:forEach var="datapoint" items="${data}">
-    <FeatureInfo>
-        <c:if test="${not empty datapoint.key}">
-            <time>${utils:dateTimeToISO8601(datapoint.key)}</time>
-        </c:if>
-        <c:choose>
-            <c:when test="${empty datapoint.value}">
-                <value>none</value>
-            </c:when>
-            <c:otherwise>
-                <value>${datapoint.value}</value>
-            </c:otherwise>
-        </c:choose>
-    </FeatureInfo>
+    <c:forEach var="featureInfo" items="${data}">
+        <Feature>
+            <id>${featureInfo.featureId}/${featureInfo.memberId}</id>
+            <c:if test="${not empty featureInfo.actualPos}">
+                <actualX>${featureInfo.actualPos.x}</actualX>
+                <actualY>${featureInfo.actualPos.y}</actualY>
+            </c:if>
+            <c:forEach var="datapoint" items="${featureInfo.timesAndValues}">
+				<FeatureInfo>
+				    <c:if test="${not empty datapoint.key}">
+				        <time>${utils:formatNiceDateTime(datapoint.key)}</time>
+				    </c:if>
+				    <c:choose>
+				        <c:when test="${empty datapoint.value}">
+				            <value>none</value>
+				        </c:when>
+				        <c:otherwise>
+				            <value>${datapoint.value}</value>
+				        </c:otherwise>
+				    </c:choose>
+				</FeatureInfo>
+            </c:forEach>
+        </Feature>
     </c:forEach>
 </FeatureInfoResponse>

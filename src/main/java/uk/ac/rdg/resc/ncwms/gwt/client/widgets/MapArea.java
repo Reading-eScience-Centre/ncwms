@@ -39,17 +39,21 @@ import uk.ac.rdg.resc.ncwms.gwt.client.handlers.StartEndTimeHandler;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.i18n.client.NumberFormat;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.xml.client.Document;
+import com.google.gwt.xml.client.Node;
+import com.google.gwt.xml.client.NodeList;
 import com.google.gwt.xml.client.XMLParser;
 
 public class MapArea extends MapWidget {
 
     private static final Projection EPSG4326 = new Projection("EPSG:4326");
+    private static final NumberFormat FORMATTER = NumberFormat.getFormat("###.#####"); 
 
     private final class WmsDetails {
         private final WMS wms;
@@ -194,10 +198,16 @@ public class MapArea extends MapWidget {
         params.setStyles(style + "/" + palette);
         params.setLayers(wmsLayerName);
         if (time != null) {
+            params.setParameter("COLORBY/TIME", time);
+            vendorParams.setProperty("COLORBY/TIME", time);
+            
             params.setParameter("TIME", time);
             vendorParams.setProperty("TIME", time);
         }
         if (elevation != null) {
+            params.setParameter("COLORBY/DEPTH", elevation);
+            vendorParams.setProperty("COLORBY/DEPTH", elevation);
+            
             params.setParameter("ELEVATION", elevation);
             vendorParams.setProperty("ELEVATION", elevation);
         }
@@ -250,7 +260,8 @@ public class MapArea extends MapWidget {
         WMSGetFeatureInfoOptions getFeatureInfoOptions = new WMSGetFeatureInfoOptions();
         getFeatureInfoOptions.setQueryVisible(true);
         getFeatureInfoOptions.setInfoFormat("text/xml");
-
+        getFeatureInfoOptions.setMaxFeaturess(5);
+        
         WMS[] layers = new WMS[wmsLayers.size()];
         Iterator<WmsDetails> it = wmsLayers.values().iterator();
         int i = 0;
@@ -260,6 +271,12 @@ public class MapArea extends MapWidget {
         }
         getFeatureInfoOptions.setLayers(layers);
 
+        JSObject vendorParams = JSObject.createJSObject();
+        String timeStr = wmsLayers.get(layerId).params.getJSObject().getPropertyAsString("TIME");
+        vendorParams.setProperty("TIME", timeStr);
+        String elevationStr = wmsLayers.get(layerId).params.getJSObject().getPropertyAsString("ELEVATION");
+        vendorParams.setProperty("ELEVATION", elevationStr);
+        
         if (getFeatureInfo != null) {
             getFeatureInfo.deactivate();
             map.removeControl(getFeatureInfo);
@@ -351,7 +368,7 @@ public class MapArea extends MapWidget {
         getFeatureInfo.setAutoActivate(true);
         map.addControl(getFeatureInfo);
 
-//        getFeatureInfo.getJSObject().setProperty("vendorParams", vendorParams);
+        getFeatureInfo.getJSObject().setProperty("vendorParams", vendorParams);
     }
 
     public void zoomToExtents(String extents) throws Exception {
@@ -573,15 +590,67 @@ public class MapArea extends MapWidget {
 
     private String processFeatureInfo(String text) {
         Document featureInfo = XMLParser.parse(text);
-        String lon = featureInfo.getElementsByTagName("longitude").item(0).getChildNodes().item(0)
-                .getNodeValue();
-        String lat = featureInfo.getElementsByTagName("latitude").item(0).getChildNodes().item(0)
-                .getNodeValue();
-        String val = featureInfo.getElementsByTagName("value").item(0).getChildNodes().item(0)
-                .getNodeValue();
-        String html = "<b>Longitude:</b> " + lon + "<br>" + "<b>Latitude: </b> " + lat + "<br>"
-                + "<b>Value:    </b> " + val;
-        return html;
+        double lon = Double.parseDouble(featureInfo.getElementsByTagName("longitude").item(0)
+                .getChildNodes().item(0).getNodeValue());
+        double lat = Double.parseDouble(featureInfo.getElementsByTagName("latitude").item(0)
+                .getChildNodes().item(0).getNodeValue());
+        
+        StringBuffer html = new StringBuffer("<b>Clicked:<br>Longitude:</b> "
+                + FORMATTER.format(lon) + "<br>" + "<b>Latitude: </b> " + FORMATTER.format(lat)
+                + "<br><br>");
+        
+        NodeList feature = featureInfo.getElementsByTagName("Feature");
+        int length = feature.getLength();
+        for(int i=0;i<length;i++){
+            /*
+             * For each feature...
+             */
+            Node item = feature.item(i);
+            NodeList childNodes = item.getChildNodes();
+            
+            String id = null;
+            Double actualX = null;
+            Double actualY = null;
+            NodeList featureInfoNode = null;
+            for (int j = 0; j < childNodes.getLength(); j++) {
+                Node child = childNodes.item(j);
+                if(child.getNodeName().equalsIgnoreCase("id")){
+                    id = child.getFirstChild().getNodeValue();
+                } else if(child.getNodeName().equalsIgnoreCase("actualX")){
+                    actualX = Double.parseDouble(child.getFirstChild().getNodeValue());
+                } else if(child.getNodeName().equalsIgnoreCase("actualY")){
+                    actualY = Double.parseDouble(child.getFirstChild().getNodeValue());
+                } else if(child.getNodeName().equalsIgnoreCase("FeatureInfo")){
+                    featureInfoNode = child.getChildNodes();
+                }
+            }
+            
+            if(id != null)
+                html.append("<b>Feature:</b> "+id);
+            if(actualX != null && actualY != null)
+                html.append(" ("+FORMATTER.format(actualX)+","+FORMATTER.format(actualY)+")");
+            html.append("<br>");
+            if(featureInfoNode != null){
+                String time = null;
+                String value = null;
+                for (int j = 0; j < featureInfoNode.getLength(); j++) {
+                    Node child = featureInfoNode.item(j);
+                    if(child.getNodeName().equalsIgnoreCase("time")){
+                        time = child.getFirstChild().getNodeValue();
+                    } else if(child.getNodeName().equalsIgnoreCase("value")){
+                        value = child.getFirstChild().getNodeValue();
+                    }
+                }
+                if(value != null){
+                    if(time != null){
+                        html.append("<b>Time</b>: "+time + "<br>");
+                    }
+                    html.append("<b>Value</b>: "+value+"<br>");
+                }
+            }
+            html.append("<br>");
+        }
+        return html.toString();
     }
 
     private void addDrawingLayer() {
