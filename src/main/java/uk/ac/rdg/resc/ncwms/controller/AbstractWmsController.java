@@ -378,6 +378,276 @@ public abstract class AbstractWmsController extends AbstractController {
             return new ModelAndView("capabilities_xml_1_1_1", models);
         }
     }
+    
+    protected ModelAndView getMap2(RequestParams params, FeatureFactory featureFactory,
+            HttpServletResponse httpServletResponse) throws WmsException, uk.ac.rdg.resc.edal.graphics.exceptions.InvalidFormatException {
+        GetMapRequest getMapRequest = new GetMapRequest(params);
+        GetMapStyleRequest styleRequest = getMapRequest.getStyleRequest();
+        String mimeType = styleRequest.getImageFormat();
+        ImageFormat imageFormat = ImageFormat.get(mimeType);
+        /*
+         * Need to make sure that the images will be compatible with the
+         * requested image format
+         */
+        if (styleRequest.isTransparent() && !imageFormat.supportsFullyTransparentPixels()) {
+            throw new WmsException("The image format " + mimeType + " does not support fully-transparent pixels");
+        }
+        if (styleRequest.getOpacity() < 100 && !imageFormat.supportsPartiallyTransparentPixels()) {
+            throw new WmsException("The image format " + mimeType + " does not support partially-transparent pixels");
+        }
+
+        GetMapDataRequest dr = getMapRequest.getDataRequest();
+
+        // Check the dimensions of the image
+        if (dr.getHeight() > this.serverConfig.getMaxImageHeight()
+                || dr.getWidth() > this.serverConfig.getMaxImageWidth()) {
+            throw new WmsException("Requested image size exceeds the maximum of "
+                    + this.serverConfig.getMaxImageWidth() + "x" + this.serverConfig.getMaxImageHeight());
+        }
+        
+        String[] layers = dr.getLayers();
+        String[] styles = styleRequest.getStyles();
+
+        if(layers.length != styles.length){
+            throw new WmsException("Must have exactly one style per layer requested");
+        }
+        
+        /*
+         * Loop through all requested layers, plotting them onto a map
+         */
+        for(int i=0; i<layers.length; i++) {
+            String layer = layers[i];
+            String style = styles[i];
+            
+            String[] layerNameParts = layer.split("/");
+            if(layerNameParts.length != 2){
+                throw new WmsException("Layers must be of the form datasetId/memberName");
+            }
+            
+            String datasetName = layerNameParts[0];
+            String memberName = layerNameParts[1];
+
+            /*
+             * Note - this bit should be done with a simple
+             * featureFactory.getFeatureCollection, but only once that's been
+             * converted to the "new" ds/member ID type
+             */
+            Dataset dataset = ((Config) serverConfig).getDatasetById(datasetName);
+            FeatureCollection<? extends Feature> featureCollection = dataset.getFeatureCollection();
+            
+            /*
+             * Get the metadata for this member, if it already exists, otherwise
+             * create a new metadata object with default values
+             */
+            FeaturePlottingMetadata metadata = dataset.getPlottingMetadataMap().get(memberName);
+            if(metadata == null){
+                metadata = new FeaturePlottingMetadata();
+            }
+            
+            /*
+             * Now set all of the styling information for this layer
+             */
+            Extent<Float> scaleRange = styleRequest.getColorScaleRange();
+            if (scaleRange == null) {
+                scaleRange = metadata.getColorScaleRange();
+            }
+            Boolean logScale = styleRequest.isScaleLogarithmic();
+            if (logScale == null) {
+                logScale = metadata.isLogScaling();
+            }
+            
+            MapStyleDescriptor styleDescriptor = new MapStyleDescriptor();
+            styleDescriptor.setColorPalette(metadata.getPaletteName());
+            /*
+             * We start with a default plot style
+             */
+            PlotStyle plotStyle = PlotStyle.DEFAULT;
+            
+            String[] styleStrEls = style.split("/");
+            /*
+             * We choose the plot style based on the request
+             */
+            String styleType = styleStrEls[0];
+            try{
+                plotStyle = PlotStyle.valueOf(styleType.toUpperCase());
+            } catch (IllegalArgumentException iae){
+                /*
+                 * Ignore this, and just use default
+                 */
+            }
+            /*
+             * And set the palette
+             */
+            String paletteName = null;
+            if(plotStyle.usesPalette()){
+                if (styleStrEls.length > 1){
+                    paletteName = styleStrEls[1];
+                }
+                styleDescriptor.setColorPalette(paletteName);
+            }
+            styleDescriptor.setScaleRange(scaleRange);
+            styleDescriptor.setTransparent(styleRequest.isTransparent());
+            styleDescriptor.setLogarithmic(logScale);
+            styleDescriptor.setOpacity(styleRequest.getOpacity());
+            styleDescriptor.setBgColor(styleRequest.getBackgroundColour());
+            styleDescriptor.setNumColourBands(styleRequest.getNumColourBands());
+            /*
+             * All styling information set
+             */
+            
+            /*
+             * Create the map plotter object
+             */
+            BoundingBox bbox = new BoundingBoxImpl(dr.getBbox(), WmsUtils.getCrs(dr.getCrsCode()));
+            MapPlotter mapPlotter = new MapPlotter(styleDescriptor, dr.getWidth(), dr.getHeight(), bbox);
+            
+            /*
+             * Get all of the features which contain the desired member name.
+             * 
+             * For grid feature collections, this will likely be just a single
+             * feature (guaranteed to be the case for a
+             * NetCDFGridSeriesFeatureCollection)
+             * 
+             * For other feature collections, we may get many features (e.g.
+             * many profile features)
+             */
+            Collection<? extends Feature> features = featureCollection.getFeaturesWithMember(memberName);
+            /*
+             * Perhaps we need a better method than getFeaturesWithMember.
+             * 
+             * For example, have a getFeaturesSatisfying with a number of
+             * arguments, including bounding box, time extent, vertical
+             * extent...
+             * 
+             * Then all features returned can be plotted.
+             */
+            
+            /*
+             * TIME: So, time string will either be a range, a single value, or
+             * a set of ranges or single values.
+             * 
+             * So we can split on a comma and check each one.
+             * 
+             * If we have a time range on an in-situ feature collection, we want
+             * to search for features in that range
+             * 
+             * On point series features, we also want to check the colorby/time
+             * flag and colour by the nearest value to that time
+             * 
+             * If we have a time range on a gridseriesfeature collection, we
+             * want an animation.
+             * 
+             * Perhaps we want a marker interface which specifies whether a time
+             * axis is continuous (i.e. we need a range) or discrete (i.e. a
+             * range denotes animation)
+             */
+            
+            
+//            mapPlotter.addToFrame(feature, memberName, vPos, tPos, label, plotStyle);
+        }
+        
+        
+        
+        
+        
+//        List<String> tValueStrings = new ArrayList<String>();
+//
+//        if(featureName.equals("*")){
+//            if(featureCollection instanceof ProfileFeatureCollection){
+//                ProfileFeatureCollection profileFeatureCollection = (ProfileFeatureCollection) featureCollection;
+//                Extent<TimePosition> tRange = TimeUtils.getTimeRangeForString(dr.getTimeString(), CalendarSystem.CAL_ISO_8601);
+//                /*
+//                 * We use the getLargeBoundingBox, since we want all features
+//                 * within the desired bounding box, plus a border, so that if
+//                 * the images are tiled, we see points which are just offscreen
+//                 */
+//                Collection<ProfileFeature> profiles = profileFeatureCollection.findProfiles(
+//                        BorderedGrid.getLargeBoundingBox(bbox, dr.getWidth(), dr.getHeight(), 8),
+//                        tRange, memberName);
+//                float targetDepth = params.getFloat("colorby/depth", Float.NaN);
+//                for(ProfileFeature profile : profiles) {
+//                    VerticalPosition vPos;
+//                    if(Float.isNaN(targetDepth)) {
+//                        vPos = GISUtils.getUppermostElevation(profile);
+//                    } else {
+//                        vPos = GISUtils.getClosestElevationTo(targetDepth, profile);
+//                    }
+//                    if(vPos != null){
+//                        mapPlotter.addToFrame(profile, memberName, vPos, null, null, plotStyle);
+//                    }
+//                    
+//                    feature = profile;
+//                }
+//            } else {
+//                throw new IllegalArgumentException("Cannot get all features for this type of dataset");
+//            }
+//        } else {
+//            feature = featureFactory.getFeature(layerName);
+//            VerticalPosition zValue = getElevationValue(dr.getElevationString(), feature);
+//            
+//            // Cycle through all the provided timesteps, extracting data for each
+//            // step
+//            List<TimePosition> timeValues = getTimeValues(dr.getTimeString(), feature);
+//            if (timeValues.size() > 1 && !imageFormat.supportsMultipleFrames()) {
+//                throw new WmsException("The image format " + mimeType + " does not support multiple frames");
+//            }
+//            // Use a single null time value if the layer has no time axis
+//            if (timeValues.isEmpty())
+//                timeValues = Arrays.asList((TimePosition) null);
+//            for (TimePosition timeValue : timeValues) {
+//                // Only add a label if this is part of an animation
+//                String tValueStr = null;
+//                if (timeValues.size() > 1 && timeValue != null) {
+//                    tValueStr = TimeUtils.dateTimeToISO8601(timeValue);
+//                }
+//                tValueStrings.add(tValueStr);
+//                
+//                mapPlotter.addToFrame(feature, memberName, zValue, timeValue, tValueStr, plotStyle);
+//            }
+//        }
+//               
+//
+//        // Write the image to the client.
+//        // First we set the HTTP headers
+//        httpServletResponse.setStatus(HttpServletResponse.SC_OK);
+//        httpServletResponse.setContentType(mimeType);
+//        // If this is a KMZ file give it a sensible filename
+//        if (imageFormat instanceof KmzFormat && feature != null) {
+//            httpServletResponse.setHeader("Content-Disposition", "inline; filename=" + feature.getFeatureCollection().getId() + "_"
+//                    + feature.getId() + ".kmz");
+//        }
+//        
+//        Integer frameRate = null;
+//        String fpsString = params.getString("frameRate");
+//        if(fpsString != null){
+//            try{
+//                frameRate = Integer.parseInt(fpsString);
+//            } catch(NumberFormatException nfe){
+//                /*
+//                 * Ignore this and just use the default
+//                 */
+//            }
+//        }
+//        
+//            
+//        // We only create a legend object if the image format requires it
+//        BufferedImage legend = null;
+//        if(feature != null){
+//            legend = imageFormat.requiresLegend() ? styleDescriptor.getLegend(
+//                    MetadataUtils.getMetadataForFeatureMember(feature, memberName).getTitle(),
+//                    MetadataUtils.getUnitsString(feature, memberName)) : null;
+//        }
+//                
+//        // Render the images and write to the output stream
+//        imageFormat.writeImage(mapPlotter.getRenderedFrames(), httpServletResponse.getOutputStream(), feature, dr.getBbox(),
+//                tValueStrings, dr.getElevationString(), legend, frameRate);
+//
+//        return null;
+//        
+        
+        return null;
+    }
+
 
     /**
      * Executes the GetMap operation. This methods performs the following steps:
@@ -430,12 +700,6 @@ public abstract class AbstractWmsController extends AbstractController {
                     + this.serverConfig.getMaxImageWidth() + "x" + this.serverConfig.getMaxImageHeight());
         }
 
-        
-        /*
-         * Start loop through all requested layers here
-         */
-        
-        
         String layerName = WmsUtils.getWmsLayerName(dr);
         
         FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);

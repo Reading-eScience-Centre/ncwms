@@ -67,7 +67,7 @@ public class FeaturePlottingMetadata {
 
     private Dataset dataset;
 
-    private Extent<Float> colorScaleRange = null;
+    private Extent<Float> colorScaleRange = Extents.newExtent(-50f, 50f);
 
     private boolean logScaling = false;
 

@@ -11,10 +11,10 @@ public class FeatureInfo {
     private LonLatPosition actualPos;
     private Map<TimePosition, Object> timesAndValues;
 
-    public FeatureInfo(String memberId, String featureId, LonLatPosition actualPos, Map<TimePosition, Object> timesAndValues) {
+    public FeatureInfo(String featureId, String memberId, LonLatPosition actualPos, Map<TimePosition, Object> timesAndValues) {
         super();
-        this.memberId = memberId;
         this.featureId = featureId;
+        this.memberId = memberId;
         this.actualPos = actualPos;
         this.timesAndValues = timesAndValues;
     }

@@ -11,6 +11,7 @@ import org.gwtopenmaps.openlayers.client.MapWidget;
 import org.gwtopenmaps.openlayers.client.Pixel;
 import org.gwtopenmaps.openlayers.client.Projection;
 import org.gwtopenmaps.openlayers.client.control.EditingToolbar;
+import org.gwtopenmaps.openlayers.client.control.Graticule;
 import org.gwtopenmaps.openlayers.client.control.LayerSwitcher;
 import org.gwtopenmaps.openlayers.client.control.MousePosition;
 import org.gwtopenmaps.openlayers.client.control.WMSGetFeatureInfo;
@@ -435,6 +436,7 @@ public class MapArea extends MapWidget {
         map.addControl(new LayerSwitcher());
         addDrawingLayer();
         map.addControl(new MousePosition());
+        // map.addControl(new Graticule());
         map.setCenter(new LonLat(0.0, 0.0), 2);
         map.setMaxExtent(new Bounds(-180, -360, 180, 360));
     }
