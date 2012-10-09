@@ -246,7 +246,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
         return featureCollectionFactoryClass;
     }
 
-    void setDataReaderClass(String dataReaderClass) throws Exception {
+    void setDataReaderClass(String dataReaderClass) {
         featureCollectionFactoryClass = dataReaderClass;
     }
 
@@ -491,6 +491,8 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      * file.
      */
     private void readLayerConfig() {
+        if(features == null)
+            return;
         boolean featureCollectionIsLayer = (features instanceof ProfileFeatureCollection);
         
         if(featureCollectionIsLayer){
@@ -542,9 +544,9 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
                 FeaturePlottingMetadata plottingMetadata = getPlottingMetadataMap().get(memberId);
                 if(plottingMetadata == null){
                     plottingMetadata = new FeaturePlottingMetadata();
+                    plottingMetadata.setId(memberId);
                     addVariable(plottingMetadata);
                 }
-                plottingMetadata.setId(memberId);
                 TitleMinMax titleMinMax = memberName2ScaleRange.get(memberName);
                 plottingMetadata.setTitle(titleMinMax.title);
                 plottingMetadata.setColorScaleRange(Extents.newExtent(titleMinMax.getMin(), titleMinMax.getMax()));

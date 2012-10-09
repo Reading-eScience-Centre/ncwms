@@ -17,8 +17,8 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
           data = Map of joda-time DateTime objects to data values (Map<DateTime, Float>) --%>
 <msGMLOutput xmlns:gml="http://www.opengis.net/gml" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">          
     <c:forEach var="featureInfo" items="${data}">
-        <${featureInfo.featureId}>
-            <${featureInfo.memberId}>
+        <${featureInfo.featureId}_feature>
+            <${featureInfo.memberId}_layer>
                 <c:if test="${not empty featureInfo.actualPos}">
                     <c:set value="${utils:getLatLon(featureInfo.actualPos)}" var="actualLatLon"/>
                     <longitude>${actualLatLon.longitude}</longitude>
@@ -46,7 +46,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 	                    </c:choose>
 	                </values>
 	            </c:forEach>
-            </${featureInfo.memberId}>
-        </${featureInfo.featureId}>
+            </${featureInfo.memberId}_layer>
+        </${featureInfo.featureId}_feature>
     </c:forEach>
 </msGMLOutput>
