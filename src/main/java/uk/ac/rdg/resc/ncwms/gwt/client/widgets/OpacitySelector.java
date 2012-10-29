@@ -31,4 +31,8 @@ public class OpacitySelector extends BaseSelector {
     public float getOpacity() {
         return (opacity.getSelectedIndex()+1)/4.0f;
     }
+    
+    public void setOpacity(float opacity) {
+        this.opacity.setSelectedIndex((int)((opacity * 4) - 1));
+    }
 }

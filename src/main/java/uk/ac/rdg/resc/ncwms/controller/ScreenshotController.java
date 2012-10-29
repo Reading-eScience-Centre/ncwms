@@ -55,12 +55,15 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.multiaction.MultiActionController;
 
 import uk.ac.rdg.resc.edal.feature.Feature;
+import uk.ac.rdg.resc.edal.feature.FeatureCollection;
+import uk.ac.rdg.resc.edal.feature.UniqueMembersFeatureCollection;
 import uk.ac.rdg.resc.edal.graphics.formats.AviFormat;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.FeatureFactory;
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
+import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 
 /**
  * Controller for generating screenshots from the Godiva2 site.
@@ -117,33 +120,40 @@ public class ScreenshotController extends MultiActionController {
                 fullRequest.indexOf(request.getServletPath()) + 1);
         
         RequestParams params = new RequestParams(request.getParameterMap());
+
+        String layerName = params.getMandatoryString("layer");
+        String memberName = WmsUtils.getMemberName(layerName);
+        FeatureCollection<? extends Feature> featureCollection = featureFactory.getFeatureCollection(layerName);
         
-        String timeString = params.getString("time");
-        List<String> tValueStrings = new ArrayList<String>();
-        
-        Feature feature = featureFactory.getFeature(params.getMandatoryString("layer"));
-        
-        List<TimePosition> timeValues = AbstractWmsController.getTimeValues(timeString, feature);
-        for (TimePosition timeValue : timeValues) {
-            String tValueStr = null;
-            if (timeValue != null) {
-                tValueStr = TimeUtils.dateTimeToISO8601(timeValue);
+        if(featureCollection instanceof UniqueMembersFeatureCollection){
+            Feature feature = ((UniqueMembersFeatureCollection<?>) featureCollection).getFeatureContainingMember(memberName);
+            String timeString = params.getString("time");
+            List<String> tValueStrings = new ArrayList<String>();
+            
+            List<TimePosition> timeValues = WmsUtils.getTimePositionsForString(timeString, feature);
+            for (TimePosition timeValue : timeValues) {
+                String tValueStr = null;
+                if (timeValue != null) {
+                    tValueStr = TimeUtils.dateTimeToISO8601(timeValue);
+                }
+                tValueStrings.add(tValueStr);
             }
-            tValueStrings.add(tValueStr);
+            
+            List<BufferedImage> frames = new ArrayList<BufferedImage>();
+            for(String time : tValueStrings) {
+                frames.add(drawScreenshot(params, servletUrl, time));
+            }
+            int frameRate = params.getPositiveInt("frameRate", 24);
+            AviFormat aviFormat = new AviFormat();
+            
+            response.setContentType(aviFormat.getMimeType());
+            response.setHeader("Content-Disposition", "attachment; filename=ncwms-export.avi");
+            final OutputStream output = response.getOutputStream();
+            aviFormat.writeImage(frames, output, frameRate);
+            return null;
+        } else {
+            throw new WmsException("Cannot create an AVI from this type of dataset");
         }
-        
-        List<BufferedImage> frames = new ArrayList<BufferedImage>();
-        for(String time : tValueStrings) {
-            frames.add(drawScreenshot(params, servletUrl, time));
-        }
-        int frameRate = params.getPositiveInt("frameRate", 24);
-        AviFormat aviFormat = new AviFormat();
-        
-        response.setContentType(aviFormat.getMimeType());
-        response.setHeader("Content-Disposition", "attachment; filename=ncwms-export.avi");
-        final OutputStream output = response.getOutputStream();
-        aviFormat.writeImage(frames, output, frameRate);
-        return null;
     }
     
     

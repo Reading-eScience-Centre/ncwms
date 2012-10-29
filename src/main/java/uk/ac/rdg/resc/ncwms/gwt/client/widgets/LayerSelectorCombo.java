@@ -109,19 +109,22 @@ public class LayerSelectorCombo extends Button implements LayerSelectorIF {
         if(parentNode != null){
             final String parentName = parentNode.getText();
             layerIdToTitle.put(id, "<big>" + parentName + "</big> > " + label);
-            /*
-             * We don't want to be able to plot the top layer item
-             */
-            if(item.isPlottable()){
-                node.addClickHandler(new ClickHandler() {
-                    @Override
-                    public void onClick(ClickEvent event) {
-                        setSelectedLayer(id);
-                        layerSelectionHandler.layerSelected(id, true);
-                        selectedNode = item;
-                    }
-                });
-            }
+        } else {
+            layerIdToTitle.put(id, "<big>" + label + "</big>");
+        }
+        
+        /*
+         * If the item is plottable, we need a click handler
+         */
+        if(item.isPlottable()){
+            node.addClickHandler(new ClickHandler() {
+                @Override
+                public void onClick(ClickEvent event) {
+                    setSelectedLayer(id);
+                    layerSelectionHandler.layerSelected(id, true);
+                    selectedNode = item;
+                }
+            });
         }
         
         if(item.isLeaf()){

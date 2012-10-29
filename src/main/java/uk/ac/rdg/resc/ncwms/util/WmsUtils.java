@@ -29,6 +29,7 @@
 package uk.ac.rdg.resc.ncwms.util;
 
 import java.io.File;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -38,7 +39,9 @@ import java.util.Set;
 import org.geotoolkit.referencing.CRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
+import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.RegularGridImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
@@ -56,11 +59,15 @@ import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.GeoPositionImpl;
+import uk.ac.rdg.resc.edal.util.Extents;
+import uk.ac.rdg.resc.edal.util.GISUtils;
+import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.config.Config;
 import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController;
 import uk.ac.rdg.resc.ncwms.controller.GetMapDataRequest;
 import uk.ac.rdg.resc.ncwms.exceptions.InvalidCrsException;
+import uk.ac.rdg.resc.ncwms.exceptions.InvalidDimensionValueException;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
 
@@ -215,19 +222,18 @@ public class WmsUtils {
 
     public static FeaturePlottingMetadata getMetadata(Config serverConfig, String layerName)
             throws WmsException {
+        
         String[] layerParts = layerName.split("/");
-        if (layerParts.length != 3) {
-            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
+        if (layerParts.length != 2) {
+            throw new WmsException("Layers should be of the form Dataset/Variable");
         }
 
         String datasetId = layerParts[0];
-        String featureId = layerParts[1];
-        String memberId = layerParts[2];
+        String memberId = layerParts[1];
 
         Dataset dataset = serverConfig.getDatasetById(datasetId);
 
-        String featureAndVarId = featureId + "/" + memberId;
-        FeaturePlottingMetadata metadata = dataset.getPlottingMetadataMap().get(featureAndVarId);
+        FeaturePlottingMetadata metadata = dataset.getPlottingMetadataMap().get(memberId);
         if(metadata == null){
             metadata = new FeaturePlottingMetadata();
         }
@@ -245,11 +251,13 @@ public class WmsUtils {
         if (layers.length == 0) {
             throw new WmsException("Must provide a value for the LAYERS parameter");
         }
-        // TODO: support more than one layer (superimposition, difference, mask)
         if (layers.length > AbstractWmsController.LAYER_LIMIT) {
             throw new WmsException("You may only create a map from " + AbstractWmsController.LAYER_LIMIT
                     + " layer(s) at a time");
         }
+        /*
+         * Note that this method is only appropriate for a LAYER_LIMIT of 1.
+         */
         return layers[0];
     }
 
@@ -259,22 +267,10 @@ public class WmsUtils {
     public static String getDatasetId(String layerName) throws WmsException {
         // Find which layer the user is requesting
         String[] layerParts = layerName.split("/");
-        if (layerParts.length != 3) {
-            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
+        if (layerParts.length != 2) {
+            throw new WmsException("Layers should be of the form Dataset/Variable");
         }
         return layerParts[0];
-    }
-    
-    /**
-     * Utility method for getting the member name from the given layer name
-     */
-    public static String getFeatureName(String layerName) throws WmsException {
-        // Find which layer the user is requesting
-        String[] layerParts = layerName.split("/");
-        if (layerParts.length != 3) {
-            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
-        }
-        return layerParts[1];
     }
 
     /**
@@ -283,10 +279,10 @@ public class WmsUtils {
     public static String getMemberName(String layerName) throws WmsException {
         // Find which layer the user is requesting
         String[] layerParts = layerName.split("/");
-        if (layerParts.length != 3) {
-            throw new WmsException("Layers should be of the form Dataset/Grid/Variable");
+        if (layerParts.length != 2) {
+            throw new WmsException("Layers should be of the form Dataset/Variable");
         }
-        return layerParts[2];
+        return layerParts[1];
     }
 
     /*
@@ -440,9 +436,9 @@ public class WmsUtils {
         } else if (feature instanceof PointSeriesFeature) {
             return ((PointSeriesFeature) feature).getCoverage().evaluate(time, memberName);
         } else if (feature instanceof ProfileFeature) {
-            return ((ProfileFeature) feature).getCoverage().evaluate(zPos);
+            return ((ProfileFeature) feature).getCoverage().evaluate(zPos, memberName);
         } else if (feature instanceof GridFeature) {
-            return ((GridFeature) feature).getCoverage().evaluate(pos);
+            return ((GridFeature) feature).getCoverage().evaluate(pos, memberName);
         } else if (feature instanceof TrajectoryFeature) {
             return ((TrajectoryFeature) feature).getCoverage().evaluate(
                     new GeoPositionImpl(pos, zPos, time), memberName);
@@ -501,4 +497,115 @@ public class WmsUtils {
         return new BoundingBoxImpl(new double[] { pos.getX() - 1.0, pos.getY() - 1.0,
                 pos.getX() + 1.0, pos.getY() + 1.0 }, pos.getCoordinateReferenceSystem());
     }
+
+    public static Extent<Double> getElevationRangeForString(String elevationString) {
+        if(elevationString == null || elevationString.equals("")){
+            return null;
+        }
+        String[] parts = elevationString.split("/");
+        if (parts.length < 1 || parts.length > 2) {
+            throw new IllegalArgumentException("Cannot determine depths from string: "
+                    + elevationString);
+        } else if (parts.length == 1) {
+            return Extents.newExtent(Double.parseDouble(parts[0]), Double.parseDouble(parts[0]));
+        } else {
+            double firstVal = Double.parseDouble(parts[0]);
+            double secondVal = Double.parseDouble(parts[1]);
+            if(firstVal < secondVal)
+                return Extents.newExtent(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]));
+            else
+                return Extents.newExtent(Double.parseDouble(parts[1]), Double.parseDouble(parts[0]));
+        }
+    }
+
+    public static List<TimePosition> getTimePositionsForString(String timeString, Feature feature)
+            throws InvalidDimensionValueException {
+        List<TimePosition> tValues = new ArrayList<TimePosition>();
+        if (feature == null) {
+            return tValues;
+        }
+        TimeAxis tAxis = GISUtils.getTimeAxis(feature, false);
+        if (tAxis == null || tAxis.size() == 0) {
+            return tValues;
+        }
+        if(timeString == null || timeString.equals("")) {
+            return tAxis.getCoordinateValues().subList(0, 1);
+        }
+        for (String t : timeString.split(",")) {
+            String[] startStop = t.split("/");
+            if (startStop.length == 1) {
+                // This is a single time value
+                TimePosition time = findTValue(startStop[0], tAxis);
+                tValues.add(time);
+            } else if (startStop.length == 2) {
+                // Use all time values from start to stop inclusive
+                tValues.addAll(findTValues(startStop[0], startStop[1], tAxis));
+            } else {
+                throw new InvalidDimensionValueException("time", t);
+            }
+        }
+        return tValues;
+    }
+
+    private static TimePosition findTValue(String isoDateTime, TimeAxis tAxis)
+            throws InvalidDimensionValueException {
+        if (tAxis == null) {
+            return null;
+        }
+        int tIndex = findTIndex(isoDateTime, tAxis);
+        if(tIndex < 0) {
+            throw new InvalidDimensionValueException("time", isoDateTime);
+        }
+        return tAxis.getCoordinateValue(tIndex);
+    }
+    
+    private static List<TimePosition> findTValues(String isoDateTimeStart, String isoDateTimeEnd,
+            TimeAxis tAxis) throws InvalidDimensionValueException {
+        if (tAxis == null) {
+            throw new InvalidDimensionValueException("time", isoDateTimeStart + "/"
+                    + isoDateTimeEnd);
+        }
+        int startIndex = findTIndex(isoDateTimeStart, tAxis);
+        int endIndex = findTIndex(isoDateTimeEnd, tAxis);
+        if (startIndex > endIndex) {
+            throw new InvalidDimensionValueException("time", isoDateTimeStart + "/"
+                    + isoDateTimeEnd);
+        }
+        List<TimePosition> layerTValues = tAxis.getCoordinateValues();
+        List<TimePosition> tValues = new ArrayList<TimePosition>();
+        for (int i = startIndex; i <= endIndex; i++) {
+            tValues.add(layerTValues.get(i));
+        }
+        return tValues;
+    }
+    
+    public static int findTIndex(String isoDateTime, TimeAxis tAxis)
+            throws InvalidDimensionValueException {
+        TimePosition target;
+        if (isoDateTime.equalsIgnoreCase("current")) {
+            target = GISUtils.getClosestToCurrentTime(tAxis);
+        } else {
+            try {
+                /*
+                 * ISO date strings do not have spaces. However, spaces can be
+                 * generated by decoding + symbols from URLs. If the date string
+                 * has a space in it, something's going wrong anyway. Chances
+                 * are it's this.
+                 */
+                isoDateTime = isoDateTime.replaceAll(" ", "+");
+                target = TimeUtils.iso8601ToDateTime(isoDateTime, tAxis.getCalendarSystem());
+            } catch (ParseException e) {
+                throw new InvalidDimensionValueException("time", isoDateTime);
+            }
+        }
+
+        /*
+         * Find the equivalent DateTime in the Layer. Note that we can't simply
+         * use the contains() method of the List, since this is based on
+         * equals(). We want to find the DateTime with the same millisecond
+         * instant.
+         */
+        return tAxis.findIndexOf(target);
+    }
+
 }

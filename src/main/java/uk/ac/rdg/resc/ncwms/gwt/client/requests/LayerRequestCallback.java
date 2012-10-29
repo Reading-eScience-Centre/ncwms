@@ -98,19 +98,6 @@ public abstract class LayerRequestCallback implements RequestCallback {
             err.handleError(new NullPointerException("No styles listed"));
         }
 
-        JSONValue zvalsJson = parentObj.get("zaxis");
-        if (zvalsJson != null) {
-            JSONObject zvalsObj = zvalsJson.isObject();
-            layerDetails.setZUnits(zvalsObj.get("units").isString().stringValue());
-            layerDetails.setzPositive(zvalsObj.get("positive").isBoolean().booleanValue());
-            List<String> availableZs = new ArrayList<String>();
-            JSONArray zvalsArr = zvalsObj.get("values").isArray();
-            for (int i = 0; i < zvalsArr.size(); i++) {
-                availableZs.add(zvalsArr.get(i).isNumber().toString());
-            }
-            layerDetails.setAvailableZs(availableZs);
-        }
-
         JSONValue moreInfoJson = parentObj.get("moreInfo");
         if (moreInfoJson != null) {
             layerDetails.setMoreInfo(moreInfoJson.isString().stringValue());
@@ -137,14 +124,23 @@ public abstract class LayerRequestCallback implements RequestCallback {
             }
         }
         
-        boolean continuousTimeAxis = false;
-        JSONValue continuousJson = parentObj.get("continuousTimeAxis");
-        if(continuousJson != null) {
-            continuousTimeAxis = continuousJson.isBoolean().booleanValue();
+        // If we have different times, we may (will?) have a nearest
+        // time string.
+        JSONValue nearestTimeJson = parentObj.get("nearestTimeIso");
+        if (nearestTimeJson != null) {
+            layerDetails.setNearestTime(nearestTimeJson.isString().stringValue());
+            layerDetails.setNearestDate(nearestTimeJson.isString().stringValue()
+                    .substring(0, 10));
         }
-        layerDetails.setContinuousTimeAxis(continuousTimeAxis);
         
-        if(continuousTimeAxis){
+        boolean multiFeature = false;
+        JSONValue multiFeatureJson = parentObj.get("multiFeature");
+        if(multiFeatureJson != null) {
+            multiFeature = multiFeatureJson.isBoolean().booleanValue();
+        }
+        layerDetails.setMultiFeature(multiFeature);
+        
+        if(multiFeature){
             JSONValue startTimeJson = parentObj.get("startTime");
             if(startTimeJson != null){
                 layerDetails.setStartTime(startTimeJson.isString().stringValue());
@@ -152,6 +148,23 @@ public abstract class LayerRequestCallback implements RequestCallback {
             JSONValue endTimeJson = parentObj.get("endTime");
             if(endTimeJson != null){
                 layerDetails.setEndTime(endTimeJson.isString().stringValue());
+            }
+            
+            JSONValue startZJson = parentObj.get("startZ");
+            if(startZJson != null){
+                layerDetails.setStartZ(startZJson.isString().stringValue());
+            }
+            JSONValue endZJson = parentObj.get("endZ");
+            if(endZJson != null){
+                layerDetails.setEndZ(endZJson.isString().stringValue());
+            }
+            JSONValue zUnitsJson = parentObj.get("zUnits");
+            if(zUnitsJson != null){
+                layerDetails.setZUnits(zUnitsJson.isString().stringValue());
+            }
+            JSONValue zPositiveJson = parentObj.get("zPositive");
+            if(zPositiveJson != null){
+                layerDetails.setZPositive(zPositiveJson.isBoolean().booleanValue());
             }
         } else {
             JSONValue datesJson = parentObj.get("datesWithData");
@@ -176,15 +189,19 @@ public abstract class LayerRequestCallback implements RequestCallback {
                     }
                 }
                 layerDetails.setAvailableDates(availableDates);
-    
-                // If we have different times, we may (will?) have a nearest
-                // time string.
-                JSONValue nearestTimeJson = parentObj.get("nearestTimeIso");
-                if (nearestTimeJson != null) {
-                    layerDetails.setNearestTime(nearestTimeJson.isString().stringValue());
-                    layerDetails.setNearestDate(nearestTimeJson.isString().stringValue()
-                            .substring(0, 10));
+            }
+            
+            JSONValue zvalsJson = parentObj.get("zaxis");
+            if (zvalsJson != null) {
+                JSONObject zvalsObj = zvalsJson.isObject();
+                layerDetails.setZUnits(zvalsObj.get("units").isString().stringValue());
+                layerDetails.setZPositive(zvalsObj.get("positive").isBoolean().booleanValue());
+                List<String> availableZs = new ArrayList<String>();
+                JSONArray zvalsArr = zvalsObj.get("values").isArray();
+                for (int i = 0; i < zvalsArr.size(); i++) {
+                    availableZs.add(zvalsArr.get(i).isNumber().toString());
                 }
+                layerDetails.setAvailableZs(availableZs);
             }
         }
     }

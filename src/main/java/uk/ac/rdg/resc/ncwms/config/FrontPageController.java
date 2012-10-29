@@ -28,8 +28,13 @@
 
 package uk.ac.rdg.resc.ncwms.config;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,6 +42,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
+import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
+import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
+import uk.ac.rdg.resc.edal.feature.Feature;
+import uk.ac.rdg.resc.edal.feature.FeatureCollection;
+import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.graphics.formats.ImageFormat;
 
 /**
@@ -49,6 +59,26 @@ public class FrontPageController extends AbstractController
     // These objects will be injected by Spring
     private Config config;
     
+    public class IndexEntry {
+        private RangeMetadata metadata;
+        private BoundingBox bbox;
+
+        public IndexEntry(RangeMetadata metadata, BoundingBox bbox) {
+            super();
+            this.metadata = metadata;
+            this.bbox = bbox;
+        }
+
+        public RangeMetadata getMetadata() {
+            return metadata;
+        }
+
+        public BoundingBox getBbox() {
+            return bbox;
+        }
+
+    }
+    
     /**
      * Entry point
      */
@@ -59,6 +89,30 @@ public class FrontPageController extends AbstractController
         Map<String, Object> models = new HashMap<String, Object>();
         models.put("config", this.config);
         models.put("supportedImageFormats", ImageFormat.getSupportedMimeTypes());
+        
+        Map<Dataset, List<IndexEntry>> entries = new HashMap<Dataset, List<IndexEntry>>();
+        for(Dataset dataset : config.getAllDatasets().values()){
+            FeatureCollection<? extends Feature> featureCollection = dataset.getFeatureCollection();
+            if(featureCollection == null){
+                continue;
+            }
+            Collection<? extends Feature> features = featureCollection.getFeatures();
+            List<IndexEntry> layers = new ArrayList<IndexEntry>();
+            Set<String> used = new HashSet<String>();
+            BoundingBox bbox = featureCollection.getCollectionBoundingBox();
+            for(Feature feature : features){
+                List<RangeMetadata> plottableLayers = MetadataUtils.getPlottableLayers(feature);
+                for(RangeMetadata metadata : plottableLayers){
+                    if(!used.contains(metadata.getName())){
+                        layers.add(new IndexEntry(metadata, bbox));
+                        used.add(metadata.getName());
+                    }
+                }
+            }
+            entries.put(dataset, layers);
+        }
+        models.put("layers", entries);
+        
         return new ModelAndView("index", models); // results in display of jsp/index.jsp
     }
 

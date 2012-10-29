@@ -7,19 +7,17 @@ import java.util.List;
 
 import uk.ac.rdg.resc.ncwms.gwt.client.handlers.TimeDateSelectionHandler;
 
+import com.google.gwt.dom.client.Document;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.DomEvent;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.i18n.client.NumberFormat;
-import com.google.gwt.user.client.ui.Button;
-import com.google.gwt.user.client.ui.HasVerticalAlignment;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
 
 public class TimeSelector extends BaseSelector implements TimeSelectorIF {
-    private static final String[] allTimes = new String[24];
+    protected static final String[] allTimes = new String[24];
     
     static {
         NumberFormat format = NumberFormat.getFormat("00");
@@ -31,17 +29,20 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 	private ListBox dates;
 	private ListBox times;
 	private String id;
+	private TimeDateSelectionHandler handler;
 	
 	/*
 	 * These are used when we have a continuous time axis
 	 */
 	private boolean continuous = false;
-	private Label endLabel;
-	private ListBox endDates;
-	private ListBox endTimes;
-    private TimeDateSelectionHandler handler;
-    private Button goButton;
-	
+	private ListBox range;
+	private Label rangeLabel;
+	/*
+	 * These are the start time (on the first date) and end time (on the last date) so that correct limits can be set
+	 */
+    private String startTime;
+    private String endTime;
+    private static final DateTimeFormat datePrinter = DateTimeFormat.getFormat("yyyy-MM-dd");;
 	
 	public TimeSelector(String id, String label, final TimeDateSelectionHandler handler) {
 	    super(label);
@@ -63,7 +64,7 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 		dates.addChangeHandler(new ChangeHandler() {
             @Override
             public void onChange(ChangeEvent event) {
-                handler.dateSelected(id, getSelectedDate());
+                dateSelected();
             }
         });
 		dates.setTitle("Adjust the date");
@@ -79,56 +80,77 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
             }
         });
 		add(times);
-		
-		setCellVerticalAlignment(dates, HasVerticalAlignment.ALIGN_BOTTOM);
-        setCellVerticalAlignment(times, HasVerticalAlignment.ALIGN_BOTTOM);
 	}
 	
-	private void initContinuous(){
-	    dates = new ListBox();
-	    dates.setName("date_selector");
-	    dates.addChangeHandler(new ChangeHandler() {
-	        @Override
-	        public void onChange(ChangeEvent event) {
-	            // TODO change the end date range
+	private void dateSelected(){
+	    if(continuous){
+	        String targetTime = null;
+	        if(times.getItemCount() > 0){
+	            targetTime = times.getValue(times.getSelectedIndex());
 	        }
-	    });
-	    dates.setTitle("Adjust the start date");
-	    add(dates);
-	    
-	    times = new ListBox();
-	    times.setName("time_selector");
-	    times.setTitle("Adjust the start time");
-	    times.addChangeHandler(new ChangeHandler() {
-	        @Override
-	        public void onChange(ChangeEvent event) {
-	            // TODO change the end time range (for this date)
+	        String targetRange = null;
+	        if(range.getItemCount() > 0){
+	            targetRange = range.getValue(range.getSelectedIndex());
 	        }
-	    });
-	    add(times);
-	    
-	    endLabel = new Label(" to ");
-	    add(endLabel);
-	    
-	    endDates = new ListBox();
-	    endDates.setName("end_date_selector");
-	    endDates.setTitle("Adjust the end date");
-	    add(endDates);
-	    
-	    endTimes = new ListBox();
-	    endTimes.setName("end_time_selector");
-	    endTimes.setTitle("Adjust the end time");
-	    add(endTimes);
-	    
-	    goButton = new Button("Go");
-	    goButton.addClickHandler(new ClickHandler() {
+            times.clear();
+            if(dates.getSelectedIndex() == 0) {
+                for(String item : allTimes){
+                    if(item.compareTo(startTime) >= 0)
+                        times.addItem(item);
+                }
+            } else if (dates.getSelectedIndex() == (dates.getItemCount() - 1)){
+                for(String item : allTimes){
+                    if(item.compareTo(endTime) <= 0)
+                        times.addItem(item);
+                }
+            } else {
+                for(String item : allTimes){
+                    times.addItem(item);
+                }
+            }
+            
+            for(int i = 0; i < times.getItemCount(); i++){
+                if(times.getValue(i).equals(targetTime)){
+                    times.setSelectedIndex(i);
+                }
+            }
+            
+            for(int i = 0; i < range.getItemCount(); i++){
+                if(range.getValue(i).equals(targetRange)){
+                    range.setSelectedIndex(i);
+                }
+            }
+            
+            handler.timeSelected(id, getSelectedDateTime());
+        } else {
+            handler.dateSelected(id, getSelectedDate());
+        }
+	}
+	
+    private void initContinuous() {
+        initDiscrete();
+
+        rangeLabel = new Label("+/-");
+        add(rangeLabel);
+        range = new ListBox();
+        range.setName("range_selector");
+        range.setTitle("Choose time window to display");
+        range.addChangeHandler(new ChangeHandler() {
             @Override
-            public void onClick(ClickEvent event) {
+            public void onChange(ChangeEvent event) {
                 handler.timeSelected(id, getSelectedDateTime());
             }
         });
-	    add(goButton);
-	}
+        range.addItem("1 hour", "" + 1000 * 60 * 60);
+        range.addItem("1 day", "" + 1000 * 60 * 60 * 24);
+        range.addItem("1 week", "" + 1000 * 60 * 60 * 24 * 7);
+        range.addItem("1 month", "" + 1000 * 60 * 60 * 24 * 7 * 31);
+        range.addItem("6 months", "" + 1000 * 60 * 60 * 24 * 7 * 31 * 6);
+        range.addItem("1 year", "" + 1000 * 60 * 60 * 24 * 7 * 31 * 12);
+        range.setEnabled(true);
+        range.setSelectedIndex(1);
+        add(range);
+    }
 	
 	@Override
     public void setId(String id){
@@ -149,19 +171,29 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
                             "For a continuous time axis, you must provide exactly 2 dates");
     	        }
     	        
+    	        startTime = availableDates.get(0).substring(11);
+    	        endTime = availableDates.get(1).substring(11);
+    	        
     	        availableDates = getDatesInRange(availableDates.get(0), availableDates.get(1));
     	        
+    	        int i = 0;
+    	        int selectDate = 0;
+    	        String nowString = datePrinter.format(new Date());
     	        for(String item : availableDates){
+    	            if(item.compareTo(nowString) < 0){
+    	                selectDate = i;
+    	            }
+    	            i++;
     	            dates.addItem(item);
-    	            endDates.addItem(item);
-    	        }
-    	        for(String item : allTimes){
-    	            times.addItem(item);
-    	            endTimes.addItem(item);
     	        }
     	        dates.setEnabled(true);
-    	        endDates.setEnabled(true);
+    	        dates.setSelectedIndex(selectDate);
+
     	        label.setStylePrimaryName("labelStyle");
+    	        /*
+    	         * Now fire a change event to populate the times
+    	         */
+    	        DomEvent.fireNativeEvent(Document.get().createChangeEvent(), dates);
 	        } else {
     		    Collections.sort(availableDates);
     			for(String item : availableDates){
@@ -205,31 +237,47 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 	
 	@Override
     public String getSelectedDateTime(){
-	    if(continuous){
-	        int i = dates.getSelectedIndex();
-	        int j = times.getSelectedIndex();
-	        int k = endDates.getSelectedIndex();
-	        int l = endTimes.getSelectedIndex();
-	        // TODO Look at this more carefully for case when no times are present
-	        if(i != -1 && j != -1 && k != -1 && l != -1){
-                return dates.getValue(i) + "T" + times.getValue(j) + "/" + endDates.getValue(k)
-                        + "T" + endTimes.getValue(l);
-	        } else {
-	            return null;
-	        }
-	    } else {
-    		int i = dates.getSelectedIndex();
-    		int j = times.getSelectedIndex();
-    		// TODO Look at this more carefully for case when no times are present
-    		if(i != -1 && j != -1){
-    			return dates.getValue(i)+"T"+times.getValue(j);
-    		} else {
-    			return null;
-    		}
-	    }
+		int i = dates.getSelectedIndex();
+		int j = times.getSelectedIndex();
+		// TODO Look at this more carefully for case when no times are present
+		if(i != -1 && j != -1){
+		    /*
+		     * TODO Maybe the Z will cause issues?
+		     */
+			return dates.getValue(i)+"T"+times.getValue(j);
+		} else {
+			return null;
+		}
 	}
 	
 	@Override
+    public String getSelectedDateTimeRange() {
+        if (!continuous) {
+            return null;
+        } else {
+            int i = dates.getSelectedIndex();
+            int j = times.getSelectedIndex();
+            int k = range.getSelectedIndex();
+            // TODO Look at this more carefully for case when no times are
+            // present
+            if (i != -1 && j != -1 && k != -1) {
+                return getRangeString(getSelectedDateTime(), range.getValue(k));
+            } else {
+                return null;
+            }
+        }
+    }
+	
+	private String getRangeString(String datetime, String rangeStr) {
+	    DateTimeFormat parser = DateTimeFormat.getFormat("yyyy-MM-dd'T'hh:mm:ss.SSS'Z'");
+	    Date centreDate = parser.parse(datetime);
+	    long range = Long.parseLong(rangeStr);
+	    Date startDate = new Date(centreDate.getTime() - range);
+	    Date endDate = new Date(centreDate.getTime() + range);
+	    return parser.format(startDate)+"/"+parser.format(endDate);
+    }
+
+    @Override
 	public String getSelectedTime() {
 	    int i = times.getSelectedIndex();
 	    // TODO Look at this more carefully for case when no times are present
@@ -245,6 +293,7 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 		for(int i=0; i<dates.getItemCount(); i++){
 			if(dates.getValue(i).equals(dateString)){
 				dates.setSelectedIndex(i);
+				dateSelected();
 				return true;
 			}
 		}
@@ -264,15 +313,6 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
 	    }
 	    return false;
 	}
-	
-//	@Override
-//    public String returnTimes(){
-//	    StringBuilder s = new StringBuilder();
-//	    for(int i=0; i < dates.getItemCount(); i++){
-//	        s.append(dates.getValue(i)+"T"+times.getValue(0)+",");
-//	    }
-//	    return s.toString();
-//	}
 	
 	@Override
     public void setEnabled(boolean enabled){
@@ -305,20 +345,15 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
                 remove(dates);
             if(times != null)
                 remove(times);
-            if(endLabel != null)
-                remove(endLabel);
-            if(endDates != null)
-                remove(endDates);
-            if(endTimes != null)
-                remove(endTimes);
-            if(goButton != null)
-                remove(goButton);
             dates = null;
             times = null;
-            endLabel = null;
-            endDates = null;
-            endTimes = null;
-            goButton = null;
+            
+            if(range != null)
+                remove(range);
+            if(rangeLabel != null)
+                remove(rangeLabel);
+            range = null;
+            rangeLabel = null;
             if(continuous) {
                 initContinuous();
             } else {
@@ -327,14 +362,9 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
         }
     }
 
-    @Override
-    public boolean isContinuous() {
-        return continuous;
-    }
-    
-    private List<String> getDatesInRange(String startDateTimeStr, String endDateTimeStr){
+    @SuppressWarnings("deprecation")
+    public static List<String> getDatesInRange(String startDateTimeStr, String endDateTimeStr){
         DateTimeFormat parser = DateTimeFormat.getFormat("yyyy-MM-dd'T'hh:mm:ss.SSS'Z'");
-        DateTimeFormat datePrinter = DateTimeFormat.getFormat("yyyy-MM-dd");
         
         Date startDate = parser.parse(startDateTimeStr);
         Date endDate = parser.parse(endDateTimeStr);
@@ -351,5 +381,46 @@ public class TimeSelector extends BaseSelector implements TimeSelectorIF {
             startDate.setDate(startDate.getDate() + 1);
         }
         return dates;
+    }
+
+    @Override
+    public boolean isContinuous() {
+        return continuous;
+    }
+
+    @Override
+    public List<String> getAvailableDates() {
+        List<String> allDates = new ArrayList<String>();
+        for (int i = 0; i < dates.getItemCount(); i++) {
+            allDates.add(dates.getValue(i));
+        }
+        return allDates;
+    }
+
+    @Override
+    public List<String> getAvailableTimes() {
+        List<String> allTimes = new ArrayList<String>();
+        for (int i = 0; i < times.getItemCount(); i++) {
+            allTimes.add(times.getValue(i));
+        }
+        return allTimes;
+    }
+    
+    @Override
+    public void selectRange(String currentRange) {
+        if(continuous){
+            for(int i = 0; i < range.getItemCount(); i++) {
+                if(range.getValue(i).equals(currentRange)){
+                    range.setSelectedIndex(i);
+                }
+            }
+        }
+    }
+    
+    @Override
+    public String getRange(){
+        if(continuous && range != null)
+            return range.getValue(range.getSelectedIndex());
+        return null;
     }
 }

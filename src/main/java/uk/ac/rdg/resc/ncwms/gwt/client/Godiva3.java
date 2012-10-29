@@ -48,7 +48,7 @@ public class Godiva3 extends BaseWmsClient implements AviExportHandler {
     private LayerSelectorIF layerSelector;
     private GodivaWidgets widgetCollection;
 
-    private Image logo;
+    protected Image logo;
     private Image loadingImage;
 
     protected boolean permalinking;
@@ -127,11 +127,11 @@ public class Godiva3 extends BaseWmsClient implements AviExportHandler {
         opacitySelector = new OpacitySelector(new ChangeHandler() {
             @Override
             public void onChange(ChangeEvent event) {
-                mapArea.setOpacity(WMS_LAYER_ID, opacitySelector.getOpacity());
+                setOpacity();
             }
         });
 
-        logo = new Image("img/resc_logo.png");
+        logo = new Image("img/logo.png");
 
         loadingImage = new Image("img/loading.gif");
         loadingImage.setVisible(false);
@@ -170,6 +170,11 @@ public class Godiva3 extends BaseWmsClient implements AviExportHandler {
         unitsInfo.setEnabled(false);
         copyrightInfo.setEnabled(false);
         opacitySelector.setEnabled(false);
+    }
+    
+    private void setOpacity() {
+        mapArea.setOpacity(WMS_LAYER_ID, opacitySelector.getOpacity());
+        updateLinksEtc();
     }
 
     @Override
@@ -238,6 +243,11 @@ public class Godiva3 extends BaseWmsClient implements AviExportHandler {
             String currentStyle = permalinkParamsMap.get("style");
             if (currentStyle != null) {
                 widgetCollection.getPaletteSelector().selectStyle(currentStyle);
+            }
+            
+            String currentRange = permalinkParamsMap.get("range");
+            if (currentRange != null) {
+                widgetCollection.getTimeSelector().selectRange(currentRange);
             }
         }
     }
@@ -331,29 +341,47 @@ public class Godiva3 extends BaseWmsClient implements AviExportHandler {
                     }
                 }
             }
-            permalinking = false;
         }
         
-        /*
-         * TODO Do we want to do this?  Currently we just set COLORBY/DEPTH and COLORBY/TIME for all requests
-         */
-//        boolean colorbyDepth = false;
-//        boolean colorbyTime = false;
-//        if(layerUpdated.contains("*")){
-//            
-//        }
+        String currentTime = null;
+        String colorbyTime = null;
+        if(widgetCollection.getTimeSelector().isContinuous()){
+            currentTime = widgetCollection.getTimeSelector().getSelectedDateTimeRange();
+            colorbyTime = widgetCollection.getTimeSelector().getSelectedDateTime();
+        } else {
+            currentTime = widgetCollection.getTimeSelector().getSelectedDateTime();
+        }
         
-        String currentTime = widgetCollection.getTimeSelector().getSelectedDateTime();
-        String currentElevation = widgetCollection.getElevationSelector().getSelectedElevation();
+        String currentElevation = null;
+        String colorbyElevation = null;
+        if(widgetCollection.getElevationSelector().isContinuous()){
+            currentElevation = widgetCollection.getElevationSelector().getSelectedElevationRange();
+            colorbyElevation = widgetCollection.getElevationSelector().getSelectedElevation();
+        } else {
+            currentElevation = widgetCollection.getElevationSelector().getSelectedElevation();
+        }
+
         String currentPalette = widgetCollection.getPaletteSelector().getSelectedPalette();
         String currentStyle = widgetCollection.getPaletteSelector().getSelectedStyle();
         String currentScaleRange = widgetCollection.getPaletteSelector().getScaleRange();
         int nColourBands = widgetCollection.getPaletteSelector().getNumColorBands();
         boolean logScale = widgetCollection.getPaletteSelector().isLogScale();
-        mapArea.addLayer(WMS_LAYER_ID, layerSelector.getSelectedIds().get(0), currentTime,
-                currentElevation, currentStyle, currentPalette, currentScaleRange, nColourBands,
+        mapArea.addLayer(WMS_LAYER_ID, layerSelector.getSelectedIds().get(0), currentTime, colorbyTime,
+                currentElevation, colorbyElevation, currentStyle, currentPalette, currentScaleRange, nColourBands,
                 logScale, widgetCollection.getElevationSelector().getNElevations() > 1,
                 widgetCollection.getTimeSelector().hasMultipleTimes());
+        
+        /*
+         * Set the opacity after updating the map, otherwise it doesn't work
+         */
+        if(permalinking){
+            permalinking = false;
+            String currentOpacity = permalinkParamsMap.get("opacity");
+            if (currentOpacity != null) {
+                opacitySelector.setOpacity(Float.parseFloat(currentOpacity));
+                setOpacity();
+            }
+        }
         updateLinksEtc();
 
         /*
@@ -395,13 +423,6 @@ public class Godiva3 extends BaseWmsClient implements AviExportHandler {
      * Updates the links (KMZ, screenshot, email, permalink...)
      */
     private void updateLinksEtc() {
-        /*
-         * TODO Perhaps we should have a getStateInfo() method or similar here.
-         * Then the anim button (and anything else that wanted it) could request
-         * the "current" state. This could be overridden in subclasses which
-         * want to implement the "current" state differently
-         */
-
         kmzLink.setHref(mapArea.getKMZUrl());
 
         String baseurl = "http://" + Window.Location.getHost() + Window.Location.getPath()
@@ -435,6 +456,9 @@ public class Godiva3 extends BaseWmsClient implements AviExportHandler {
         if (timeSelector.getSelectedDateTime() != null) {
             urlParams += "&time=" + timeSelector.getSelectedDateTime();
         }
+        if (timeSelector.getRange() != null) {
+            urlParams += "&range=" + timeSelector.getRange();
+        }
         if (elevationSelector.getSelectedElevation() != null) {
             currentElevation = elevationSelector.getSelectedElevation();
             urlParams += "&elevation=" + currentElevation;
@@ -451,6 +475,7 @@ public class Godiva3 extends BaseWmsClient implements AviExportHandler {
             scaleRange = paletteSelector.getScaleRange();
             urlParams += "&scaleRange=" + scaleRange;
         }
+        urlParams += "&opacity=" + opacitySelector.getOpacity();
 
         anim.updateDetails(currentLayer, currentElevation, currentPalette, currentStyle,
                 scaleRange, nColorBands, logScale);

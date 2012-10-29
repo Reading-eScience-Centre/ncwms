@@ -47,7 +47,10 @@ public class GetMapDataRequest {
     private int width;
     private int height;
     private String timeString;
+    private String colorbyTimeString;
     private String elevationString;
+    private String colorbyElevationString;
+    private boolean animation;
 
     /**
      * Creates a new instance of GetMapDataRequest from the given parameters
@@ -89,7 +92,10 @@ public class GetMapDataRequest {
         this.width = params.getMandatoryPositiveInt("width");
         this.height = params.getMandatoryPositiveInt("height");
         this.timeString = params.getString("time");
+        this.colorbyTimeString = params.getString("colorby/time");
         this.elevationString = params.getString("elevation");
+        this.colorbyElevationString = params.getString("colorby/depth");
+        this.animation = params.getBoolean("animation", false);
     }
 
     public String[] getLayers() {
@@ -120,4 +126,15 @@ public class GetMapDataRequest {
         return elevationString;
     }
 
+    public String getColorbyTimeString() {
+        return colorbyTimeString;
+    }
+
+    public String getColorbyElevationString() {
+        return colorbyElevationString;
+    }
+
+    public boolean isAnimation() {
+        return animation;
+    }
 }

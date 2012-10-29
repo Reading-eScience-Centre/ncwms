@@ -332,14 +332,6 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                     layerDetailsLoaded(getLayerDetails(), autoZoomAndPalette);
 
                     /*
-                     * Select the nearest date. This will either be the nearest
-                     * date to the current date/time, or the nearest date to the
-                     * selected date/time, depending on whether currentTime is
-                     * null or not
-                     */
-                    dateSelected(getLayerDetails().getId(), getLayerDetails().getNearestDate());
-
-                    /*
                      * Zoom to extents and possible auto-adjust palette
                      */
                     if (autoZoomAndPalette) {
@@ -353,11 +345,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
                          * will only request the auto-range if the server-side
                          * value has not been configured
                          */
-                        maybeRequestAutoRange(getLayerDetails().getId(),
-                                getWidgetCollection(getLayerDetails().getId())
-                                        .getElevationSelector().getSelectedElevation(),
-                                getWidgetCollection(getLayerDetails().getId()).getTimeSelector()
-                                        .getSelectedDateTime(), false);
+                        maybeRequestAutoRange(getLayerDetails().getId(), false);
                     } else {
                         minMaxDetailsLoaded = true;
                     }
@@ -401,17 +389,25 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
      * @param force
      *            whether to perform even if a scale has been set on the server
      */
-    protected void maybeRequestAutoRange(final String layerId, String elevation, String time,
-            boolean force) {
+    protected void maybeRequestAutoRange(final String layerId, boolean force) {
+        GodivaWidgets widgetCollection = getWidgetCollection(layerId);
+        if(!widgetCollection.getPaletteSelector().isEnabled()){
+            /*
+             * If the palette is disabled, we don't want to get an auto-range
+             */
+            minMaxDetailsLoaded = true;
+            return;
+        }
+        
         minMaxDetailsLoaded = false;
+        
         /*
          * If we have default values for the scale range or force=true, then
          * continue with the request, otherwise return
          */
-        String[] scaleRangeSplit = getWidgetCollection(layerId).getPaletteSelector()
+        String[] scaleRangeSplit = widgetCollection.getPaletteSelector()
                 .getScaleRange().split(",");
-        if (!force
-                && (Double.parseDouble(scaleRangeSplit[0]) != -50 || Double
+        if (!force && (Double.parseDouble(scaleRangeSplit[0]) != -50 || Double
                         .parseDouble(scaleRangeSplit[1]) != 50)) {
             minMaxDetailsLoaded = true;
             return;
@@ -426,14 +422,41 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
         parameters.put("item", "minmax");
         parameters.put("layers", layerId);
         parameters.put("srs", mapArea.getMap().getProjection());
-        parameters.put("time", getWidgetCollection(layerId).getTimeSelector().getSelectedDateTime());
+        
+        if (widgetCollection.getTimeSelector().isContinuous()) {
+            if (widgetCollection.getTimeSelector().getSelectedDateTime() != null) {
+                parameters.put("colorby/time", widgetCollection.getTimeSelector()
+                        .getSelectedDateTime());
+            }
+            if (widgetCollection.getTimeSelector().getSelectedDateTimeRange() != null) {
+                parameters.put("time", widgetCollection.getTimeSelector()
+                        .getSelectedDateTimeRange());
+            }
+        } else {
+            if (widgetCollection.getTimeSelector().getSelectedDateTime() != null) {
+                parameters.put("time", widgetCollection.getTimeSelector().getSelectedDateTime());
+            }
+        }
+
+        if (widgetCollection.getElevationSelector().isContinuous()) {
+            if (widgetCollection.getElevationSelector().getSelectedElevation() != null) {
+                parameters.put("colorby/depth", widgetCollection.getElevationSelector()
+                        .getSelectedElevation());
+            }
+            if (widgetCollection.getElevationSelector().getSelectedElevationRange() != null) {
+                parameters.put("elevation", widgetCollection.getElevationSelector()
+                        .getSelectedElevationRange());
+            }
+        } else {
+            if (widgetCollection.getElevationSelector().getSelectedElevation() != null) {
+                parameters.put("elevation", widgetCollection.getElevationSelector()
+                        .getSelectedElevation());
+            }
+        }
         parameters.put("height", "100");
         parameters.put("width", "100");
         parameters.put("version", "1.1.1");
         parameters.put("bbox", mapArea.getMap().getExtent().toBBox(4));
-        if (elevation != null) {
-            parameters.put("elevation", elevation);
-        }
         if (nearestTime != null) {
             parameters.put("time", nearestTime);
         }
@@ -571,26 +594,48 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
         widgetCollection.getCopyrightInfo().setCopyrightInfo(layerDetails.getCopyright());
         widgetCollection.getMoreInfo().setInfo(layerDetails.getMoreInfo());
 
-        widgetCollection.getElevationSelector().setUnitsAndDirection(layerDetails.getZUnits(),
-                layerDetails.isZPositive());
-        widgetCollection.getElevationSelector().populateVariables(layerDetails.getAvailableZs());
-
         widgetCollection.getPaletteSelector().populatePalettes(layerDetails.getAvailablePalettes());
         widgetCollection.getPaletteSelector().populateStyles(layerDetails.getSupportedStyles());
 
-        widgetCollection.getTimeSelector().setContinuous(layerDetails.isContinuousTimeAxis());
-        if(layerDetails.isContinuousTimeAxis()){
-            List<String> startEndDates = new ArrayList<String>();
-            startEndDates.add(layerDetails.getStartTime());
-            startEndDates.add(layerDetails.getEndTime());
-            widgetCollection.getTimeSelector().populateDates(startEndDates);
+        widgetCollection.getTimeSelector().setContinuous(layerDetails.isMultiFeature());
+        widgetCollection.getElevationSelector().setContinuous(layerDetails.isMultiFeature());
+        
+        mapArea.setMultiFeature(layerDetails.isMultiFeature());
+        
+        if(layerDetails.isMultiFeature()){
+            if(layerDetails.getStartTime().equals(layerDetails.getEndTime())){
+                widgetCollection.getTimeSelector().populateDates(null);
+            } else {
+                List<String> startEndDates = new ArrayList<String>();
+                startEndDates.add(layerDetails.getStartTime());
+                startEndDates.add(layerDetails.getEndTime());
+                widgetCollection.getTimeSelector().populateDates(startEndDates);
+            }
+            
+            if(layerDetails.getStartZ().equals(layerDetails.getEndZ())){
+                widgetCollection.getElevationSelector().populateElevations(null);
+            } else {
+                List<String> startEndZs = new ArrayList<String>();
+                startEndZs.add(layerDetails.getStartZ());
+                startEndZs.add(layerDetails.getEndZ());
+                widgetCollection.getElevationSelector().populateElevations(startEndZs);
+            }
+            if (layerDetails.getNearestDateTime() != null) {
+                widgetCollection.getTimeSelector().selectDateTime(layerDetails.getNearestDateTime());
+            }
         } else {
             widgetCollection.getTimeSelector().populateDates(layerDetails.getAvailableDates());
-            if (layerDetails.getNearestTime() != null) {
-                nearestTime = layerDetails.getNearestTime();
+            widgetCollection.getElevationSelector().populateElevations(layerDetails.getAvailableZs());
+            if (layerDetails.getNearestDateTime() != null) {
+                nearestTime = layerDetails.getNearestDateTime();
                 widgetCollection.getTimeSelector().selectDate(layerDetails.getNearestDate());
             }
         }
+        /*
+         * This is independent of whether we have multiple features
+         */
+        widgetCollection.getElevationSelector().setUnitsAndDirection(layerDetails.getZUnits(),
+                layerDetails.isZPositive());
 
         if (!widgetCollection.getPaletteSelector().isLocked()) {
             widgetCollection.getPaletteSelector().setScaleRange(layerDetails.getScaleRange());
@@ -648,9 +693,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
 
     @Override
     public void autoAdjustPalette(String layerId) {
-        maybeRequestAutoRange(layerId, getWidgetCollection(layerId).getElevationSelector()
-                .getSelectedElevation(), getWidgetCollection(layerId).getTimeSelector()
-                .getSelectedDateTime(), true);
+        maybeRequestAutoRange(layerId, true);
     }
 
     @Override
@@ -702,6 +745,7 @@ public abstract class BaseWmsClient implements EntryPoint, ErrorHandler, GodivaA
 
     @Override
     public void timeSelected(String layerId, String selectedTime) {
+        dateTimeDetailsLoaded = true;
         nearestTime = null;
         updateMapBase(layerId);
     }
