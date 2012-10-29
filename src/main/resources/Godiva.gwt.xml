@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module rename-to='godiva'>
+  <inherits name='uk.ac.rdg.resc.godiva.Godiva'/>
+  
+  <!-- Specify the app entry point class.                         -->
+  <entry-point class='uk.ac.rdg.resc.godiva.client.Godiva'/>
+
+</module>
