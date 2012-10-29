@@ -96,36 +96,26 @@ public class GetMapStyleRequest
     /**
      * Gets the ColorScaleRange object requested by the client
      */
-    static Extent<Float> getColorScaleRange(RequestParams params) throws WmsException
-    {
+    static Extent<Float> getColorScaleRange(RequestParams params) throws WmsException {
         String csr = params.getString("colorscalerange");
-        if (csr == null || csr.equalsIgnoreCase("default"))
-        {
+        if (csr == null || csr.equalsIgnoreCase("default")) {
             // The client wants the layer's default scale range to be used
             return null;
-        }
-        else if (csr.equalsIgnoreCase("auto"))
-        {
+        } else if (csr.equalsIgnoreCase("auto")) {
             // The client wants the image to be scaled according to the image's
             // own min and max values (giving maximum contrast)
             return Extents.emptyExtent(Float.class);
-        }
-        else
-        {
+        } else {
             // The client has specified an explicit colour scale range
-            try
-            {
-                String[] scaleEls = csr.split(",");
-                if (scaleEls.length != 2) throw new Exception();
-                Float scaleMin = Float.parseFloat(scaleEls[0]);
-                Float scaleMax = Float.parseFloat(scaleEls[1]);
-                if (Double.compare(scaleMin, scaleMax) > 0) throw new Exception();
-                return Extents.newExtent(scaleMin, scaleMax);
+            String[] scaleEls = csr.split(",");
+            if (scaleEls.length == 0){
+                return Extents.emptyExtent(Float.class);
             }
-            catch(Exception e)
-            {
-                throw new WmsException("Invalid format for COLORSCALERANGE");
-            }
+            Float scaleMin = Float.parseFloat(scaleEls[0]);
+            Float scaleMax = Float.parseFloat(scaleEls[1]);
+            if (scaleMin > scaleMax)
+                throw new WmsException("Min > Max in COLORSCALERANGE");
+            return Extents.newExtent(scaleMin, scaleMax);
         }
     }
 

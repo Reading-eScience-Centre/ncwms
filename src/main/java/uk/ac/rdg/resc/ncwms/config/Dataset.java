@@ -21,7 +21,7 @@ import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
-import uk.ac.rdg.resc.edal.feature.ProfileFeatureCollection;
+import uk.ac.rdg.resc.edal.feature.UniqueMembersFeatureCollection;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
 import uk.ac.rdg.resc.edal.util.Extents;
@@ -493,7 +493,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
     private void readLayerConfig() {
         if(features == null)
             return;
-        boolean featureCollectionIsLayer = (features instanceof ProfileFeatureCollection);
+        boolean featureCollectionIsLayer = !(features instanceof UniqueMembersFeatureCollection);
         
         if(featureCollectionIsLayer){
             class TitleMinMax{
@@ -540,11 +540,10 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
             }
             
             for(String memberName : memberName2ScaleRange.keySet()){
-                String memberId = "*/"+memberName;
-                FeaturePlottingMetadata plottingMetadata = getPlottingMetadataMap().get(memberId);
+                FeaturePlottingMetadata plottingMetadata = getPlottingMetadataMap().get(memberName);
                 if(plottingMetadata == null){
                     plottingMetadata = new FeaturePlottingMetadata();
-                    plottingMetadata.setId(memberId);
+                    plottingMetadata.setId(memberName);
                     addVariable(plottingMetadata);
                 }
                 TitleMinMax titleMinMax = memberName2ScaleRange.get(memberName);
@@ -554,7 +553,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
         } else {
             for (Feature feature : features.getFeatures()) {
                 for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
-                    String memberId = feature.getId()+"/"+memberMetadata.getName();
+                    String memberId = memberMetadata.getName();
                     // Load the Variable object from the config file or create a new
                     // one if it doesn't exist.
                     FeaturePlottingMetadata plottingMetadata = getPlottingMetadataMap().get(memberId);
@@ -570,7 +569,6 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
                         plottingMetadata.setTitle(memberMetadata.getTitle());
     
                     /*
-                     * 
                      * Set the colour scale range. If this isn't specified in the
                      * config information, load an "educated guess" at the scale
                      * range from the source data.

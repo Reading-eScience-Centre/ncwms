@@ -20,4 +20,5 @@ public interface PaletteSelectorIF extends IsWidget {
     public boolean isLogScale();
     public boolean isLocked();
     public void setEnabled(boolean enabled);
+    public boolean isEnabled();
 }

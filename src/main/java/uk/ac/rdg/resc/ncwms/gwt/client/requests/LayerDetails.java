@@ -22,9 +22,11 @@ public class LayerDetails {
     private String nearestTime = null;
     private String nearestDate = null;
     
-    private boolean continuousTimeAxis = false;
+    private boolean multiFeature = false;
     private String startTime = null;
     private String endTime = null;
+    private String startZ = null;
+    private String endZ = null;
 
     public LayerDetails(String layerId) {
         id = layerId;
@@ -90,7 +92,7 @@ public class LayerDetails {
         return availableDates;
     }
 
-    public String getNearestTime() {
+    public String getNearestDateTime() {
         return nearestTime;
     }
 
@@ -126,7 +128,7 @@ public class LayerDetails {
         this.zUnits = zUnits;
     }
 
-    public void setzPositive(boolean zPositive) {
+    public void setZPositive(boolean zPositive) {
         this.zPositive = zPositive;
     }
 
@@ -162,12 +164,12 @@ public class LayerDetails {
         this.nearestDate = nearestDate;
     }
 
-    public boolean isContinuousTimeAxis() {
-        return continuousTimeAxis;
+    public boolean isMultiFeature() {
+        return multiFeature;
     }
 
-    public void setContinuousTimeAxis(boolean continuousTimeAxis) {
-        this.continuousTimeAxis = continuousTimeAxis;
+    public void setMultiFeature(boolean multiFeature) {
+        this.multiFeature = multiFeature;
     }
 
     public String getStartTime() {
@@ -184,5 +186,21 @@ public class LayerDetails {
 
     public void setEndTime(String endTime) {
         this.endTime = endTime;
+    }
+
+    public String getStartZ() {
+        return startZ;
+    }
+
+    public String getEndZ() {
+        return endZ;
+    }
+
+    public void setStartZ(String startZ) {
+        this.startZ = startZ;
+    }
+
+    public void setEndZ(String endZ) {
+        this.endZ = endZ;
     }
 }

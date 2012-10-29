@@ -2,21 +2,28 @@ package uk.ac.rdg.resc.ncwms.controller;
 
 import java.util.Map;
 
-import uk.ac.rdg.resc.edal.position.LonLatPosition;
+import uk.ac.rdg.resc.edal.position.HorizontalPosition;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 
 public class FeatureInfo {
-    private String memberId;
+    private String featureCollectionId;
     private String featureId;
-    private LonLatPosition actualPos;
+    private String memberId;
+    private HorizontalPosition actualPos;
     private Map<TimePosition, Object> timesAndValues;
 
-    public FeatureInfo(String featureId, String memberId, LonLatPosition actualPos, Map<TimePosition, Object> timesAndValues) {
+    public FeatureInfo(String featureCollectionId, String featureId, String memberId,
+            HorizontalPosition actualPos, Map<TimePosition, Object> timesAndValues) {
         super();
+        this.featureCollectionId = featureCollectionId;
         this.featureId = featureId;
         this.memberId = memberId;
         this.actualPos = actualPos;
         this.timesAndValues = timesAndValues;
+    }
+    
+    public String getFeatureCollectionId() {
+        return featureCollectionId;
     }
 
     public String getFeatureId() {
@@ -27,7 +34,7 @@ public class FeatureInfo {
         return memberId;
     }
 
-    public LonLatPosition getActualPos() {
+    public HorizontalPosition getActualPos() {
         return actualPos;
     }
 

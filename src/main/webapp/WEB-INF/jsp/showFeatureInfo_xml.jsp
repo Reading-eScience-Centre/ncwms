@@ -17,7 +17,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
     <latitude>${latitude}</latitude>
     <c:forEach var="featureInfo" items="${data}">
         <Feature>
-            <id>${featureInfo.featureId}/${featureInfo.memberId}</id>
+            <id>${featureInfo.featureCollectionId}/${featureInfo.featureId}/${featureInfo.memberId}</id>
             <c:if test="${not empty featureInfo.actualPos}">
                 <actualX>${featureInfo.actualPos.x}</actualX>
                 <actualY>${featureInfo.actualPos.y}</actualY>

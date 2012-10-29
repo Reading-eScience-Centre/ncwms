@@ -97,8 +97,8 @@ public class PaletteSelector implements PaletteSelectorIF {
         nColorBands.setTitle("Select the number of colour bands to use for this data");
         
         paletteImage = new Image();
-        paletteImage.setWidth(width+"px");
-        paletteImage.setHeight(height+"px");
+        paletteImage.setWidth("0px");
+        paletteImage.setHeight("0px");
         paletteImage.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
@@ -359,6 +359,8 @@ public class PaletteSelector implements PaletteSelectorIF {
 	@Override
     public void selectPalette(String paletteString){
 	    currentPalette = paletteString;
+	    paletteImage.setWidth(width+"px");
+        paletteImage.setHeight(height+"px");
 	    if(vertical)
 	        paletteImage.setUrl(getImageUrl(paletteString, height, 1));
 	    else
@@ -368,6 +370,13 @@ public class PaletteSelector implements PaletteSelectorIF {
 	@Override
     public boolean setScaleRange(String scaleRange) {
 	    String[] vals = scaleRange.split(",");
+	    if(vals.length == 0){
+	        /*
+	         * We have no scale - we're plotting non-numerical data.  Disable the palette
+	         */
+	        setEnabled(false);
+	        return false;
+	    }
 	    float minVal = Float.parseFloat(vals[0]);
 	    if(isLogScale() && minVal <= 0){
 	        ErrorBox.popupErrorMessage("Cannot use a negative or zero value for logarithmic scale");
@@ -449,6 +458,15 @@ public class PaletteSelector implements PaletteSelectorIF {
         lockButton.setEnabled(enabled);
         styles.setEnabled(enabled);
         logScale.setEnabled(enabled);
+        if(enabled){
+            paletteImage.setStylePrimaryName("activeImageStyle");
+            mlLabel.setStylePrimaryName("tickmark");
+            mhLabel.setStylePrimaryName("tickmark");
+        } else {
+            paletteImage.setStylePrimaryName("inactiveImageStyle");
+            mlLabel.setStylePrimaryName("disabledTickmark");
+            mhLabel.setStylePrimaryName("disabledTickmark");
+        }
         this.enabled = enabled;
     }
 
@@ -481,5 +499,10 @@ public class PaletteSelector implements PaletteSelectorIF {
                 return;
             }
         }
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
     }
 }

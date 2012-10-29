@@ -44,13 +44,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.servlet.ModelAndView;
 
+import uk.ac.rdg.resc.edal.coverage.Coverage;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
-import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
+import uk.ac.rdg.resc.edal.feature.UniqueMembersFeatureCollection;
 import uk.ac.rdg.resc.ncwms.controller.AbstractMetadataController;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.FeatureFactory;
+import uk.ac.rdg.resc.ncwms.controller.RequestParams;
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
 import uk.ac.rdg.resc.ncwms.gwt.client.requests.LayerMenuItem;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
@@ -150,63 +152,35 @@ public class NcwmsMetadataController extends AbstractMetadataController
      * hierarchy.
      */
     @Override
-    protected ModelAndView showMenu(HttpServletRequest request) throws Exception {
+    protected ModelAndView showMenu(RequestParams params) throws Exception {
         Map<String, ? extends Dataset> allDatasets = super.config.getAllDatasets();
-        
        /*
         * Go through all datasets and construct a tree for each 
         */
         Map<Dataset, LayerMenuItem> datasets = new LinkedHashMap<Dataset, LayerMenuItem>();
         for(String datasetId : allDatasets.keySet()){
             Dataset dataset = allDatasets.get(datasetId);
+            
             /*
              * Where we have multiple features with the same member name, we
-             * group them with a feature ID of "*"
+             * group them
              */
-            Map<String, String> memberName2FeatureId = new LinkedHashMap<String, String>();
             FeatureCollection<? extends Feature> featureCollection = dataset.getFeatureCollection();
-            LayerMenuItem datasetRoot = new LayerMenuItem(dataset.getTitle(), null, false);;
+            LayerMenuItem datasetRoot;
+            if(featureCollection instanceof UniqueMembersFeatureCollection) {
+                datasetRoot = new LayerMenuItem(dataset.getTitle(), null, false);
+            } else {
+                datasetRoot = new LayerMenuItem(dataset.getTitle(), dataset.getId()+"/*", true);
+            }
             /*
              * For every feature...
              */
             if(featureCollection != null){
-                for(Feature feature : featureCollection.getFeatures()){
-                    String featureId = feature.getId();
-                    /*
-                     * Get a list of metadata objects in the feature
-                     */
-                    RangeMetadata topMetadata = feature.getCoverage().getRangeMetadata();
-                    List<RangeMetadata> treeMembers = MetadataUtils.getAllTreeMembers(topMetadata);
-                    for(RangeMetadata metadata : treeMembers){
-                        /*
-                         * For each one, check if we already have a feature with
-                         * this member
-                         */
-                        String memberName = metadata.getName();
-                        if(memberName2FeatureId.containsKey(memberName)){
-                            /*
-                             * If we already have a feature, set the feature ID to "*"
-                             */
-                            memberName2FeatureId.put(memberName, "*");
-                        } else {
-                            /*
-                             * Otherwise add this one to the Map
-                             */
-                            memberName2FeatureId.put(memberName, featureId);
-                        }
-                    }
-                }
-            
-                /*
-                 * We now have a map of member names to desired feature IDs
-                 * 
-                 * Keep a record of the member names added, so that we don't add
-                 * the, twice
-                 */
                 Set<String> memberNamesUsed = new LinkedHashSet<String>();
                 for(Feature feature : featureCollection.getFeatures()){
-                    RangeMetadata topMetadata = feature.getCoverage().getRangeMetadata();
-                    addRangeMetadataToTree(datasetRoot, topMetadata, memberNamesUsed, memberName2FeatureId, datasetId);
+                    Coverage<?> coverage = feature.getCoverage();
+                    RangeMetadata topMetadata = coverage.getRangeMetadata();
+                    addRangeMetadataToTree(datasetRoot, topMetadata, memberNamesUsed, datasetId);
                 }
             }
             datasets.put(dataset, datasetRoot);
@@ -215,7 +189,7 @@ public class NcwmsMetadataController extends AbstractMetadataController
         String menu = "default";
         // Let's see if the client has requested a specific menu. If so, we'll
         // construct the menu based on the appropriate JSP.
-        String menuFromRequest = request.getParameter("menu");
+        String menuFromRequest = params.getString("menu");
         if (menuFromRequest != null && !menuFromRequest.trim().equals("")) {
             menu = menuFromRequest.toLowerCase();
         }
@@ -236,14 +210,11 @@ public class NcwmsMetadataController extends AbstractMetadataController
      * @param memberNamesUsed
      *            The member names already used. If new members with these names
      *            would be added, they are ignored
-     * @param memberName2FeatureId
-     *            A map of member names to feature IDs (either actual IDs or
-     *            "*"s)
      * @param datasetId
      *            The ID of the containing dataset (used to make the full ID)
      */
     private void addRangeMetadataToTree(LayerMenuItem parentMenuItem, RangeMetadata topMetadata,
-            Set<String> memberNamesUsed, Map<String, String> memberName2FeatureId, String datasetId) {
+            Set<String> memberNamesUsed, String datasetId) {
         Set<String> memberNames = topMetadata.getMemberNames();
         /*
          * For all members of the metadata
@@ -261,7 +232,7 @@ public class NcwmsMetadataController extends AbstractMetadataController
                 /*
                  * Create the full ID
                  */
-                String id = datasetId + "/" + memberName2FeatureId.get(memberName) + "/" + memberName;
+                String id = datasetId + "/" + memberName;
                 if(memberMetadata instanceof ScalarMetadata){
                     /*
                      * We have a leaf node - add it to the tree
@@ -285,7 +256,7 @@ public class NcwmsMetadataController extends AbstractMetadataController
                     LayerMenuItem nodeItem = new LayerMenuItem(memberMetadata.getTitle(), id, plottable);
                     parentMenuItem.addChildItem(nodeItem);
                     
-                    addRangeMetadataToTree(nodeItem, memberMetadata, memberNamesUsed, memberName2FeatureId, datasetId);
+                    addRangeMetadataToTree(nodeItem, memberMetadata, memberNamesUsed, datasetId);
                 }
             }
         }

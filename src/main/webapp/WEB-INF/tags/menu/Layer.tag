@@ -18,8 +18,10 @@
     </c:if>
     <c:if test="${dataset.loading}">
         <json:property name="label" value="${label} (loading)"/>
+        <json:property name="plottable" value="${false}"/>
     </c:if>
     <c:if test="${dataset.error}">
         <json:property name="label" value="${label} (error)"/>
+        <json:property name="plottable" value="${false}"/>
     </c:if>
 </json:object>

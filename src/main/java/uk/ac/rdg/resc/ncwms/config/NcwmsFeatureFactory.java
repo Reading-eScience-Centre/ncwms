@@ -13,36 +13,13 @@ public class NcwmsFeatureFactory implements FeatureFactory {
     public NcwmsFeatureFactory(NcwmsController controller) {
         this.controller = controller;
     }
-    
-    @Override
-    public Feature getFeature(String layerName) throws FeatureNotDefinedException {
-        // Split the layer name on the slash character
-        String[] parts = layerName.split("/");
-        if (parts.length == 3) {
-            String datasetId = parts[0];
-            Dataset ds = controller.getConfig().getDatasetById(datasetId);
-            if (ds == null)
-                throw new FeatureNotDefinedException(layerName);
-
-            String featureId = parts[1];// layerName.substring(slashIndex + 1);
-            Feature feature = ds.getFeatureById(featureId);
-            if (feature == null)
-                throw new FeatureNotDefinedException(layerName);
-
-            return feature;
-        } else {
-            // We don't bother looking for the position in the string where
-            // the parse error occurs
-            throw new FeatureNotDefinedException(layerName);
-        }
-    }
 
     @Override
     public FeatureCollection<? extends Feature> getFeatureCollection(String layerName)
             throws FeatureNotDefinedException {
         // Split the layer name on the slash character
         String[] parts = layerName.split("/");
-        if (parts.length == 3) {
+        if (parts.length == 2) {
             String datasetId = parts[0];
             Dataset ds = controller.getConfig().getDatasetById(datasetId);
             if (ds == null)

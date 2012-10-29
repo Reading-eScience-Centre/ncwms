@@ -23,19 +23,21 @@ import uk.ac.rdg.resc.edal.coverage.DiscreteCoverage;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
-import uk.ac.rdg.resc.edal.coverage.grid.impl.VerticalAxisImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.FeatureCollection;
+import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.feature.GridSeriesFeature;
+import uk.ac.rdg.resc.edal.feature.PointSeriesFeature;
 import uk.ac.rdg.resc.edal.feature.ProfileFeature;
-import uk.ac.rdg.resc.edal.feature.ProfileFeatureCollection;
+import uk.ac.rdg.resc.edal.feature.UniqueMembersFeatureCollection;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
 import uk.ac.rdg.resc.edal.graphics.ColorPalette;
 import uk.ac.rdg.resc.edal.graphics.PlotStyle;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.TimePeriod;
 import uk.ac.rdg.resc.edal.position.TimePosition;
+import uk.ac.rdg.resc.edal.position.VerticalCrs;
 import uk.ac.rdg.resc.edal.position.VerticalPosition;
 import uk.ac.rdg.resc.edal.position.impl.TimePeriodImpl;
 import uk.ac.rdg.resc.edal.position.impl.TimePositionJoda;
@@ -46,7 +48,6 @@ import uk.ac.rdg.resc.edal.util.TimeUtils;
 import uk.ac.rdg.resc.ncwms.config.Config;
 import uk.ac.rdg.resc.ncwms.config.FeaturePlottingMetadata;
 import uk.ac.rdg.resc.ncwms.controller.AbstractWmsController.FeatureFactory;
-import uk.ac.rdg.resc.ncwms.exceptions.FeatureNotDefinedException;
 import uk.ac.rdg.resc.ncwms.exceptions.MetadataException;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
@@ -74,25 +75,28 @@ public abstract class AbstractMetadataController {
     public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response)
             throws MetadataException {
         try {
-            String item = request.getParameter("item");
+            RequestParams params = new RequestParams(request.getParameterMap());
+            String item = params.getString("item");
             if (item == null) {
                 throw new Exception("Must provide an ITEM parameter");
             } else if (item.equals("menu")) {
-                return this.showMenu(request);
+                return this.showMenu(params);
             } else if (item.equals("layerDetails")) {
-                return this.showLayerDetails(request);
+                return this.showLayerDetails(params);
             } else if (item.equals("timesteps")) {
-                return this.showTimesteps(request);
+                return this.showTimesteps(params);
             } else if (item.equals("minmax")) {
-                return this.showMinMax(request);
+                return this.showMinMax(params);
             } else if (item.equals("animationTimesteps")) {
-                return this.showAnimationTimesteps(request);
+                return this.showAnimationTimesteps(params);
             }
             throw new Exception("Invalid value for ITEM parameter");
         } catch (Exception e) {
-            // Wrap all exceptions in a MetadataException. These will be
-            // automatically
-            // displayed via displayMetadataException.jsp, in JSON format
+            /*
+             * Wrap all exceptions in a MetadataException. These will be
+             * automatically displayed via displayMetadataException.jsp, in JSON
+             * format
+             */
             e.printStackTrace();
             throw new MetadataException(e);
         }
@@ -102,67 +106,36 @@ public abstract class AbstractMetadataController {
      * Shows the hierarchy of layers available from this server, or a pre-set
      * hierarchy. May differ between implementations
      */
-    protected abstract ModelAndView showMenu(HttpServletRequest request) throws Exception;
+    protected abstract ModelAndView showMenu(RequestParams params) throws Exception;
 
     /**
      * Shows an JSON document containing the details of the given variable
      * (units, zvalues, tvalues etc). See showLayerDetails.jsp.
      */
-    private ModelAndView showLayerDetails(HttpServletRequest request) throws Exception {
-
-        String layerName = request.getParameter("layerName");
-        String datasetName = WmsUtils.getDatasetId(layerName);
-        String featureName = WmsUtils.getFeatureName(layerName);
+    private ModelAndView showLayerDetails(RequestParams params) throws Exception {
+        
+        String layerName = params.getMandatoryString("layerName");
+        
+        FeatureCollection<? extends Feature> featureCollection = featureFactory
+                .getFeatureCollection(layerName);
+        
         String memberName = WmsUtils.getMemberName(layerName);
 
-        VerticalAxis vAxis;
         BoundingBox bbox;
-        boolean continuousTimeAxis;
+        boolean multiFeature;
         String units;
         
         Map<String, Object> models = new HashMap<String, Object>();
         Set<PlotStyle> styles = new HashSet<PlotStyle>();
-        if(featureName.equals("*")){
-            FeatureCollection<? extends Feature> featureCollection = config.getDatasetById(datasetName).getFeatureCollection();
-            if(featureCollection instanceof ProfileFeatureCollection){
-                ProfileFeatureCollection profileFeatureCollection = (ProfileFeatureCollection) featureCollection;
-                continuousTimeAxis = true;
-                
-                bbox = profileFeatureCollection.getBoundingBox();
-                units = "";
-                for(ProfileFeature feature : profileFeatureCollection.getFeatures()){
-                    if(feature.getCoverage().getScalarMemberNames().contains(memberName)){
-                        units = MetadataUtils.getUnitsString(feature, memberName);
-                        styles = WmsUtils.getBaseStyles(feature, memberName);
-                        break;
-                    }
-                }
-                Extent<VerticalPosition> verticalExtent = profileFeatureCollection.getVerticalExtent();
-                int lowZ = (int) Math.floor(verticalExtent.getLow().getZ());
-                int highZ = (int) Math.ceil(verticalExtent.getHigh().getZ());
-                int dz = (highZ - lowZ) / 20;
-                List<Double> values = new ArrayList<Double>();
-                for(double z = lowZ; z <= highZ; z += dz){
-                    values.add(z);
-                }
-                vAxis = new VerticalAxisImpl("Fake z-axis", values, verticalExtent.getLow().getCoordinateReferenceSystem());
-                TimePosition startTime = profileFeatureCollection.getTimeExtent().getLow();
-                TimePosition endTime = profileFeatureCollection.getTimeExtent().getHigh();
-                
-                models.put("startTime", TimeUtils.dateTimeToISO8601(startTime));
-                models.put("endTime", TimeUtils.dateTimeToISO8601(endTime));
-                models.put("tAxisUnits", TimeUtils.getTimeAxisUnits(startTime.getCalendarSystem()));
-            } else {
-                throw new IllegalArgumentException("This dataset does not support querying multiple features");
-            }
-        } else {
-            Feature feature = getFeature(request);
-            
-            continuousTimeAxis = false;
+        
+        if(featureCollection instanceof UniqueMembersFeatureCollection) {
+            Feature feature = ((UniqueMembersFeatureCollection<? extends Feature>) featureCollection)
+                    .getFeatureContainingMember(memberName);
+            multiFeature = false;
             bbox = WmsUtils.getWmsBoundingBox(feature);
             styles = WmsUtils.getBaseStyles(feature, memberName);
-            vAxis = GISUtils.getVerticalAxis(feature);
-            TimeAxis tAxis = GISUtils.getTimeAxis(feature);
+            VerticalAxis vAxis = GISUtils.getVerticalAxis(feature);
+            TimeAxis tAxis = GISUtils.getTimeAxis(feature, false);
             // Find the time the user has requested (this is the time that is
             // currently displayed on the Godiva2 site). If no time has been
             // specified we use the current time
@@ -171,7 +144,7 @@ public abstract class AbstractMetadataController {
                 calendarSystem = tAxis.getCalendarSystem();
             }
             TimePosition targetDateTime = new TimePositionJoda(calendarSystem);
-            String targetDateIso = request.getParameter("time");
+            String targetDateIso = params.getString("time");
             if (targetDateIso != null && !targetDateIso.trim().equals("")) {
                 try {
                     targetDateTime = TimeUtils.iso8601ToDateTime(targetDateIso, calendarSystem);
@@ -188,7 +161,7 @@ public abstract class AbstractMetadataController {
                 timeValues = tAxis.getCoordinateValues();
             else
                 timeValues = Collections.emptyList();
-            TimePosition nearestDateTime = timeValues.isEmpty() ? new TimePositionJoda() : timeValues.get(0);
+            TimePosition nearestDateTime = GISUtils.getClosestTimeTo(targetDateTime, tAxis);
             
             /*
              * Takes an array of time values for a layer and turns it into a Map of
@@ -236,18 +209,66 @@ public abstract class AbstractMetadataController {
             models.put("tAxisUnits", TimeUtils.getTimeAxisUnits(tAxis.getCalendarSystem()));
             models.put("datesWithData", datesWithData);
             models.put("nearestTimeIso", TimeUtils.dateTimeToISO8601(nearestDateTime));
+            models.put("vaxis", vAxis);
+        } else {
+            multiFeature = true;
+            
+            bbox = featureCollection.getCollectionBoundingBox();
+            units = "";
+            for(Feature feature : featureCollection.getFeatures()){
+                if(feature.getCoverage().getScalarMemberNames().contains(memberName)){
+                    units = MetadataUtils.getUnitsString(feature, memberName);
+                    styles = WmsUtils.getBaseStyles(feature, memberName);
+                    break;
+                }
+            }
+            
+            Extent<VerticalPosition> verticalExtent = featureCollection.getCollectionVerticalExtent();
+            Double startZ = verticalExtent.getLow().getZ();
+            Double endZ = verticalExtent.getHigh().getZ();
+            /*
+             * TODO sort out order.
+             */
+            VerticalCrs verticalCrs = verticalExtent.getHigh().getCoordinateReferenceSystem();
+            models.put("startZ", startZ.toString());
+            models.put("endZ", endZ.toString());
+            models.put("verticalCrs", verticalCrs);
+            
+            TimePosition startTime = featureCollection.getCollectionTimeExtent().getLow();
+            TimePosition endTime = featureCollection.getCollectionTimeExtent().getHigh();
+            
+            models.put("startTime", TimeUtils.dateTimeToISO8601(startTime));
+            models.put("endTime", TimeUtils.dateTimeToISO8601(endTime));
+            models.put("tAxisUnits", TimeUtils.getTimeAxisUnits(startTime.getCalendarSystem()));
+            
+            TimePosition targetDateTime = new TimePositionJoda(startTime.getCalendarSystem());
+            String targetDateIso = params.getString("time");
+            if (targetDateIso != null && !targetDateIso.trim().equals("")) {
+                try {
+                    targetDateTime = TimeUtils.iso8601ToDateTime(targetDateIso, startTime.getCalendarSystem());
+                } catch (IllegalArgumentException iae) {
+                    // targetDateIso was not valid for the layer's chronology
+                    // We swallow this exception: targetDateTime will remain
+                    // unchanged.
+                }
+            }
+            if(targetDateTime.compareTo(startTime) < 0){
+                targetDateTime = startTime;
+            } else if(targetDateTime.compareTo(endTime) > 0){
+                targetDateTime = endTime;
+            }
+            models.put("nearestTimeIso", TimeUtils.dateTimeToISO8601(targetDateTime));
         }
         
         models.put("bbox", bbox);
-        models.put("vaxis", vAxis);
-        models.put("continuousTimeAxis", continuousTimeAxis);
+        models.put("multiFeature", multiFeature);
         models.put("units", units);
         models.put("styles", styles);
         
         FeaturePlottingMetadata plottingMetadata = WmsUtils.getMetadata(config, layerName);
         models.put("featureMetadata", plottingMetadata);
         models.put("memberName", memberName);
-        models.put("dataset", WmsUtils.getDataset(config, request.getParameter("layerName")));
+        models.put("dataset", WmsUtils.getDataset(config, layerName));
         /*
          * The names of the palettes supported by this layer. Actually this will
          * be the same for all layers, but we can't put this in the menu because
@@ -257,42 +278,45 @@ public abstract class AbstractMetadataController {
         return new ModelAndView("showLayerDetails", models);
     }
 
-    private Feature getFeature(HttpServletRequest request) throws FeatureNotDefinedException {
-        String layerName = request.getParameter("layerName");
-        if (layerName == null) {
-            throw new FeatureNotDefinedException("null");
-        }
-        return featureFactory.getFeature(layerName);
-    }
-
     /**
      * Finds all the timesteps that occur on the given date, which will be
      * provided in the form "2007-10-18".
      */
-    private ModelAndView showTimesteps(HttpServletRequest request) throws Exception {
-        Feature feature = getFeature(request);
+    private ModelAndView showTimesteps(RequestParams params) throws Exception {
+        String layerName = params.getMandatoryString("layerName");
+        
+        FeatureCollection<? extends Feature> featureCollection = featureFactory
+                .getFeatureCollection(layerName);
+        
+        if(!(featureCollection instanceof UniqueMembersFeatureCollection)){
+            throw new WmsException(
+                    "The method GetMetadata, item=timesteps is not valid for datasets with a continuous time axis");
+        } else {
+            String memberName = WmsUtils.getMemberName(layerName);
+            Feature feature = ((UniqueMembersFeatureCollection<? extends Feature>) featureCollection).getFeatureContainingMember(memberName);
+            TimeAxis tAxis = GISUtils.getTimeAxis(feature, false);
+            
+            if (tAxis == null || tAxis.getCoordinateValues().isEmpty())
+                return null; // return no data if no time axis present
 
-        TimeAxis tAxis = GISUtils.getTimeAxis(feature);
-        if (tAxis == null || tAxis.getCoordinateValues().isEmpty())
-            return null; // return no data if no time axis present
-
-        String dayStr = request.getParameter("day");
-        if (dayStr == null) {
-            throw new Exception("Must provide a value for the day parameter");
-        }
-        TimePosition date = TimeUtils.iso8601ToDate(dayStr, tAxis.getCalendarSystem());
-        // List of date-times that fall on this day
-        List<TimePosition> timesteps = new ArrayList<TimePosition>();
-        // Search exhaustively through the layer's valid time values
-        // TODO: inefficient: should stop once last day has been found.
-        for (TimePosition tVal : tAxis.getCoordinateValues()) {
-            if (onSameDay(tVal, date)) {
-                timesteps.add(tVal);
+            String dayStr = params.getString("day");
+            if (dayStr == null) {
+                throw new Exception("Must provide a value for the day parameter");
             }
-        }
-        log.debug("Found {} timesteps on {}", timesteps.size(), dayStr);
+            TimePosition date = TimeUtils.iso8601ToDate(dayStr, tAxis.getCalendarSystem());
+            // List of date-times that fall on this day
+            List<TimePosition> timesteps = new ArrayList<TimePosition>();
+            // Search exhaustively through the layer's valid time values
+            // TODO: inefficient: should stop once last day has been found.
+            for (TimePosition tVal : tAxis.getCoordinateValues()) {
+                if (onSameDay(tVal, date)) {
+                    timesteps.add(tVal);
+                }
+            }
+            log.debug("Found {} timesteps on {}", timesteps.size(), dayStr);
 
-        return new ModelAndView("showTimesteps", "timesteps", timesteps);
+            return new ModelAndView("showTimesteps", "timesteps", timesteps);    
+        }
     }
 
     /**
@@ -315,114 +339,85 @@ public abstract class AbstractMetadataController {
      * Shows an XML document containing the minimum and maximum values for the
      * tile given in the parameters.
      */
-    private ModelAndView showMinMax(HttpServletRequest request) throws Exception {
-        RequestParams params = new RequestParams(request.getParameterMap());
+    private ModelAndView showMinMax(RequestParams params) throws Exception {
+        
         /*
          * We only need the bit of the GetMap request that pertains to data
          * extraction
          */
         GetMapDataRequest dr = new GetMapDataRequest(params, params.getWmsVersion());
-
-        String layerName = WmsUtils.getWmsLayerName(dr);
-        String featureName = WmsUtils.getFeatureName(layerName);
+        String[] layerNames = dr.getLayers();
+        if(layerNames == null || layerNames.length != 1) {
+            throw new WmsException("Must request exactly one WMS layer to get min/max");
+        }
+        String layerName = layerNames[0];
         String memberName = WmsUtils.getMemberName(layerName);
+
+        FeatureCollection<? extends Feature> featureCollection = featureFactory
+                .getFeatureCollection(layerName);
+        
         Extent<Float> valueRange = null;
         RegularGrid grid = WmsUtils.getImageGrid(dr);
         
-        if(featureName.equals("*")){
-            FeatureCollection<? extends Feature> featureCollection = featureFactory.getFeatureCollection(layerName);
-            if(featureCollection instanceof ProfileFeatureCollection){
-                ProfileFeatureCollection profileFeatureCollection = (ProfileFeatureCollection) featureCollection;
-                Extent<TimePosition> tRange = TimeUtils.getTimeRangeForString(dr.getTimeString(), CalendarSystem.CAL_ISO_8601);
-                Collection<ProfileFeature> profiles = profileFeatureCollection.findProfiles(grid.getCoordinateExtent(), tRange, memberName);
-                float targetDepth = Float.parseFloat(dr.getElevationString());
-                float max = -Float.MAX_VALUE;
-                float min = Float.MAX_VALUE;
-                for(ProfileFeature profile : profiles){
-                    VerticalPosition vPos;
-                    if(Float.isNaN(targetDepth)) {
-                        vPos = GISUtils.getUppermostElevation(profile);
-                    } else {
-                        vPos = GISUtils.getClosestElevationTo(targetDepth, profile);
-                    }
-                    if(vPos == null){
-                        continue;
-                    }
-                    Object value = profile.getCoverage().evaluate(vPos, memberName);
-                    if(Number.class.isAssignableFrom(value.getClass())){
-                        float f = ((Number) value).floatValue();
-                        if(f < min){
-                            min = f;
-                        } 
-                        if(f > max){
-                            max = f;
-                        }
-                    }
-                }
-                valueRange = Extents.newExtent(min, max);
-            } else {
-                throw new IllegalArgumentException("Cannot get minmax on * for this dataset");
-            }
-        } else {
-            Feature feature = featureFactory.getFeature(layerName);
+        if(featureCollection instanceof UniqueMembersFeatureCollection){
+            Feature feature = ((UniqueMembersFeatureCollection<? extends Feature>) featureCollection).getFeatureContainingMember(memberName);
+            
             memberName = MetadataUtils.getScalarMemberName(feature, memberName);
     
-            // Get the variable we're interested in
-            if (feature instanceof GridSeriesFeature) {
-                /*
-                 * If we have a grid series feature, extract the relevant portion of
-                 * the data
-                 */
-           
-                VerticalPosition zValue = AbstractWmsController.getElevationValue(
-                        dr.getElevationString(), feature);
-                /*
-                 * Get the requested timestep (taking the first only if an animation
-                 * is requested)
-                 */
-                List<TimePosition> timeValues = AbstractWmsController.getTimeValues(dr.getTimeString(),
-                        feature);
-                TimePosition tValue = timeValues.isEmpty() ? null : timeValues.get(0);
-    
-                feature = ((GridSeriesFeature) feature).extractGridFeature(grid, zValue, tValue,
-                        CollectionUtils.setOf(memberName));
+            /*
+             * If we have a grid series feature, extract the relevant portion of
+             * the data
+             */
+            VerticalPosition zValue =  GISUtils.getExactElevation(dr.getElevationString(), feature);
+            /*
+             * Get the requested timestep (taking the first only if an animation
+             * is requested)
+             */
+            List<TimePosition> timeValues = WmsUtils.getTimePositionsForString(dr.getTimeString(), feature);
+            TimePosition tValue = timeValues.isEmpty() ? null : timeValues.get(0);
+            
+            valueRange = getFeatureMinMax(feature, zValue, tValue, memberName, grid);
+        } else {
+            Extent<TimePosition> tRange = TimeUtils.getTimeRangeForString(dr.getTimeString(),
+                    CalendarSystem.CAL_ISO_8601);
+            Extent<Double> zRange = WmsUtils.getElevationRangeForString(dr.getElevationString());
+            Collection<? extends Feature> features = featureCollection.findFeatures(
+                    grid.getCoordinateExtent(), zRange, tRange, CollectionUtils.setOf(memberName));
+            
+            TimePosition colorByTime = null;
+            if(dr.getColorbyTimeString() != null){
+                colorByTime = TimeUtils.iso8601ToDateTime(dr.getColorbyTimeString(), CalendarSystem.CAL_ISO_8601);
             }
             
-            /*
-             * Now we have a feature with the data. If it has a discrete coverage,
-             * get the value range
-             */
-            if (feature.getCoverage() instanceof DiscreteCoverage) {
-                DiscreteCoverage<?,?> discreteCoverage = (DiscreteCoverage<?, ?>) feature.getCoverage();
-                Class<?> clazz = discreteCoverage.getScalarMetadata(memberName).getValueType();
-                final List<?> values = discreteCoverage.getValues(memberName);
-                if (Number.class.isAssignableFrom(clazz)) {
-                    valueRange = Extents.findMinMax(new AbstractList<Float>() {
-                        @Override
-                        public Float get(int index) {
-                            Number val = (Number)values.get(index);
-                            return val == null ? null : val.floatValue();
-                        }
-    
-                        @Override
-                        public int size() {
-                            return values.size();
-                        }
-                    });
-                } else {
-                    /*
-                     * We have a non-numerical coverage.  It doesn't matter what we return
-                     */
-                    valueRange = Extents.newExtent(0f,100f);
+            Double colorByDepth = null;
+            if(dr.getColorbyElevationString() != null){
+                colorByDepth = Double.parseDouble(dr.getColorbyElevationString()); 
+            }
+            
+            float max = -Float.MAX_VALUE;
+            float min = Float.MAX_VALUE;
+            for(Feature feature : features){
+                memberName = MetadataUtils.getScalarMemberName(feature, memberName);
+                
+                VerticalPosition vPos  = GISUtils.getClosestElevationTo(colorByDepth, feature);
+                TimePosition tPos = GISUtils.getClosestTimeTo(colorByTime, GISUtils.getTimeAxis(feature, false));
+                
+                Extent<Float> minMax = getFeatureMinMax(feature, vPos, tPos, memberName, null);
+                
+                if(minMax.getLow() != null && minMax.getLow() < min){
+                    min = minMax.getLow();
+                } 
+                if(minMax.getHigh() != null && minMax.getHigh() > max){
+                    max = minMax.getHigh();
                 }
-            } else {
+            }
+            if(max < min){
                 /*
-                 * We don't know how to handle non-discrete coverages.
-                 * 
-                 * At the time of writing, there are no coverages which are non-discrete
+                 * We haven't found any features with values.
                  */
-                throw new UnsupportedOperationException(
-                        "Coverage must be discrete for min-max requests");
+                valueRange = Extents.emptyExtent(Float.class);
+            } else {
+                valueRange = Extents.newExtent(min, max);
             }
         }
         
@@ -431,61 +426,143 @@ public abstract class AbstractMetadataController {
              * We only have null values in this feature. It doesn't really
              * matter what we return...
              */
-            valueRange = Extents.newExtent(0f,100f);
-        }
-        if(valueRange.getLow().equals(valueRange.getHigh())){
+            valueRange = Extents.emptyExtent(Float.class);
+        } else if(valueRange.getLow().equals(valueRange.getHigh())){
             valueRange = Extents.newExtent(valueRange.getLow()/1.1f, valueRange.getHigh()*1.1f);
         }
         return new ModelAndView("showMinMax", "valueRange", valueRange);
+    }
+    
+    private Extent<Float> getFeatureMinMax(Feature feature, VerticalPosition zValue, TimePosition tValue, String memberName, RegularGrid grid){
+        memberName = MetadataUtils.getScalarMemberName(feature, memberName);
+        
+        if(feature instanceof PointSeriesFeature){
+            PointSeriesFeature pointSeriesFeature = (PointSeriesFeature) feature;
+            Object value = pointSeriesFeature.getCoverage().evaluate(tValue, memberName);
+            if(Number.class.isAssignableFrom(value.getClass())){
+                return Extents.newExtent(((Number)value).floatValue(), ((Number)value).floatValue());
+            } else {
+                return Extents.emptyExtent(Float.class);
+            }
+        } else if(feature instanceof ProfileFeature){
+            ProfileFeature profileFeature = (ProfileFeature) feature;
+            Object value = profileFeature.getCoverage().evaluate(zValue, memberName);
+            
+            if(value == null || (!Number.class.isAssignableFrom(value.getClass()))){
+                return Extents.emptyExtent(Float.class);
+            } else {
+                return Extents.newExtent(((Number)value).floatValue(), ((Number)value).floatValue());
+            }
+        } else if(feature instanceof GridSeriesFeature) {
+            feature = ((GridSeriesFeature) feature).extractGridFeature(grid, zValue, tValue,
+                    CollectionUtils.setOf(memberName));
+        } else if (feature instanceof GridFeature){
+            feature = ((GridFeature) feature).extractGridFeature(grid, CollectionUtils.setOf(memberName));
+        }
+        
+        Extent<Float> valueRange;
+        /*
+         * Now we have a feature with the data. If it has a discrete coverage,
+         * get the value range
+         */
+        if (feature.getCoverage() instanceof DiscreteCoverage) {
+            DiscreteCoverage<?,?> discreteCoverage = (DiscreteCoverage<?, ?>) feature.getCoverage();
+            Class<?> clazz = discreteCoverage.getScalarMetadata(memberName).getValueType();
+            final List<?> values = discreteCoverage.getValues(memberName);
+            if (Number.class.isAssignableFrom(clazz)) {
+                valueRange = Extents.findMinMax(new AbstractList<Float>() {
+                    @Override
+                    public Float get(int index) {
+                        Number val = (Number)values.get(index);
+                        return val == null ? null : val.floatValue();
+                    }
+
+                    @Override
+                    public int size() {
+                        return values.size();
+                    }
+                });
+            } else {
+                /*
+                 * We have a non-numerical coverage.  It doesn't matter what we return
+                 */
+                valueRange = Extents.newExtent(0f,100f);
+            }
+        } else {
+            /*
+             * We don't know how to handle non-discrete coverages.
+             * 
+             * At the time of writing, there are no coverages which are non-discrete
+             */
+            return Extents.emptyExtent(Float.class);
+        }
+        return valueRange;
     }
 
     /**
      * Calculates the TIME strings necessary to generate animations for the
      * given layer at hourly, daily, weekly, monthly and yearly resolution.
      * 
-     * @param request
+     * @param params
      * @return
      * @throws java.lang.Exception
      */
-    private ModelAndView showAnimationTimesteps(HttpServletRequest request) throws WmsException {
-        Feature feature = getFeature(request);
-        TimeAxis tAxis = GISUtils.getTimeAxis(feature);
+    private ModelAndView showAnimationTimesteps(RequestParams params) throws WmsException {
+        String layerName = params.getMandatoryString("layerName");
+        String memberName = WmsUtils.getMemberName(layerName);
+        
+        FeatureCollection<? extends Feature> featureCollection = featureFactory
+                .getFeatureCollection(layerName);
+        
+        if(featureCollection instanceof UniqueMembersFeatureCollection) {
+            Feature feature = ((UniqueMembersFeatureCollection<?>) featureCollection)
+                    .getFeatureContainingMember(memberName);
+            
+            TimeAxis tAxis = GISUtils.getTimeAxis(feature, false);
 
-        String startStr = request.getParameter("start");
-        String endStr = request.getParameter("end");
-        if (startStr == null || endStr == null) {
-            throw new WmsException("Must provide values for start and end");
+            if(tAxis == null){
+                throw new WmsException("There is no time axis - cannot create animation");
+            }
+            String startStr = params.getString("start");
+            String endStr = params.getString("end");
+            if (startStr == null || endStr == null) {
+                throw new WmsException("Must provide values for start and end");
+            }
+
+            // Find the start and end indices along the time axis
+            int startIndex = WmsUtils.findTIndex(startStr, tAxis);
+            int endIndex = WmsUtils.findTIndex(endStr, tAxis);
+            List<TimePosition> tValues = tAxis.getCoordinateValues();
+
+            // E.g.: {
+            // "Full" : "start/end",
+            // "Hourly" : "t1,t2,t3,t4",
+            // "Daily" : "ta,tb,tc,td"
+            // etc
+            // }
+            Map<String, String> timeStrings = new LinkedHashMap<String, String>();
+
+            timeStrings.put("Full (" + (endIndex - startIndex + 1) + " frames)", startStr + "/"
+                    + endStr);
+            addTimeString("Daily", timeStrings, tValues, startIndex, endIndex,
+                    new TimePeriodImpl().withDays(1));
+            addTimeString("Weekly", timeStrings, tValues, startIndex, endIndex,
+                    new TimePeriodImpl().withWeeks(1));
+            addTimeString("Monthly", timeStrings, tValues, startIndex, endIndex,
+                    new TimePeriodImpl().withMonths(1));
+            addTimeString("Bi-monthly", timeStrings, tValues, startIndex, endIndex,
+                    new TimePeriodImpl().withMonths(2));
+            addTimeString("Twice-yearly", timeStrings, tValues, startIndex, endIndex,
+                    new TimePeriodImpl().withMonths(6));
+            addTimeString("Yearly", timeStrings, tValues, startIndex, endIndex,
+                    new TimePeriodImpl().withYears(1));
+
+            return new ModelAndView("showAnimationTimesteps", "timeStrings", timeStrings);
+        } else {
+            throw new WmsException("Animations are not supported for this type of variable");
         }
-
-        // Find the start and end indices along the time axis
-        int startIndex = AbstractWmsController.findTIndex(startStr, tAxis);
-        int endIndex = AbstractWmsController.findTIndex(endStr, tAxis);
-        List<TimePosition> tValues = tAxis.getCoordinateValues();
-
-        // E.g.: {
-        // "Full" : "start/end",
-        // "Hourly" : "t1,t2,t3,t4",
-        // "Daily" : "ta,tb,tc,td"
-        // etc
-        // }
-        Map<String, String> timeStrings = new LinkedHashMap<String, String>();
-
-        timeStrings.put("Full (" + (endIndex - startIndex + 1) + " frames)", startStr + "/"
-                + endStr);
-        addTimeString("Daily", timeStrings, tValues, startIndex, endIndex,
-                new TimePeriodImpl().withDays(1));
-        addTimeString("Weekly", timeStrings, tValues, startIndex, endIndex,
-                new TimePeriodImpl().withWeeks(1));
-        addTimeString("Monthly", timeStrings, tValues, startIndex, endIndex,
-                new TimePeriodImpl().withMonths(1));
-        addTimeString("Bi-monthly", timeStrings, tValues, startIndex, endIndex,
-                new TimePeriodImpl().withMonths(2));
-        addTimeString("Twice-yearly", timeStrings, tValues, startIndex, endIndex,
-                new TimePeriodImpl().withMonths(6));
-        addTimeString("Yearly", timeStrings, tValues, startIndex, endIndex,
-                new TimePeriodImpl().withYears(1));
-
-        return new ModelAndView("showAnimationTimesteps", "timeStrings", timeStrings);
+        
+        
     }
 
     private static void addTimeString(String label, Map<String, String> timeStrings,

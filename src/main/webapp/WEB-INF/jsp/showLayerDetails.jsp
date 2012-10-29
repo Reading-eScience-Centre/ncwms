@@ -15,10 +15,13 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
      Data (models) passed in to this page:
          bbox = the bounding box of the layer
          vaxis = the vertical axis of the layer
-         continuousTimeAxis = true if we have a continuous time axis
-            startTime = the start of the continuous axis
-            endTime = the end of the continuous axis
+         multiFeature = true if we have a multiple features in a dataset
+            startTime = the start of the time axis for a multiFeature dataset
+            endTime = the end of the time axis for a multiFeature dataset
             tAxisUnits = the units of the time axis
+            startZ = the start of the vertical axis for a multiFeature dataset
+            endZ = the end of the vertical axis for a multiFeature dataset
+            verticalCrs = the vertical CRS for a multiFeature dataset
          styles = a Set of strings representing the supported styles
          featureMetadata = the plotting metadata
          memberName = the member to be plotted
@@ -53,17 +56,27 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 
     <json:array name="supportedStyles" items="${styles}"/>
 
-    <c:if test="${not empty vaxis}">
-        <json:object name="zaxis">
-            <json:property name="units" value="${vaxis.verticalCrs.units.unitString}"/>
-            <json:property name="positive" value="${vaxis.verticalCrs.positiveDirection.positive}"/>
-            <json:array name="values" items="${vaxis.coordinateValues}"/>
-        </json:object>
-    </c:if>
-
-    <json:property name="continuousTimeAxis" value="${continuousTimeAxis}"/>
     <c:choose>
-        <c:when test="${continuousTimeAxis}">
+	    <c:when test="${multiFeature}">
+	        <json:property name="startZ" value="${startZ}"/>
+	        <json:property name="endZ" value="${endZ}"/>
+	        <json:property name="zUnits" value="${verticalCrs.units.unitString}"/>
+	        <json:property name="zPositive" value="${verticalCrs.positiveDirection.positive}"/>
+	    </c:when>
+	    <c:otherwise>
+		    <c:if test="${not empty vaxis}">
+		        <json:object name="zaxis">
+		            <json:property name="units" value="${vaxis.verticalCrs.units.unitString}"/>
+		            <json:property name="positive" value="${vaxis.verticalCrs.positiveDirection.positive}"/>
+		            <json:array name="values" items="${vaxis.coordinateValues}"/>
+		        </json:object>
+		    </c:if>
+	    </c:otherwise>
+    </c:choose>
+
+    <json:property name="multiFeature" value="${multiFeature}"/>
+    <c:choose>
+        <c:when test="${multiFeature}">
             <json:property name="startTime" value="${startTime}"/>
             <json:property name="endTime" value="${endTime}"/>
 	        <json:property name="timeAxisUnits" value="${tAxisUnits}"/>
@@ -79,9 +92,6 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 		                </json:object>
 		            </c:forEach>
 		        </json:object>
-		        <%-- The nearest time on the time axis to the time that's currently
-		             selected on the web interface, in ISO8601 format --%>
-		        <json:property name="nearestTimeIso" value="${nearestTimeIso}"/>
 		        <%-- The time axis units: "ISO8601" for "normal" axes, "360_day" for
 		             axes that use the 360-day calendar, etc. --%>
 		        <json:property name="timeAxisUnits" value="${tAxisUnits}"/>
@@ -89,6 +99,9 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
         </c:otherwise>
     </c:choose>
     
+    <%-- The nearest time on the time axis to the time that's currently
+         selected on the web interface, in ISO8601 format --%>
+    <json:property name="nearestTimeIso" value="${nearestTimeIso}"/>
     <json:property name="moreInfo" value="${dataset.moreInfoUrl}"/>
     <json:property name="copyright" value="${dataset.copyrightStatement}"/>
     <json:array name="palettes" items="${paletteNames}"/>
