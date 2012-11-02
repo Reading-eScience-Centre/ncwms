@@ -13,6 +13,8 @@ import org.geotoolkit.referencing.factory.epsg.EpsgInstaller;
 import org.opengis.util.FactoryException;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
+import uk.ac.rdg.resc.ncwms.config.NcwmsContext;
+
 /**
  * Class which initialises the necessary database for looking up EPSG codes, and
  * sets it as the database to use.
@@ -23,9 +25,11 @@ import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 public class EPSGDatabaseInitialiser {
     private DataSource dataSource;
     private Connection conn;
-    public EPSGDatabaseInitialiser() {
+    private NcwmsContext ncwmsContext;
+    
+    public void init() {
         try {
-            String databasePath = new File("epsgcodes.db").getCanonicalPath();
+            String databasePath = new File(ncwmsContext.getWorkingDirectory(), "epsgcodes.db").getCanonicalPath();
             Class.forName("org.h2.Driver");
             conn = DriverManager.getConnection("jdbc:h2:" + databasePath);
             conn.setAutoCommit(true);
@@ -52,6 +56,10 @@ public class EPSGDatabaseInitialiser {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+    }
+    
+    public void setNcwmsContext(NcwmsContext ncwmsContext){
+        this.ncwmsContext = ncwmsContext;
     }
     
     public DataSource getDataSource(){
