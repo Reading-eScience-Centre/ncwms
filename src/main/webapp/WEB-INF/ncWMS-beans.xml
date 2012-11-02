@@ -193,6 +193,7 @@
     </bean>
     
     <bean id="epsgDatabaseInit"
-        class="uk.ac.rdg.resc.ncwms.util.EPSGDatabaseInitialiser" destroy-method="close">
+        class="uk.ac.rdg.resc.ncwms.util.EPSGDatabaseInitialiser" init-method="init" destroy-method="close">
+        <property name="ncwmsContext"><ref local="ncwmsContext"/></property>
     </bean>
 </beans>
