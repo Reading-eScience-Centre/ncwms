@@ -1244,10 +1244,10 @@ public abstract class AbstractWmsController extends AbstractController {
 
         String timeString = params.getMandatoryString("time");
 
-        List<PointSeriesFeature> pointSeriesFeatures = new ArrayList<PointSeriesFeature>();
+        List<Feature> timeseriesFeatures = new ArrayList<Feature>();
         for (Feature feature : featuresToPlot) {
             final String memberName = MetadataUtils.getScalarMemberName(feature, baseMemberName);
-            PointSeriesFeature pointSeriesFeature = null;
+            Feature timeseriesFeature = null;
 
             if (feature instanceof PointSeriesFeature) {
                 Extent<TimePosition> timeRange;
@@ -1259,7 +1259,7 @@ public abstract class AbstractWmsController extends AbstractController {
                     throw new WmsException(
                             "Time range is invalid - cannot create a time series plot");
                 }
-                pointSeriesFeature = ((PointSeriesFeature) feature).extractSubFeature(timeRange,
+                timeseriesFeature = ((PointSeriesFeature) feature).extractSubFeature(timeRange,
                         CollectionUtils.setOf(memberName));
             } else if (feature instanceof GridSeriesFeature) {
                 Extent<TimePosition> timeRange;
@@ -1278,10 +1278,10 @@ public abstract class AbstractWmsController extends AbstractController {
 
                 GridSeriesFeature gridSeriesFeature = (GridSeriesFeature) feature;
 
-                pointSeriesFeature = gridSeriesFeature.extractPointSeriesFeature(pos, zValue,
+                timeseriesFeature = gridSeriesFeature.extractPointSeriesFeature(pos, zValue,
                         timeRange, CollectionUtils.setOf(memberName));
             } else if (feature instanceof TrajectoryFeature) {
-                throw new UnsupportedOperationException("Not implemented yet");
+                timeseriesFeature = feature;
             } else {
                 /*
                  * We don't have a time axis, but since we might have multiple
@@ -1315,20 +1315,20 @@ public abstract class AbstractWmsController extends AbstractController {
                 coverage.addMember(baseMemberName, domain, scalarMetadata.getDescription(),
                         scalarMetadata.getParameter(), scalarMetadata.getUnits(), littleBigList,
                         scalarMetadata.getValueType());
-                pointSeriesFeature = new PointSeriesFeatureImpl(scalarMetadata.getTitle(),
+                timeseriesFeature = new PointSeriesFeatureImpl(scalarMetadata.getTitle(),
                         scalarMetadata.getName(), scalarMetadata.getDescription(), coverage, hPos,
                         vPos, null);
             }
-            if (pointSeriesFeature != null) {
-                pointSeriesFeatures.add(pointSeriesFeature);
+            if (timeseriesFeature != null) {
+                timeseriesFeatures.add(timeseriesFeature);
             }
         }
 
-        if (pointSeriesFeatures.size() == 0) {
+        if (timeseriesFeatures.size() == 0) {
             throw new WmsException("Cannot plot a timeseries of " + params.getMandatoryString("layer") + " at this point");
         }
 
-        JFreeChart chart = Charting.createTimeseriesPlot(pointSeriesFeatures, baseMemberName);
+        JFreeChart chart = Charting.createTimeseriesPlot(timeseriesFeatures, baseMemberName);
         response.setContentType(outputFormat);
         int width = 500;
         int height = 400;
