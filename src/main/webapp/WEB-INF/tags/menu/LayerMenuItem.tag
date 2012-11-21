@@ -3,7 +3,7 @@
 <%@taglib uri="/WEB-INF/taglib/wms/MenuMaker" prefix="menu"%>
 <%@taglib uri="/WEB-INF/taglib/wms/wmsUtils" prefix="utils"%> <%-- tag library for useful utility functions --%>
 <%@attribute name="dataset" required="true" type="uk.ac.rdg.resc.ncwms.wms.Dataset" description="Dataset containing this layer" %>
-<%@attribute name="item" required="true" type="uk.ac.rdg.resc.godiva.client.requests.LayerMenuItem" description="The top-level LayerMenuItem"%>
+<%@attribute name="item" required="true" type="uk.ac.rdg.resc.godiva.shared.LayerMenuItem" description="The top-level LayerMenuItem"%>
 
 <c:choose>
 	<c:when test="${item.leaf}">
