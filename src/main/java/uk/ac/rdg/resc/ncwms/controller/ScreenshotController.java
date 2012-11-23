@@ -33,7 +33,6 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -353,7 +352,6 @@ public class ScreenshotController extends MultiActionController {
         URL baseUrl = createWMSUrl(params, true, minLon, minLat, maxLon, maxLat, width, height,
                 bgUrl, time);
         image = ImageIO.read(baseUrl);
-        ImageIO.write(image, "png", new File("/home/guy/00wtf.png"));
         return image;
     }
 

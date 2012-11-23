@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import org.geotoolkit.referencing.CRS;
+import org.geotoolkit.referencing.IdentifiedObjects;
 
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.feature.Feature;
@@ -67,7 +67,8 @@ public class TileCacheKey implements Serializable {
      *             if the given filepath exists on the server but does not
      *             represent a file (e.g. it is a directory)
      */
-    public TileCacheKey(String filepath, Feature feature, RegularGrid grid, int tIndex, int zIndex, Dataset dataset) {
+    public TileCacheKey(String filepath, Feature feature, RegularGrid grid, int tIndex, int zIndex,
+            Dataset dataset) {
         this.layerId = feature.getId();
         this.setGrid(grid);
         this.filepath = filepath;
@@ -78,7 +79,8 @@ public class TileCacheKey implements Serializable {
                 this.lastModified = f.lastModified();
                 this.fileSize = f.length();
             } else {
-                throw new IllegalArgumentException(filepath + " exists but is not a valid file on this server");
+                throw new IllegalArgumentException(filepath
+                        + " exists but is not a valid file on this server");
             }
         }
         if (WmsUtils.isOpendapLocation(filepath) || WmsUtils.isNcmlAggregation(filepath)) {
@@ -158,11 +160,12 @@ public class TileCacheKey implements Serializable {
 
         // For speed we start with the cheap comparisons (i.e. not the string
         // comparisons) and the things that are most likely to be different.
-        return this.tIndex == other.tIndex && this.zIndex == other.zIndex && this.fileSize == other.fileSize
-                && this.lastModified == other.lastModified && this.datasetLastModified == other.datasetLastModified
-                && this.width == other.width && this.height == other.height && this.crsCode.equals(other.crsCode)
-                && this.filepath.equals(other.filepath) && this.layerId.equals(other.layerId)
-                && Arrays.equals(this.bbox, other.bbox);
+        return this.tIndex == other.tIndex && this.zIndex == other.zIndex
+                && this.fileSize == other.fileSize && this.lastModified == other.lastModified
+                && this.datasetLastModified == other.datasetLastModified
+                && this.width == other.width && this.height == other.height
+                && this.crsCode.equals(other.crsCode) && this.filepath.equals(other.filepath)
+                && this.layerId.equals(other.layerId) && Arrays.equals(this.bbox, other.bbox);
     }
 
     /**
@@ -174,13 +177,12 @@ public class TileCacheKey implements Serializable {
      * values to ensure that data are retrieved accurately and without
      * unnecessary repetition.
      */
-    @SuppressWarnings("deprecation")
     private void setGrid(RegularGrid grid) {
         this.width = grid.getXAxis().size();
         this.height = grid.getYAxis().size();
         BoundingBox boundingBox = grid.getCoordinateExtent();
-        this.bbox = new double[] { boundingBox.getMinX(), boundingBox.getMinY(), boundingBox.getMaxX(),
-                boundingBox.getMaxY() };
+        this.bbox = new double[] { boundingBox.getMinX(), boundingBox.getMinY(),
+                boundingBox.getMaxX(), boundingBox.getMaxY() };
         if (GISUtils.isWgs84LonLat(grid.getCoordinateReferenceSystem())) {
             // Make sure we always use the same code for lat-lon projections
             this.crsCode = "CRS:841";
@@ -188,11 +190,13 @@ public class TileCacheKey implements Serializable {
             this.bbox[0] = GISUtils.constrainLongitude180(this.bbox[0]);
             this.bbox[2] = GISUtils.constrainLongitude180(this.bbox[2]);
         } else {
-            // This should work for all CRS objects we obtain from the
-            // Geotoolkit
-            // CRS factories (see
-            // http://lists.osgeo.org/pipermail/geotoolkit/2010-April/000347.html)
-            this.crsCode = CRS.getDeclaredIdentifier(grid.getCoordinateReferenceSystem());
+            /*
+             * This should work for all CRS objects we obtain from the
+             * Geotoolkit CRS factories (see
+             * http://lists.osgeo.org/pipermail/geotoolkit
+             * /2010-April/000347.html)
+             */
+            this.crsCode = IdentifiedObjects.getIdentifier(grid.getCoordinateReferenceSystem());
         }
     }
 }
