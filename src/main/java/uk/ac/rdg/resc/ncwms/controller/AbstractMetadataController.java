@@ -191,9 +191,6 @@ public abstract class AbstractMetadataController {
                     months = new LinkedHashMap<Integer, List<Integer>>();
                     datesWithData.put(year, months);
                 }
-                // We need to subtract 1 from the month number as Javascript months
-                // are 0-based (Joda-time months are 1-based). This retains
-                // compatibility with previous behaviour.
                 int month = dateTime.getMonthOfYear();
                 List<Integer> days = months.get(month);
                 if (days == null) {
@@ -206,7 +203,11 @@ public abstract class AbstractMetadataController {
             }
             
             units = MetadataUtils.getUnitsString(feature, memberName);
-            models.put("tAxisUnits", TimeUtils.getTimeAxisUnits(tAxis.getCalendarSystem()));
+            if(tAxis != null) {
+                models.put("tAxisUnits", TimeUtils.getTimeAxisUnits(tAxis.getCalendarSystem()));
+            } else {
+                models.put("tAxisUnits", "none");
+            }
             models.put("datesWithData", datesWithData);
             models.put("nearestTimeIso", TimeUtils.dateTimeToISO8601(nearestDateTime));
             models.put("vaxis", vAxis);
