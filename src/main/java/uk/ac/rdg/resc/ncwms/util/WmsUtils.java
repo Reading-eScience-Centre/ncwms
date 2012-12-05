@@ -462,8 +462,7 @@ public class WmsUtils {
         } else if (feature instanceof TrajectoryFeature) {
             TrajectoryFeature trajectoryFeature = (TrajectoryFeature) feature;
             trajectoryFeature.getCoverage().getDomain().getDomainObjects();
-            HorizontalPosition pos = ((ProfileFeature) feature).getHorizontalPosition();
-            return getBoundingBoxForSinglePosition(pos);
+            return ((TrajectoryFeature) feature).getCoverage().getDomain().getCoordinateBounds();
         } else {
             throw new IllegalArgumentException("Unknown feature type");
         }
