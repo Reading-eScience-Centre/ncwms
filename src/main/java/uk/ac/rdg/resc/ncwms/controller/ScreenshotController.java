@@ -155,16 +155,36 @@ public class ScreenshotController extends MultiActionController {
         }
     }
     
-    
-    
     private BufferedImage drawScreenshot(RequestParams params, String servletUrl, String time) throws WmsException, IOException {
         String baseLayerUrl = params.getString("baseUrl");
         String baseLayerNames = params.getString("baseLayers");
-        if (baseLayerUrl == null || baseLayerNames == null || baseLayerUrl.equals("")
-                || baseLayerNames.equals("")) {
-            baseLayerUrl = "http://www2.demis.nl/wms/wms.ashx?WMS=BlueMarble&LAYERS=Earth%20Image";
-        } else {
+        if(baseLayerNames != null) {
             baseLayerUrl += "&LAYERS=" + baseLayerNames;
+        }
+
+        Float minLon = Float.parseFloat(params.getString("bbox").split(",")[0]);
+        Float maxLon = Float.parseFloat(params.getString("bbox").split(",")[2]);
+        Float minLat = Float.parseFloat(params.getString("bbox").split(",")[1]);
+        Float maxLat = Float.parseFloat(params.getString("bbox").split(",")[3]);
+        Float lonRange = maxLon - minLon;
+        
+        String crs = params.getString("crs");
+        
+        /*
+         * The problem with base layers is that they all support different
+         * things. Since base layers can be configurable, we cannot test that
+         * they will all work. Therefore, we try the supplied one, and failing
+         * that, choose the base layer based on the CRS.
+         */
+        URL baseUrl = createWMSUrl(params, true, minLon, minLat, maxLon, maxLat, 100, 100, baseLayerUrl, time);
+        try{
+            ImageIO.read(baseUrl);
+        } catch (Exception e) {
+            if(crs.equalsIgnoreCase("EPSG:4326") || crs.equalsIgnoreCase("CRS:84")) {
+                baseLayerUrl = "http://www2.demis.nl/wms/wms.ashx?WMS=BlueMarble&LAYERS=Earth%20Image";
+            } else if (crs.equalsIgnoreCase("EPSG:32661") || crs.equalsIgnoreCase("EPSG:32761")) {
+                baseLayerUrl = "http://wms-basemaps.appspot.com/wms?LAYERS=bluemarble_file&FORMAT=image/jpeg";
+            }
         }
         
         int mapHeight = params.getPositiveInt("mapHeight", 384);
@@ -240,13 +260,7 @@ public class ScreenshotController extends MultiActionController {
             vPos += 30;
         }
 
-        Float minLon = Float.parseFloat(params.getString("bbox").split(",")[0]);
-        Float maxLon = Float.parseFloat(params.getString("bbox").split(",")[2]);
-        Float minLat = Float.parseFloat(params.getString("bbox").split(",")[1]);
-        Float maxLat = Float.parseFloat(params.getString("bbox").split(",")[3]);
-        Float lonRange = maxLon - minLon;
-
-        if (minLon >= -180 && maxLon <= 180) {
+        if ((!crs.equalsIgnoreCase("EPSG:4326") && !crs.equalsIgnoreCase("CRS:84")) || (minLon >= -180 && maxLon <= 180)) {
             BufferedImage im = getImage(params, minLon, minLat, maxLon, maxLat, mapWidth,
                     mapHeight, baseLayerUrl, time);
             g.drawImage(im, 0, textSpace, null);
@@ -321,26 +335,28 @@ public class ScreenshotController extends MultiActionController {
         g.setFont(font);
         if (sr != null) {
             String[] scaleVals = sr.split(",");
-            float topVal = Float.parseFloat(scaleVals[1]);
-            float botVal = Float.parseFloat(scaleVals[0]);
-            String log = params.getString("logScale");
-            double highMedVal;
-            double lowMedVal;
-            if (log != null && Boolean.parseBoolean(log)) {
-                double aThird = Math.log(topVal / botVal) / 3.0;
-                highMedVal = Math.exp(Math.log(botVal) + 2 * aThird);
-                lowMedVal = Math.exp(Math.log(botVal) + aThird);
-            } else {
-                highMedVal = botVal + 2 * (topVal - botVal) / 3;
-                lowMedVal = botVal + (topVal - botVal) / 3;
+            if(scaleVals.length == 2) {
+                float topVal = Float.parseFloat(scaleVals[1]);
+                float botVal = Float.parseFloat(scaleVals[0]);
+                String log = params.getString("logScale");
+                double highMedVal;
+                double lowMedVal;
+                if (log != null && Boolean.parseBoolean(log)) {
+                    double aThird = Math.log(topVal / botVal) / 3.0;
+                    highMedVal = Math.exp(Math.log(botVal) + 2 * aThird);
+                    lowMedVal = Math.exp(Math.log(botVal) + aThird);
+                } else {
+                    highMedVal = botVal + 2 * (topVal - botVal) / 3;
+                    lowMedVal = botVal + (topVal - botVal) / 3;
+                }
+                int highMedPos = botPos + 2 * (topPos - botPos) / 3;
+                int lowMedPos = botPos + (topPos - botPos) / 3;
+                DecimalFormat format = new DecimalFormat("##0.00");
+                g.drawString(format.format(topVal), hPos, topPos);
+                g.drawString(format.format(highMedVal), hPos, highMedPos);
+                g.drawString(format.format(lowMedVal), hPos, lowMedPos);
+                g.drawString(format.format(botVal), hPos, botPos);
             }
-            int highMedPos = botPos + 2 * (topPos - botPos) / 3;
-            int lowMedPos = botPos + (topPos - botPos) / 3;
-            DecimalFormat format = new DecimalFormat("##0.00");
-            g.drawString(format.format(topVal), hPos, topPos);
-            g.drawString(format.format(highMedVal), hPos, highMedPos);
-            g.drawString(format.format(lowMedVal), hPos, lowMedPos);
-            g.drawString(format.format(botVal), hPos, botPos);
         }
 
         return image;
@@ -351,7 +367,12 @@ public class ScreenshotController extends MultiActionController {
         BufferedImage image = null;
         URL baseUrl = createWMSUrl(params, true, minLon, minLat, maxLon, maxLat, width, height,
                 bgUrl, time);
-        image = ImageIO.read(baseUrl);
+        try{
+            image = ImageIO.read(baseUrl);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        }
         return image;
     }
 
@@ -366,14 +387,25 @@ public class ScreenshotController extends MultiActionController {
                     baseWmsUrl = m.replaceAll("%20");
             }
             url.append(baseWmsUrl);
+            url.append("&STYLES=");
         } else {
+            String dataset = params.getString("dataset");
+            if(dataset == null || dataset.equalsIgnoreCase("null")) {
+                /*
+                 * If we don't have a dataset, we can't plot a layer
+                 */
+                return null;
+            }
             url.append(baseWmsUrl);
-            url.append(params.getString("dataset") + "?SERVICE=WMS&LAYERS="
+            url.append(dataset + "?SERVICE=WMS&LAYERS="
                     + params.getString("layer"));
             String style = params.getString("style");
             String palette = params.getString("palette");
-            if (style != null && palette != null)
+            if (style != null && palette != null) {
                 url.append("&STYLES=" + style + "/" + palette);
+            } else {
+                url.append("&STYLES=");
+            }
             String scaleRange = params.getString("scaleRange");
             if (scaleRange != null)
                 url.append("&COLORSCALERANGE=" + scaleRange);
@@ -385,13 +417,23 @@ public class ScreenshotController extends MultiActionController {
             String elevation = params.getString("elevation");
             if (elevation != null)
                 url.append("&ELEVATION=" + elevation);
+            String colorbyDepth = params.getString("colorby/depth");
+            if (colorbyDepth != null)
+                url.append("&COLORBY/DEPTH=" + colorbyDepth);
+            String colorbyTime = params.getString("colorby/time");
+            if (colorbyTime != null)
+                url.append("&COLORBY/TIME=" + colorbyTime);
         }
 
         url.append("&TRANSPARENT=true");
         url.append("&VERSION=1.1.1&SERVICE=WMS&REQUEST=GetMap&FORMAT=image/png&WIDTH=" + width
                 + "&HEIGHT=" + height);
         url.append("&BBOX=" + minLon + "," + minLat + "," + maxLon + "," + maxLat);
-        url.append("&SRS=" + params.getString("crs"));
+        String crs = params.getString("crs");
+        if(crs.equalsIgnoreCase("CRS:84")) {
+            crs = "EPSG:4326";
+        }
+        url.append("&SRS=" + crs);
         try {
             return new URL(url.toString().replaceAll(" ", "%20"));
         } catch (MalformedURLException e) {
@@ -401,7 +443,11 @@ public class ScreenshotController extends MultiActionController {
     }
 
     private URL createColorbarUrl(RequestParams params, int mapHeight, String baseUrl) {
-        String url = baseUrl + params.getString("dataset")
+        String dataset = params.getString("dataset");
+        if(dataset == null || dataset.equalsIgnoreCase("null")) {
+            return null;
+        }
+        String url = baseUrl + dataset
                 + "?REQUEST=GetLegendGraphic&COLORBARONLY=true&WIDTH=1&HEIGHT=" + mapHeight;
         String numColorBands = params.getString("numColorBands");
         if (numColorBands != null)
