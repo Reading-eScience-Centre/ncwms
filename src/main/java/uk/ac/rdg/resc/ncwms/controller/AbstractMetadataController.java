@@ -63,7 +63,7 @@ import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 public abstract class AbstractMetadataController {
     private static final Logger log = LoggerFactory.getLogger(AbstractMetadataController.class);
 
-    private final FeatureFactory featureFactory;
+    protected final FeatureFactory featureFactory;
 
     protected Config config;
 
@@ -112,7 +112,7 @@ public abstract class AbstractMetadataController {
      * Shows an JSON document containing the details of the given variable
      * (units, zvalues, tvalues etc). See showLayerDetails.jsp.
      */
-    private ModelAndView showLayerDetails(RequestParams params) throws Exception {
+    protected ModelAndView showLayerDetails(RequestParams params) throws Exception {
         
         String layerName = params.getMandatoryString("layerName");
         
@@ -216,11 +216,13 @@ public abstract class AbstractMetadataController {
             
             bbox = featureCollection.getCollectionBoundingBox();
             units = "";
-            for(Feature feature : featureCollection.getFeatures()){
-                if(feature.getCoverage().getScalarMemberNames().contains(memberName)){
-                    units = MetadataUtils.getUnitsString(feature, memberName);
-                    styles = WmsUtils.getBaseStyles(feature, memberName);
-                    break;
+            if(featureCollection.getFeatures() != null) {
+                for(Feature feature : featureCollection.getFeatures()){
+                    if(feature.getCoverage().getScalarMemberNames().contains(memberName)){
+                        units = MetadataUtils.getUnitsString(feature, memberName);
+                        styles = WmsUtils.getBaseStyles(feature, memberName);
+                        break;
+                    }
                 }
             }
             
@@ -369,7 +371,8 @@ public abstract class AbstractMetadataController {
              * If we have a grid series feature, extract the relevant portion of
              * the data
              */
-            VerticalPosition zValue =  GISUtils.getExactElevation(dr.getElevationString(), feature);
+            VerticalPosition zValue = GISUtils.getExactElevation(dr.getElevationString(),
+                    GISUtils.getVerticalAxis(feature));
             /*
              * Get the requested timestep (taking the first only if an animation
              * is requested)
@@ -400,7 +403,7 @@ public abstract class AbstractMetadataController {
             for(Feature feature : features){
                 memberName = MetadataUtils.getScalarMemberName(feature, memberName);
                 
-                VerticalPosition vPos  = GISUtils.getClosestElevationTo(colorByDepth, feature);
+                VerticalPosition vPos  = GISUtils.getClosestElevationTo(colorByDepth, GISUtils.getVerticalAxis(feature));
                 TimePosition tPos = GISUtils.getClosestTimeTo(colorByTime, GISUtils.getTimeAxis(feature, false));
                 
                 Extent<Float> minMax = getFeatureMinMax(feature, vPos, tPos, memberName, null);

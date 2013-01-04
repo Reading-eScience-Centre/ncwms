@@ -175,7 +175,9 @@ public class NcwmsMetadataController extends AbstractMetadataController
             /*
              * For every feature...
              */
-            if(featureCollection != null){
+            if(featureCollection != null && featureCollection.getFeatures() !=  null){
+                featureCollection.getMemberIdsInCollection();
+                
                 Set<String> memberNamesUsed = new LinkedHashSet<String>();
                 for(Feature feature : featureCollection.getFeatures()){
                     Coverage<?> coverage = feature.getCoverage();

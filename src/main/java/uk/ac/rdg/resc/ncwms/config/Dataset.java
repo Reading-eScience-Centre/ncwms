@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.cdm.feature.DefaultGridSeriesFeatureCollectionFactory;
 import uk.ac.rdg.resc.edal.cdm.feature.FeatureCollectionFactory;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
@@ -37,6 +38,14 @@ import uk.ac.rdg.resc.edal.util.GISUtils;
  */
 @Root(name = "dataset")
 public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
+    
+    static {
+        /*
+         * Set the default class for reading.
+         */
+        FeatureCollectionFactory.setDefaultClass(DefaultGridSeriesFeatureCollectionFactory.class);
+    }
+    
     private static final Logger logger = LoggerFactory.getLogger(Dataset.class);
 
     // Unique ID for this dataset
@@ -118,7 +127,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     private TimePosition lastFailedUpdateTime = null;
 
-    private FeatureCollection<? extends Feature> features;
+    private FeatureCollection<? extends Feature> featureCollection;
 
     /**
      * Checks that the data we have read are valid. Checks that there are no
@@ -286,9 +295,9 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Override
     public Feature getFeatureById(String featureId) {
-        if(features == null)
+        if(featureCollection == null)
             return null;
-        return features.getFeatureById(featureId);
+        return featureCollection.getFeatureById(featureId);
     }
 
     /**
@@ -296,7 +305,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      */
     @Override
     public FeatureCollection<? extends Feature> getFeatureCollection() {
-        return features;
+        return featureCollection;
     }
 
     /**
@@ -478,7 +487,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
         // accordingly
         config.updateCredentialsProvider(this);
         // Read the layers from the data reader
-        features = fcFactory.read(location, id, title);
+        featureCollection = fcFactory.read(location, id, title);
         appendLoadingProgress("loaded layers");
         // Look for overriding attributes in the configuration
         readLayerConfig();
@@ -491,9 +500,9 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
      * file.
      */
     private void readLayerConfig() {
-        if(features == null)
+        if(featureCollection == null)
             return;
-        boolean featureCollectionIsLayer = !(features instanceof UniqueMembersFeatureCollection);
+        boolean featureCollectionIsLayer = !(featureCollection instanceof UniqueMembersFeatureCollection);
         
         if(featureCollectionIsLayer){
             class TitleMinMax{
@@ -521,24 +530,25 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
              }
             
             Map<String, TitleMinMax> memberName2ScaleRange = new HashMap<String, TitleMinMax>();
-            for(Feature feature : features.getFeatures()){
-                for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
-                    
-                    TitleMinMax minmax = memberName2ScaleRange.get(memberMetadata.getName());
-                    if(minmax == null){
-                        minmax = new TitleMinMax();
-                    }
-                    minmax.title = memberMetadata.getTitle();
-                    
-                    Extent<Float> valueRange = GISUtils.estimateValueRange(feature, memberMetadata.getName());
-                    if(valueRange != null){
-                        minmax.maybeSetMin(valueRange.getLow());
-                        minmax.maybeSetMax(valueRange.getHigh());
-                        memberName2ScaleRange.put(memberMetadata.getName(), minmax);
+            if(featureCollection.getFeatures() != null) {
+                for(Feature feature : featureCollection.getFeatures()){
+                    for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
+                        
+                        TitleMinMax minmax = memberName2ScaleRange.get(memberMetadata.getName());
+                        if(minmax == null){
+                            minmax = new TitleMinMax();
+                        }
+                        minmax.title = memberMetadata.getTitle();
+                        
+                        Extent<Float> valueRange = GISUtils.estimateValueRange(feature, memberMetadata.getName());
+                        if(valueRange != null){
+                            minmax.maybeSetMin(valueRange.getLow());
+                            minmax.maybeSetMax(valueRange.getHigh());
+                            memberName2ScaleRange.put(memberMetadata.getName(), minmax);
+                        }
                     }
                 }
             }
-            
             for(String memberName : memberName2ScaleRange.keySet()){
                 FeaturePlottingMetadata plottingMetadata = getPlottingMetadataMap().get(memberName);
                 if(plottingMetadata == null){
@@ -551,7 +561,7 @@ public class Dataset implements uk.ac.rdg.resc.ncwms.wms.Dataset {
                 plottingMetadata.setColorScaleRange(Extents.newExtent(titleMinMax.getMin(), titleMinMax.getMax()));
             }
         } else {
-            for (Feature feature : features.getFeatures()) {
+            for (Feature feature : featureCollection.getFeatures()) {
                 for(RangeMetadata memberMetadata : MetadataUtils.getPlottableLayers(feature)){
                     String memberId = memberMetadata.getName();
                     // Load the Variable object from the config file or create a new

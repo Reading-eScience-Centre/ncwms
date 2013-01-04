@@ -575,7 +575,7 @@ public abstract class AbstractWmsController extends AbstractController {
                     .getFeatureContainingMember(memberName);
 
             VerticalPosition zValue = GISUtils.getExactElevation(
-                    mapDataRequest.getElevationString(), feature);
+                    mapDataRequest.getElevationString(), GISUtils.getVerticalAxis(feature));
 
             /*
              * Cycle through all the provided timesteps, extracting data for
@@ -660,7 +660,7 @@ public abstract class AbstractWmsController extends AbstractController {
             }
 
             for (Feature feature : features) {
-                VerticalPosition vPos = GISUtils.getClosestElevationTo(colorByDepth, feature);
+                VerticalPosition vPos = GISUtils.getClosestElevationTo(colorByDepth, GISUtils.getVerticalAxis(feature));
                 TimePosition tPos = GISUtils.getClosestTimeTo(colorByTime,
                         GISUtils.getTimeAxis(feature, false));
                 mapPlotter.addToFrame(feature, memberName, vPos, tPos, null, plotStyle);
@@ -823,7 +823,7 @@ public abstract class AbstractWmsController extends AbstractController {
             memberName = MetadataUtils.getScalarMemberName(feature, memberName);
 
             VerticalPosition zValue = GISUtils.getExactElevation(
-                    featureDataRequest.getElevationString(), feature);
+                    featureDataRequest.getElevationString(), GISUtils.getVerticalAxis(feature));
 
             HorizontalGrid horizGrid = null;
             if (feature instanceof GridSeriesFeature) {
@@ -927,7 +927,7 @@ public abstract class AbstractWmsController extends AbstractController {
                     vPos = trajectoryPosition.getVerticalPosition();
                     tPos = trajectoryPosition.getTimePosition();
                 } else {
-                    vPos = GISUtils.getClosestElevationTo(colorByDepth, feature);
+                    vPos = GISUtils.getClosestElevationTo(colorByDepth, GISUtils.getVerticalAxis(feature));
                     tPos = GISUtils.getClosestTimeTo(colorByTime,
                             GISUtils.getTimeAxis(feature, false));
                 }
@@ -1071,7 +1071,8 @@ public abstract class AbstractWmsController extends AbstractController {
                 List<TimePosition> tValues = WmsUtils.getTimePositionsForString(
                         params.getString("time"), feature);
                 tValue = tValues.isEmpty() ? null : tValues.get(0);
-                zValue = GISUtils.getExactElevation(params.getString("elevation"), feature);
+                zValue = GISUtils.getExactElevation(params.getString("elevation"),
+                        GISUtils.getVerticalAxis(feature));
                 vAxis = gridSeriesFeature.getCoverage().getDomain().getVerticalAxis();
                 if (vAxis != null && vAxis.size() > 1) {
                     hasVerticalAxis = true;
@@ -1272,7 +1273,7 @@ public abstract class AbstractWmsController extends AbstractController {
                             "Time range is invalid - cannot create a time series plot");
                 }
                 VerticalPosition zValue = GISUtils.getExactElevation(params.getString("elevation"),
-                        feature);
+                        GISUtils.getVerticalAxis(feature));
                 
                 HorizontalPosition pos = getHorizontalPosition(params);
 
@@ -1301,7 +1302,7 @@ public abstract class AbstractWmsController extends AbstractController {
                 if (params.getString("elevation") != null) {
                     targetDepth = Double.parseDouble(params.getString("elevation"));
                 }
-                VerticalPosition vPos = GISUtils.getClosestElevationTo(targetDepth, feature);
+                VerticalPosition vPos = GISUtils.getClosestElevationTo(targetDepth, GISUtils.getVerticalAxis(feature));
                 
                 assert(timeAxis.getCoordinateValues().size() == 1);
                 
@@ -1567,8 +1568,8 @@ public abstract class AbstractWmsController extends AbstractController {
             scaleRange = Extents.newExtent(min, max);
         }
 
-        VerticalPosition zValue = GISUtils
-                .getExactElevation(params.getString("elevation"), feature);
+        VerticalPosition zValue = GISUtils.getExactElevation(params.getString("elevation"),
+                GISUtils.getVerticalAxis(feature));
 
         return Charting.createVerticalSectionChart(feature, memberName, lineString, scaleRange,
                 palette, numColourBands, logScale, zValue, tValue);
