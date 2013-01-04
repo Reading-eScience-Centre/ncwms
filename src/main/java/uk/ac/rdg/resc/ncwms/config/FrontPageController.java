@@ -100,12 +100,14 @@ public class FrontPageController extends AbstractController
             List<IndexEntry> layers = new ArrayList<IndexEntry>();
             Set<String> used = new HashSet<String>();
             BoundingBox bbox = featureCollection.getCollectionBoundingBox();
-            for(Feature feature : features){
-                List<RangeMetadata> plottableLayers = MetadataUtils.getPlottableLayers(feature);
-                for(RangeMetadata metadata : plottableLayers){
-                    if(!used.contains(metadata.getName())){
-                        layers.add(new IndexEntry(metadata, bbox));
-                        used.add(metadata.getName());
+            if(features != null) {
+                for(Feature feature : features){
+                    List<RangeMetadata> plottableLayers = MetadataUtils.getPlottableLayers(feature);
+                    for(RangeMetadata metadata : plottableLayers){
+                        if(!used.contains(metadata.getName())){
+                            layers.add(new IndexEntry(metadata, bbox));
+                            used.add(metadata.getName());
+                        }
                     }
                 }
             }

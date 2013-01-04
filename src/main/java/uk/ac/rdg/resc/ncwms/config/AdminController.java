@@ -29,6 +29,7 @@
 package uk.ac.rdg.resc.ncwms.config;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -319,10 +320,13 @@ public class AdminController extends MultiActionController {
                 String[] layerParts = layerId.split("/");
                 if (layerParts.length == 2) {
                     if (layerParts[0].equals("*")) {
-                        for (Feature feature : ds.getFeatureCollection().getFeatures()) {
-                            RangeMetadata memberMetadata = MetadataUtils
-                                    .getMetadataForFeatureMember(feature, layerParts[1]);
-                            memberMetadata.setTitle(newTitle);
+                        Collection<? extends Feature> features = ds.getFeatureCollection().getFeatures();
+                        if(features != null) {
+                            for (Feature feature : features) {
+                                RangeMetadata memberMetadata = MetadataUtils
+                                        .getMetadataForFeatureMember(feature, layerParts[1]);
+                                memberMetadata.setTitle(newTitle);
+                            }
                         }
                     } else {
                         Feature feature = ds.getFeatureById(layerParts[0]);
