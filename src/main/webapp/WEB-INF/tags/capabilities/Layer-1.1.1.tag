@@ -19,7 +19,7 @@
 	    <c:set var="vAxis" value="${utils:getVerticalAxis(feature)}"/>
 	    <c:if test="${not empty vAxis}">
 	        <Dimension name="elevation" units="${vAxis.verticalCrs.units.unitString}"/>
-            <Extent name="elevation" default="${utils:getDefaultElevation(feature)}">
+            <Extent name="elevation" default="${utils:getDefaultElevation(vAxis)}">
                 <%-- Print out the dimension values, comma separated, making sure
                      that there is no comma at the start or end of the list.  Note that
                      we can't use ${fn:join} because the z values are an array of doubles,
