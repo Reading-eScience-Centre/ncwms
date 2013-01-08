@@ -133,7 +133,7 @@
     <description>Returns the uppermost elevation (i.e. the default)</description>
     <name>getDefaultElevation</name>
     <function-class>uk.ac.rdg.resc.edal.util.GISUtils</function-class>
-    <function-signature>java.lang.Double getClosestElevationToSurface(uk.ac.rdg.resc.edal.feature.Feature)</function-signature>
+    <function-signature>java.lang.Double getClosestElevationToSurface(uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis)</function-signature>
   </function>
 
   <function>
