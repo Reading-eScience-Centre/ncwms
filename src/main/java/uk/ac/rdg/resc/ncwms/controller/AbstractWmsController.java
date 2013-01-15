@@ -74,7 +74,6 @@ import uk.ac.rdg.resc.edal.coverage.domain.impl.PointSeriesDomainImpl;
 import uk.ac.rdg.resc.edal.coverage.grid.GridCell2D;
 import uk.ac.rdg.resc.edal.coverage.grid.HorizontalGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
-import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.BorderedGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinates2DImpl;
@@ -1296,7 +1295,7 @@ public abstract class AbstractWmsController extends AbstractController {
                  * 2. It'll take more work to disable it on the front end than
                  * it did to implement...
                  */
-                TimeAxis timeAxis = GISUtils.getTimeAxis(feature, true);
+                List<TimePosition> times = GISUtils.getTimeAxis(feature, true);
                 HorizontalPosition hPos = getHorizontalPosition(params);
                 Double targetDepth = null;
                 if (params.getString("elevation") != null) {
@@ -1304,13 +1303,13 @@ public abstract class AbstractWmsController extends AbstractController {
                 }
                 VerticalPosition vPos = GISUtils.getClosestElevationTo(targetDepth, GISUtils.getVerticalAxis(feature));
                 
-                assert(timeAxis.getCoordinateValues().size() == 1);
+                assert(times.size() == 1);
                 
-                PointSeriesDomain domain = new PointSeriesDomainImpl(timeAxis.getCoordinateValues());
+                PointSeriesDomain domain = new PointSeriesDomainImpl(times);
                 
                 ScalarMetadata scalarMetadata = MetadataUtils.getScalarMetadata(feature, memberName);
                 PointSeriesCoverageImpl coverage = new PointSeriesCoverageImpl(scalarMetadata.getDescription(), domain);
-                Object value = WmsUtils.getFeatureValue(feature, hPos, vPos, timeAxis.getCoordinateValue(0), memberName);
+                Object value = WmsUtils.getFeatureValue(feature, hPos, vPos, times.get(0), memberName);
                 LittleBigList<Object> littleBigList = new LittleBigList<Object>();
                 littleBigList.add(value);
                 coverage.addMember(baseMemberName, domain, scalarMetadata.getDescription(),
