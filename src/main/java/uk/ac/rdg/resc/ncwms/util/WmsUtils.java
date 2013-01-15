@@ -41,7 +41,6 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
-import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.RegularGridImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
@@ -523,12 +522,12 @@ public class WmsUtils {
         if (feature == null) {
             return tValues;
         }
-        TimeAxis tAxis = GISUtils.getTimeAxis(feature, false);
+        List<TimePosition> tAxis = GISUtils.getTimeAxis(feature, false);
         if (tAxis == null || tAxis.size() == 0) {
             return tValues;
         }
         if(timeString == null || timeString.equals("")) {
-            return tAxis.getCoordinateValues().subList(0, 1);
+            return tAxis.subList(0, 1);
         }
         for (String t : timeString.split(",")) {
             String[] startStop = t.split("/");
@@ -546,44 +545,46 @@ public class WmsUtils {
         return tValues;
     }
 
-    private static TimePosition findTValue(String isoDateTime, TimeAxis tAxis)
+    private static TimePosition findTValue(String isoDateTime, List<TimePosition> tValues)
             throws InvalidDimensionValueException {
-        if (tAxis == null) {
+        if (tValues == null) {
             return null;
         }
-        int tIndex = findTIndex(isoDateTime, tAxis);
+        int tIndex = findTIndex(isoDateTime, tValues);
         if(tIndex < 0) {
             throw new InvalidDimensionValueException("time", isoDateTime);
         }
-        return tAxis.getCoordinateValue(tIndex);
+        return tValues.get(tIndex);
     }
     
     private static List<TimePosition> findTValues(String isoDateTimeStart, String isoDateTimeEnd,
-            TimeAxis tAxis) throws InvalidDimensionValueException {
-        if (tAxis == null) {
+            List<TimePosition> tValues) throws InvalidDimensionValueException {
+        if (tValues == null) {
             throw new InvalidDimensionValueException("time", isoDateTimeStart + "/"
                     + isoDateTimeEnd);
         }
-        int startIndex = findTIndex(isoDateTimeStart, tAxis);
-        int endIndex = findTIndex(isoDateTimeEnd, tAxis);
+        int startIndex = findTIndex(isoDateTimeStart, tValues);
+        int endIndex = findTIndex(isoDateTimeEnd, tValues);
         if (startIndex > endIndex) {
             throw new InvalidDimensionValueException("time", isoDateTimeStart + "/"
                     + isoDateTimeEnd);
         }
-        List<TimePosition> layerTValues = tAxis.getCoordinateValues();
-        List<TimePosition> tValues = new ArrayList<TimePosition>();
+        List<TimePosition> returnTValues = new ArrayList<TimePosition>();
         for (int i = startIndex; i <= endIndex; i++) {
-            tValues.add(layerTValues.get(i));
+            returnTValues.add(tValues.get(i));
         }
-        return tValues;
+        return returnTValues;
     }
     
-    public static int findTIndex(String isoDateTime, TimeAxis tAxis)
+    public static int findTIndex(String isoDateTime, List<TimePosition> tValues)
             throws InvalidDimensionValueException {
         TimePosition target;
         if (isoDateTime.equalsIgnoreCase("current")) {
-            target = GISUtils.getClosestToCurrentTime(tAxis);
+            target = GISUtils.getClosestToCurrentTime(tValues);
         } else {
+            if(tValues == null || tValues.size() == 0) {
+                return -1;
+            }
             try {
                 /*
                  * ISO date strings do not have spaces. However, spaces can be
@@ -592,19 +593,19 @@ public class WmsUtils {
                  * are it's this.
                  */
                 isoDateTime = isoDateTime.replaceAll(" ", "+");
-                target = TimeUtils.iso8601ToDateTime(isoDateTime, tAxis.getCalendarSystem());
+                target = TimeUtils.iso8601ToDateTime(isoDateTime, tValues.get(0).getCalendarSystem());
             } catch (ParseException e) {
                 throw new InvalidDimensionValueException("time", isoDateTime);
             }
         }
 
-        /*
-         * Find the equivalent DateTime in the Layer. Note that we can't simply
-         * use the contains() method of the List, since this is based on
-         * equals(). We want to find the DateTime with the same millisecond
-         * instant.
-         */
-        return tAxis.findIndexOf(target);
+        long targetMillis = target.getValue();
+        for(int i = 0; i < tValues.size(); i++) {
+            if(targetMillis == tValues.get(i).getValue()) {
+                return i;
+            }
+        }
+        return -1;
     }
 
 }

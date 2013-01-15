@@ -21,7 +21,6 @@ import org.springframework.web.servlet.ModelAndView;
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.DiscreteCoverage;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
-import uk.ac.rdg.resc.edal.coverage.grid.TimeAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
@@ -135,13 +134,13 @@ public abstract class AbstractMetadataController {
             bbox = WmsUtils.getWmsBoundingBox(feature);
             styles = WmsUtils.getBaseStyles(feature, memberName);
             VerticalAxis vAxis = GISUtils.getVerticalAxis(feature);
-            TimeAxis tAxis = GISUtils.getTimeAxis(feature, false);
+            List<TimePosition> timeValues = GISUtils.getTimeAxis(feature, false);
             // Find the time the user has requested (this is the time that is
             // currently displayed on the Godiva2 site). If no time has been
             // specified we use the current time
             CalendarSystem calendarSystem = null;
-            if (tAxis != null) {
-                calendarSystem = tAxis.getCalendarSystem();
+            if (timeValues != null && timeValues.size() > 0) {
+                calendarSystem = timeValues.get(0).getCalendarSystem();
             }
             TimePosition targetDateTime = new TimePositionJoda(calendarSystem);
             String targetDateIso = params.getString("time");
@@ -156,12 +155,9 @@ public abstract class AbstractMetadataController {
             }
             
             Map<Integer, Map<Integer, List<Integer>>> datesWithData = new LinkedHashMap<Integer, Map<Integer, List<Integer>>>();
-            List<TimePosition> timeValues;
-            if (tAxis != null)
-                timeValues = tAxis.getCoordinateValues();
-            else
+            if (timeValues == null)
                 timeValues = Collections.emptyList();
-            TimePosition nearestDateTime = GISUtils.getClosestTimeTo(targetDateTime, tAxis);
+            TimePosition nearestDateTime = GISUtils.getClosestTimeTo(targetDateTime, timeValues);
             
             /*
              * Takes an array of time values for a layer and turns it into a Map of
@@ -203,8 +199,8 @@ public abstract class AbstractMetadataController {
             }
             
             units = MetadataUtils.getUnitsString(feature, memberName);
-            if(tAxis != null) {
-                models.put("tAxisUnits", TimeUtils.getTimeAxisUnits(tAxis.getCalendarSystem()));
+            if(calendarSystem != null) {
+                models.put("tAxisUnits", TimeUtils.getTimeAxisUnits(calendarSystem));
             } else {
                 models.put("tAxisUnits", "none");
             }
@@ -297,21 +293,22 @@ public abstract class AbstractMetadataController {
         } else {
             String memberName = WmsUtils.getMemberName(layerName);
             Feature feature = ((UniqueMembersFeatureCollection<? extends Feature>) featureCollection).getFeatureContainingMember(memberName);
-            TimeAxis tAxis = GISUtils.getTimeAxis(feature, false);
+            List<TimePosition> tValues = GISUtils.getTimeAxis(feature, false);
             
-            if (tAxis == null || tAxis.getCoordinateValues().isEmpty())
+            if (tValues == null || tValues.isEmpty())
                 return null; // return no data if no time axis present
 
             String dayStr = params.getString("day");
             if (dayStr == null) {
                 throw new Exception("Must provide a value for the day parameter");
             }
-            TimePosition date = TimeUtils.iso8601ToDate(dayStr, tAxis.getCalendarSystem());
+            // We can do a get(0) here, because we have already checked that tValues.isEmpty() is false
+            TimePosition date = TimeUtils.iso8601ToDate(dayStr, tValues.get(0).getCalendarSystem());
             // List of date-times that fall on this day
             List<TimePosition> timesteps = new ArrayList<TimePosition>();
             // Search exhaustively through the layer's valid time values
             // TODO: inefficient: should stop once last day has been found.
-            for (TimePosition tVal : tAxis.getCoordinateValues()) {
+            for (TimePosition tVal : tValues) {
                 if (onSameDay(tVal, date)) {
                     timesteps.add(tVal);
                 }
@@ -522,9 +519,9 @@ public abstract class AbstractMetadataController {
             Feature feature = ((UniqueMembersFeatureCollection<?>) featureCollection)
                     .getFeatureContainingMember(memberName);
             
-            TimeAxis tAxis = GISUtils.getTimeAxis(feature, false);
+            List<TimePosition> tValues = GISUtils.getTimeAxis(feature, false);
 
-            if(tAxis == null){
+            if(tValues == null){
                 throw new WmsException("There is no time axis - cannot create animation");
             }
             String startStr = params.getString("start");
@@ -534,9 +531,8 @@ public abstract class AbstractMetadataController {
             }
 
             // Find the start and end indices along the time axis
-            int startIndex = WmsUtils.findTIndex(startStr, tAxis);
-            int endIndex = WmsUtils.findTIndex(endStr, tAxis);
-            List<TimePosition> tValues = tAxis.getCoordinateValues();
+            int startIndex = WmsUtils.findTIndex(startStr, tValues);
+            int endIndex = WmsUtils.findTIndex(endStr, tValues);
 
             // E.g.: {
             // "Full" : "start/end",
