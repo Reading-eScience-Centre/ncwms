@@ -31,7 +31,7 @@
 	    <c:if test="${not empty tAxis}">
 	        <Dimension name="time" units="${utils:getTimeAxisUnits(tAxis.calendarSystem)}"/>
 	        <c:set var="tvalues" value="${tAxis.coordinateValues}" />
-            <Extent name="time" multipleValues="1" current="1" default="${utils:dateTimeToISO8601(utils:getDefaultTime(tAxis))}">
+            <Extent name="time" multipleValues="1" current="1" default="${utils:dateTimeToISO8601(utils:getDefaultTime(tvalues))}">
                 <c:choose>
                     <c:when test="${verboseTimes}">
                         <%-- Use the verbose version of the time string --%>

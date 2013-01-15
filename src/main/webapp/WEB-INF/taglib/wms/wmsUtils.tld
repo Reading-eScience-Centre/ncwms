@@ -140,7 +140,7 @@
     <description>Returns the closest time to the current one (i.e. the default)</description>
     <name>getDefaultTime</name>
     <function-class>uk.ac.rdg.resc.edal.util.GISUtils</function-class>
-    <function-signature>uk.ac.rdg.resc.edal.position.TimePosition getClosestToCurrentTime(uk.ac.rdg.resc.edal.coverage.grid.TimeAxis)</function-signature>
+    <function-signature>uk.ac.rdg.resc.edal.position.TimePosition getClosestToCurrentTime(java.util.List)</function-signature>
   </function>
   
   <function>

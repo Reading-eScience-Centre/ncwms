@@ -134,7 +134,7 @@ public abstract class AbstractMetadataController {
             bbox = WmsUtils.getWmsBoundingBox(feature);
             styles = WmsUtils.getBaseStyles(feature, memberName);
             VerticalAxis vAxis = GISUtils.getVerticalAxis(feature);
-            List<TimePosition> timeValues = GISUtils.getTimeAxis(feature, false);
+            List<TimePosition> timeValues = GISUtils.getTimes(feature, false);
             // Find the time the user has requested (this is the time that is
             // currently displayed on the Godiva2 site). If no time has been
             // specified we use the current time
@@ -293,7 +293,7 @@ public abstract class AbstractMetadataController {
         } else {
             String memberName = WmsUtils.getMemberName(layerName);
             Feature feature = ((UniqueMembersFeatureCollection<? extends Feature>) featureCollection).getFeatureContainingMember(memberName);
-            List<TimePosition> tValues = GISUtils.getTimeAxis(feature, false);
+            List<TimePosition> tValues = GISUtils.getTimes(feature, false);
             
             if (tValues == null || tValues.isEmpty())
                 return null; // return no data if no time axis present
@@ -401,7 +401,7 @@ public abstract class AbstractMetadataController {
                 memberName = MetadataUtils.getScalarMemberName(feature, memberName);
                 
                 VerticalPosition vPos  = GISUtils.getClosestElevationTo(colorByDepth, GISUtils.getVerticalAxis(feature));
-                TimePosition tPos = GISUtils.getClosestTimeTo(colorByTime, GISUtils.getTimeAxis(feature, false));
+                TimePosition tPos = GISUtils.getClosestTimeTo(colorByTime, GISUtils.getTimes(feature, false));
                 
                 Extent<Float> minMax = getFeatureMinMax(feature, vPos, tPos, memberName, null);
                 
@@ -519,7 +519,7 @@ public abstract class AbstractMetadataController {
             Feature feature = ((UniqueMembersFeatureCollection<?>) featureCollection)
                     .getFeatureContainingMember(memberName);
             
-            List<TimePosition> tValues = GISUtils.getTimeAxis(feature, false);
+            List<TimePosition> tValues = GISUtils.getTimes(feature, false);
 
             if(tValues == null){
                 throw new WmsException("There is no time axis - cannot create animation");

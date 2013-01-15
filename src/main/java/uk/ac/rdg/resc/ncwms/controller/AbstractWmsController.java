@@ -661,7 +661,7 @@ public abstract class AbstractWmsController extends AbstractController {
             for (Feature feature : features) {
                 VerticalPosition vPos = GISUtils.getClosestElevationTo(colorByDepth, GISUtils.getVerticalAxis(feature));
                 TimePosition tPos = GISUtils.getClosestTimeTo(colorByTime,
-                        GISUtils.getTimeAxis(feature, false));
+                        GISUtils.getTimes(feature, false));
                 mapPlotter.addToFrame(feature, memberName, vPos, tPos, null, plotStyle);
             }
 
@@ -928,7 +928,7 @@ public abstract class AbstractWmsController extends AbstractController {
                 } else {
                     vPos = GISUtils.getClosestElevationTo(colorByDepth, GISUtils.getVerticalAxis(feature));
                     tPos = GISUtils.getClosestTimeTo(colorByTime,
-                            GISUtils.getTimeAxis(feature, false));
+                            GISUtils.getTimes(feature, false));
                 }
                 
                 Object value = WmsUtils.getFeatureValue(feature, pos, vPos, tPos, memberName);
@@ -1295,7 +1295,7 @@ public abstract class AbstractWmsController extends AbstractController {
                  * 2. It'll take more work to disable it on the front end than
                  * it did to implement...
                  */
-                List<TimePosition> times = GISUtils.getTimeAxis(feature, true);
+                List<TimePosition> times = GISUtils.getTimes(feature, true);
                 HorizontalPosition hPos = getHorizontalPosition(params);
                 Double targetDepth = null;
                 if (params.getString("elevation") != null) {

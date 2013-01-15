@@ -522,7 +522,7 @@ public class WmsUtils {
         if (feature == null) {
             return tValues;
         }
-        List<TimePosition> tAxis = GISUtils.getTimeAxis(feature, false);
+        List<TimePosition> tAxis = GISUtils.getTimes(feature, false);
         if (tAxis == null || tAxis.size() == 0) {
             return tValues;
         }
