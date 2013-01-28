@@ -161,6 +161,10 @@ public class NcwmsMetadataController extends AbstractMetadataController
         for(String datasetId : allDatasets.keySet()){
             Dataset dataset = allDatasets.get(datasetId);
             
+            if(dataset.isDisabled()) {
+                continue;
+            }
+            
             /*
              * Where we have multiple features with the same member name, we
              * group them
