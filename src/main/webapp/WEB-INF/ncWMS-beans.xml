@@ -74,10 +74,13 @@
     </bean>
  -->         
     
+    <bean id="multipartResolver"
+        class="org.springframework.web.multipart.commons.CommonsMultipartResolver"/>
+    
     <!-- This Controller will handle all the requests to the WMS -->
     <bean id="wmsController" class="uk.ac.rdg.resc.ncwms.config.NcwmsController"
             init-method="init" destroy-method="shutdown">
-        <property name="supportedMethods" value="GET"/>
+        <property name="supportedMethods" value="GET,POST"/>
 <!--         <property name="tileCache"><ref local="tileCache"/></property> -->
         <property name="serverConfig"><ref local="config"/></property>
         <property name="metadataController"><ref local="metadataController"/></property>
