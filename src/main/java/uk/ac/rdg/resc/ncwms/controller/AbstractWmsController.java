@@ -30,8 +30,10 @@ package uk.ac.rdg.resc.ncwms.controller;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageProducer;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.text.ParseException;
 import java.util.AbstractList;
@@ -49,7 +51,9 @@ import java.util.Set;
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.JAXBException;
 
+import org.bouncycastle.jce.provider.symmetric.AES.OFB;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
@@ -63,6 +67,8 @@ import org.jfree.ui.RectangleInsets;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
@@ -101,6 +107,12 @@ import uk.ac.rdg.resc.edal.graphics.MapStyleDescriptor;
 import uk.ac.rdg.resc.edal.graphics.PlotStyle;
 import uk.ac.rdg.resc.edal.graphics.formats.ImageFormat;
 import uk.ac.rdg.resc.edal.graphics.formats.KmzFormat;
+import uk.ac.rdg.resc.edal.graphics.style.FeatureCollectionAndMemberName;
+import uk.ac.rdg.resc.edal.graphics.style.GlobalPlottingParams;
+import uk.ac.rdg.resc.edal.graphics.style.Id2FeatureAndMember;
+import uk.ac.rdg.resc.edal.graphics.style.StyleXMLParser;
+import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.Image;
+import uk.ac.rdg.resc.edal.graphics.style.datamodel.model.ImageData;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.GeoPosition;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
@@ -260,6 +272,157 @@ public abstract class AbstractWmsController extends AbstractController {
             e.printStackTrace();
             // An unexpected (internal) error has occurred
             throw e;
+        }
+    }
+
+    protected ModelAndView postTest(RequestParams params, HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse, final FeatureFactory featureFactory) throws WmsException, uk.ac.rdg.resc.edal.graphics.exceptions.InvalidFormatException {
+        /*
+         * This is a test method. It currently takes any POST requests, checks
+         * for an XML style, and returns an image. No error checking, not
+         * robust, really, really easy to get it to fail. Probably a security
+         * hole
+         * 
+         * Again, THIS IS A TEST METHOD.
+         * 
+         * If this should be production code, this method shouldn't be here. Why
+         * haven't you already deleted it?
+         */
+        
+        MultipartHttpServletRequest multipartHttpServletRequest = (MultipartHttpServletRequest) httpServletRequest;
+        MultipartFile file = multipartHttpServletRequest.getFile("XML_STYLE");
+        Id2FeatureAndMember id2Feature = new Id2FeatureAndMember() {
+            @Override
+            public FeatureCollectionAndMemberName getFeatureAndMemberName(String id) {
+                try {
+                    return new FeatureCollectionAndMemberName(featureFactory.getFeatureCollection(id), WmsUtils.getMemberName(id));
+                } catch (FeatureNotDefinedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (WmsException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        };
+        System.out.println(params.getString("REQUEST"));
+        GlobalPlottingParams plottingParameters = parsePlottingParams(params);
+        
+        StringBuilder xmlSB = new StringBuilder();
+        if(file != null) {
+            try{
+                BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
+                String line = null;
+                while((line=reader.readLine())!= null){
+                    xmlSB.append(line);
+                }
+                String xmlString = xmlSB.toString();
+                ImageData imageData = StyleXMLParser.deserialise(xmlString);
+                Image image = new Image(imageData);
+                
+                BufferedImage finalImage = image.drawImage(plottingParameters, id2Feature);
+                httpServletResponse.setContentType("image/png");
+                httpServletResponse.setHeader("Content-Disposition", "inline; filename=xmlImage.png");
+                
+                ImageIO.write(finalImage, "png", httpServletResponse.getOutputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JAXBException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        return null;
+    }
+    
+    private GlobalPlottingParams parsePlottingParams(RequestParams httpParams) {
+        GetMapRequest getMapRequest;
+        try {
+            getMapRequest = new GetMapRequest(httpParams);
+        } catch (WmsException e1) {
+            throw new IllegalArgumentException("Something's wrong with your parameters");
+        }
+        GetMapDataRequest dataRequest = getMapRequest.getDataRequest();
+        
+        String timeString = dataRequest.getTimeString();
+        String[] timeStrings = timeString.split("/");
+        Extent<TimePosition> tExtent;
+        if(timeStrings.length == 1) {
+            try {
+                TimePosition time = TimeUtils.iso8601ToDateTime(timeStrings[0], CalendarSystem.CAL_ISO_8601);
+                tExtent = Extents.newExtent(time, time);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Time format is wrong: "+timeStrings[0]);
+            }
+        } else if(timeStrings.length == 2) {
+            try {
+                tExtent = Extents.newExtent(
+                        TimeUtils.iso8601ToDateTime(timeStrings[0], CalendarSystem.CAL_ISO_8601),
+                        TimeUtils.iso8601ToDateTime(timeStrings[1], CalendarSystem.CAL_ISO_8601));
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Time format is wrong: "+timeString);
+            }
+        } else {
+            throw new IllegalArgumentException("Time can either be a single value or a range");
+        }
+        
+        TimePosition targetTime = null;
+        String targetTimeString = dataRequest.getColorbyTimeString();
+        if(targetTimeString != null) {
+            try {
+                targetTime = TimeUtils.iso8601ToDateTime(targetTimeString, CalendarSystem.CAL_ISO_8601);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("colorby/time format is wrong: "+targetTimeString);
+            }
+        }
+        if(targetTime == null) {
+            targetTime = tExtent.getHigh();
+        }
+        
+        
+        String depthString = dataRequest.getElevationString();
+        String[] depthStrings = depthString.split("/");
+        Extent<Double> zExtent;
+        if(depthStrings.length == 1) {
+            try {
+                Double depth = Double.parseDouble(depthStrings[0]);
+                zExtent = Extents.newExtent(depth, depth);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Depth format is wrong: "+depthStrings[0]);
+            }
+        } else if(depthStrings.length == 2) {
+            try {
+                zExtent = Extents.newExtent(
+                        Double.parseDouble(timeStrings[0]),
+                        Double.parseDouble(timeStrings[1]));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Depth format is wrong: "+depthString);
+            }
+        } else {
+            throw new IllegalArgumentException("Depth can either be a single value or a range");
+        }
+        
+        Double targetDepth = null;
+        String targetDepthString = dataRequest.getColorbyElevationString();
+        if(targetDepthString != null) {
+            try {
+                targetDepth = Double.parseDouble(targetDepthString);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("colorby/depth format is wrong: "+targetDepthString);
+            }
+        }
+        if(targetDepth == null) {
+            targetDepth = zExtent.getHigh();
+        }
+        
+        try {
+            return new GlobalPlottingParams(dataRequest.getWidth(), dataRequest.getHeight(),
+                    new BoundingBoxImpl(dataRequest.getBbox(),
+                            WmsUtils.getCrs(dataRequest.getCrsCode())), zExtent, tExtent, targetDepth,
+                    targetTime);
+        } catch (uk.ac.rdg.resc.ncwms.exceptions.InvalidCrsException e) {
+            throw new IllegalArgumentException("Something's wrong with your parameters");
         }
     }
 
