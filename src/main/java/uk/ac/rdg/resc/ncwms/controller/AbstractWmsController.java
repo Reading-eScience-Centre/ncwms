@@ -125,6 +125,8 @@ import uk.ac.rdg.resc.ncwms.exceptions.InvalidUpdateSequence;
 import uk.ac.rdg.resc.ncwms.exceptions.Wms1_1_1Exception;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
+import uk.ac.rdg.resc.ncwms.util.WmsUtils.StyleInfo;
+import uk.ac.rdg.resc.ncwms.wms.CapabilitiesLayer;
 import uk.ac.rdg.resc.ncwms.wms.Dataset;
 
 /**
@@ -345,7 +347,7 @@ public abstract class AbstractWmsController extends AbstractController {
 
         Map<String, Object> models = new HashMap<String, Object>();
         models.put("config", this.serverConfig);
-        models.put("datasets", datasets);
+//        models.put("datasets", datasets);
         // We use the current time if the last update time is unknown
         models.put("lastUpdate", lastUpdateTime == null ? new TimePositionJoda() : lastUpdateTime);
         models.put("wmsBaseUrl", httpServletRequest.getRequestURL().toString());
@@ -373,6 +375,73 @@ public abstract class AbstractWmsController extends AbstractController {
         models.put("legendHeight", ColorPalette.LEGEND_HEIGHT);
         models.put("paletteNames", ColorPalette.getAvailablePaletteNames());
         models.put("verboseTimes", verboseTimes);
+        
+        List<CapabilitiesLayer> layers = new ArrayList<CapabilitiesLayer>();
+        
+        for(Dataset dataset : datasets) {
+            CapabilitiesLayer topLayer = new CapabilitiesLayer(dataset.isReady(), null,
+                    dataset.getTitle(), null, null, Extents.emptyExtent(TimePosition.class), null,
+                    null);
+            
+            FeatureCollection<? extends Feature> featureCollection = dataset.getFeatureCollection();
+            
+            if(featureCollection == null) {
+                continue;
+            }
+            
+            if(featureCollection instanceof UniqueMembersFeatureCollection<?>) {
+                /*
+                 * We want a list of featureCollection/membername IDs
+                 */
+                UniqueMembersFeatureCollection<?> uniqueMembersFeatureCollection = (UniqueMembersFeatureCollection<?>) featureCollection;
+                for(String memberId : featureCollection.getMemberIdsInCollection()) {
+                    
+                    FeaturePlottingMetadata featurePlottingMetadata = dataset.getPlottingMetadataMap().get(memberId);
+                    Feature feature = uniqueMembersFeatureCollection.getFeatureContainingMember(memberId);
+                    CapabilitiesLayer childLayer = new CapabilitiesLayer(false,
+                            featureCollection.getId() + "/" + memberId, featurePlottingMetadata.getTitle(), feature.getDescription(),
+                            featureCollection.getCollectionBoundingBox(),
+                            GISUtils.getTimeAxis(feature),
+                            GISUtils.getVerticalAxis(feature),
+                            WmsUtils.getStylesWithPalettes(feature, memberId,
+                                    ColorPalette.getAvailablePaletteNames()));
+                    topLayer.getChildLayers().add(childLayer);
+                }
+                
+            } else {
+                StyleInfo style = new StyleInfo("DEFAULT", "");
+                
+                /*
+                 * We want a list of featureCollection/membername IDs under a featureCollection/* header
+                 */
+                CapabilitiesLayer parentLayer = new CapabilitiesLayer(true,
+                        featureCollection.getId() + "/*", featureCollection.getName(), "",
+                        featureCollection.getCollectionBoundingBox(),
+                        featureCollection.getCollectionTimeExtent(),
+                        featureCollection.getCollectionVerticalExtent(), Arrays.asList(style));
+                
+                for(String memberId : featureCollection.getMemberIdsInCollection()) {
+                    FeaturePlottingMetadata featurePlottingMetadata = dataset.getPlottingMetadataMap().get(memberId);
+                    Collection<? extends Feature> features = featureCollection.findFeatures(null, null, null, CollectionUtils.setOf(memberId));
+                    if(features.size() > 0) {
+                        Feature feature = features.iterator().next();
+                        CapabilitiesLayer childLayer = new CapabilitiesLayer(true,
+                                featureCollection.getId() + "/" + memberId, featurePlottingMetadata.getTitle(), feature.getDescription(),
+                                featureCollection.getCollectionBoundingBox(),
+                                featureCollection.getCollectionTimeExtent(),
+                                featureCollection.getCollectionVerticalExtent(),
+                                WmsUtils.getStylesWithPalettes(feature, memberId,
+                                        ColorPalette.getAvailablePaletteNames()));
+                        parentLayer.getChildLayers().add(childLayer);
+                    }
+                }
+                topLayer.getChildLayers().add(parentLayer);
+            }
+            layers.add(topLayer);
+        }
+        
+        models.put("layers", layers);
+        
         // Do WMS version negotiation. From the WMS 1.3.0 spec:
         // * If a version unknown to the server and higher than the lowest
         // supported version is requested, the server shall send the highest

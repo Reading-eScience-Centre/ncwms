@@ -102,24 +102,14 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
         <Layer>
             <Title><c:out value="${config.title}"/></Title><%-- Use of c:out escapes XML --%>
             <c:forEach var="crsCode" items="${supportedCrsCodes}">
-            <SRS>${crsCode}</SRS>
+                <SRS>${crsCode}</SRS>
             </c:forEach>
-            <c:forEach var="dataset" items="${datasets}">
-	            <c:if test="${dataset.ready}">
-	                <Layer>
-	                    <Title><c:out value="${dataset.title}" /></Title>
-	                    <c:forEach var="feature" items="${dataset.featureCollection.features}">
-	                        <c:set var="parentMetadata" value="${feature.coverage.rangeMetadata}"/>
-	                        <c:forEach var="memberName" items="${parentMetadata.memberNames}">
-	                            <c:set var="childMetadata" value="${utils:getChildMetadata(parentMetadata, memberName)}"/>
-	                            <cap:layer111 metadata="${childMetadata}" dataset="${dataset}" feature="${feature}"/>
-	                        </c:forEach>
-	                        <%-- End loop through members --%>
-	                    </c:forEach>
-	                    <%-- End loop through features --%>
-	                </Layer>
-	            </c:if>
-            </c:forEach>
+			<c:forEach var="parentLayer" items="${layers}">
+			    <c:if test="${parentLayer.ready}">
+			        <cap:layer111 layer="${parentLayer}"/>
+			    </c:if>
+			    <%-- End if dataset is ready --%>
+			</c:forEach>
         </Layer>
     </Capability>
 </WMT_MS_Capabilities>
