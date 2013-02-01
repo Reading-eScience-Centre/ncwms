@@ -114,20 +114,9 @@
 <c:forEach var="crsCode" items="${supportedCrsCodes}">
 	<CRS>${crsCode}</CRS>
 </c:forEach>
-<c:forEach var="dataset" items="${datasets}">
-	<c:if test="${dataset.ready}">
-		<Layer>
-		<Title><c:out value="${dataset.title}" /></Title>
-		<c:forEach var="feature" items="${dataset.featureCollection.features}">
-            <c:set var="parentMetadata" value="${feature.coverage.rangeMetadata}"/>
-            <c:forEach var="memberName" items="${parentMetadata.memberNames}">
-                <c:set var="childMetadata" value="${utils:getChildMetadata(parentMetadata, memberName)}"/>
-                    <cap:layer metadata="${childMetadata}" dataset="${dataset}" feature="${feature}"/>
-            </c:forEach>
-			<%-- End loop through members --%>
-		</c:forEach>
-		<%-- End loop through features --%>
-		</Layer>
+<c:forEach var="parentLayer" items="${layers}">
+	<c:if test="${parentLayer.ready}">
+        <cap:layer layer="${parentLayer}"/>
 	</c:if>
 	<%-- End if dataset is ready --%>
 </c:forEach>
