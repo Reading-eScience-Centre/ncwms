@@ -25,9 +25,10 @@ public class CapabilitiesLayer {
     private boolean continuousAxes;
     private List<StyleInfo> styles = new ArrayList<WmsUtils.StyleInfo>();
     private List<CapabilitiesLayer> childLayers = new ArrayList<CapabilitiesLayer>();
+    private boolean queryable;
 
     public CapabilitiesLayer(boolean ready, String name, String title, String description,
-            BoundingBox bbox, TimeAxis tAxis, VerticalAxis vAxis, List<StyleInfo> styles) {
+            BoundingBox bbox, TimeAxis tAxis, VerticalAxis vAxis, List<StyleInfo> styles, boolean queryable) {
         super();
         this.ready = ready;
         this.name = name;
@@ -38,10 +39,11 @@ public class CapabilitiesLayer {
         this.vAxis = vAxis;
         this.styles = styles;
         this.continuousAxes = false;
+        this.queryable = queryable;
     }
     
     public CapabilitiesLayer(boolean ready, String name, String title, String description,
-            BoundingBox bbox, Extent<TimePosition> tExtent, Extent<VerticalPosition> vExtent, List<StyleInfo> styles) {
+            BoundingBox bbox, Extent<TimePosition> tExtent, Extent<VerticalPosition> vExtent, List<StyleInfo> styles, boolean queryable) {
         super();
         this.ready = ready;
         this.name = name;
@@ -52,10 +54,15 @@ public class CapabilitiesLayer {
         this.vExtent = vExtent;
         this.styles = styles;
         this.continuousAxes = true;
+        this.queryable = queryable;
     }
 
     public boolean isReady() {
         return ready;
+    }
+    
+    public boolean isQueryable() {
+        return queryable;
     }
     
     public boolean isContinuous() {

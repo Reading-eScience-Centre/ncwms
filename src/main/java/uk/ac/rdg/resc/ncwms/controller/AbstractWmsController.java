@@ -33,6 +33,7 @@ import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -78,6 +79,7 @@ import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.BorderedGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.GridCoordinates2DImpl;
 import uk.ac.rdg.resc.edal.coverage.impl.PointSeriesCoverageImpl;
+import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.exceptions.InvalidCrsException;
@@ -156,6 +158,7 @@ public abstract class AbstractWmsController extends AbstractController {
     private static final String FEATURE_INFO_XML_FORMAT = "text/xml";
     private static final String FEATURE_INFO_GML_FORMAT = "application/vnd.ogc.gml";
     private static final String FEATURE_INFO_PNG_FORMAT = "image/png";
+    private static final Object FEATURE_INFO_TEXT_FORMAT = "text/plain";
     /**
      * The maximum number of layers that can be requested in a single GetMap
      * operation
@@ -379,9 +382,13 @@ public abstract class AbstractWmsController extends AbstractController {
         List<CapabilitiesLayer> layers = new ArrayList<CapabilitiesLayer>();
         
         for(Dataset dataset : datasets) {
+            if(dataset.isDisabled()) {
+                continue;
+            }
+            
             CapabilitiesLayer topLayer = new CapabilitiesLayer(dataset.isReady(), null,
                     dataset.getTitle(), null, null, Extents.emptyExtent(TimePosition.class), null,
-                    null);
+                    null, false);
             
             FeatureCollection<? extends Feature> featureCollection = dataset.getFeatureCollection();
             
@@ -393,24 +400,16 @@ public abstract class AbstractWmsController extends AbstractController {
                 /*
                  * We want a list of featureCollection/membername IDs
                  */
-                UniqueMembersFeatureCollection<?> uniqueMembersFeatureCollection = (UniqueMembersFeatureCollection<?>) featureCollection;
-                for(String memberId : featureCollection.getMemberIdsInCollection()) {
-                    
-                    FeaturePlottingMetadata featurePlottingMetadata = dataset.getPlottingMetadataMap().get(memberId);
-                    Feature feature = uniqueMembersFeatureCollection.getFeatureContainingMember(memberId);
-                    CapabilitiesLayer childLayer = new CapabilitiesLayer(false,
-                            featureCollection.getId() + "/" + memberId, featurePlottingMetadata.getTitle(), feature.getDescription(),
-                            featureCollection.getCollectionBoundingBox(),
-                            GISUtils.getTimeAxis(feature),
-                            GISUtils.getVerticalAxis(feature),
-                            WmsUtils.getStylesWithPalettes(feature, memberId,
-                                    ColorPalette.getAvailablePaletteNames()));
-                    topLayer.getChildLayers().add(childLayer);
+                for(Feature feature : featureCollection.getFeatures()) {
+                    RangeMetadata rangeMetadata = feature.getCoverage().getRangeMetadata();
+                    List<CapabilitiesLayer> childLayers = getCapabilitiesLayerFromRangeMetadata(dataset, feature, rangeMetadata);
+                    topLayer.getChildLayers().addAll(childLayers);
                 }
-                
             } else {
                 StyleInfo style = new StyleInfo("DEFAULT", "");
-                
+                /*
+                 * TODO We don't yet support nested in-situ layers.  Need to look at how RangeMetadata is generated
+                 */
                 /*
                  * We want a list of featureCollection/membername IDs under a featureCollection/* header
                  */
@@ -418,7 +417,7 @@ public abstract class AbstractWmsController extends AbstractController {
                         featureCollection.getId() + "/*", featureCollection.getName(), "",
                         featureCollection.getCollectionBoundingBox(),
                         featureCollection.getCollectionTimeExtent(),
-                        featureCollection.getCollectionVerticalExtent(), Arrays.asList(style));
+                        featureCollection.getCollectionVerticalExtent(), Arrays.asList(style), true);
                 
                 for(String memberId : featureCollection.getMemberIdsInCollection()) {
                     FeaturePlottingMetadata featurePlottingMetadata = dataset.getPlottingMetadataMap().get(memberId);
@@ -431,7 +430,7 @@ public abstract class AbstractWmsController extends AbstractController {
                                 featureCollection.getCollectionTimeExtent(),
                                 featureCollection.getCollectionVerticalExtent(),
                                 WmsUtils.getStylesWithPalettes(feature, memberId,
-                                        ColorPalette.getAvailablePaletteNames()));
+                                        ColorPalette.getAvailablePaletteNames()), true);
                         parentLayer.getChildLayers().add(childLayer);
                     }
                 }
@@ -459,6 +458,27 @@ public abstract class AbstractWmsController extends AbstractController {
             // version is < 1.3.0. Send 1.1.1 Capabilities
             return new ModelAndView("capabilities_xml_1_1_1", models);
         }
+    }
+
+    private List<CapabilitiesLayer> getCapabilitiesLayerFromRangeMetadata(Dataset dataset, Feature feature, RangeMetadata rangeMetadata) {
+        List<CapabilitiesLayer> ret = new ArrayList<CapabilitiesLayer>();
+        for(String member : rangeMetadata.getMemberNames()) {
+            RangeMetadata memberMetadata = rangeMetadata.getMemberMetadata(member);
+            
+            FeaturePlottingMetadata featurePlottingMetadata = dataset.getPlottingMetadataMap().get(member);
+
+            CapabilitiesLayer layer = new CapabilitiesLayer(false,
+                    feature.getFeatureCollection().getId() + "/" + member, featurePlottingMetadata.getTitle(), feature.getDescription(),
+                    feature.getFeatureCollection().getCollectionBoundingBox(),
+                    GISUtils.getTimeAxis(feature),
+                    GISUtils.getVerticalAxis(feature),
+                    WmsUtils.getStylesWithPalettes(feature, member, ColorPalette.getAvailablePaletteNames()), true);
+            
+            layer.getChildLayers().addAll(getCapabilitiesLayerFromRangeMetadata(dataset, feature, memberMetadata));
+            
+            ret.add(layer);
+        }
+        return ret;
     }
 
     /**
@@ -812,7 +832,8 @@ public abstract class AbstractWmsController extends AbstractController {
         String outputFormat = request.getOutputFormat();
         // Check the output format
         if (!outputFormat.equals(FEATURE_INFO_XML_FORMAT)
-                && !outputFormat.equals(FEATURE_INFO_GML_FORMAT)) {
+                && !outputFormat.equals(FEATURE_INFO_GML_FORMAT)
+                && !outputFormat.equals(FEATURE_INFO_TEXT_FORMAT)) {
             throw new InvalidFormatException("The output format " + request.getOutputFormat()
                     + " is not valid for GetFeatureInfo");
         }
@@ -863,10 +884,6 @@ public abstract class AbstractWmsController extends AbstractController {
 
         String timeString = featureDataRequest.getTimeString();
 
-        /*-
-         * Now we map date-times to data values
-         * The map is kept in order of ascending time
-         */
         List<FeatureInfo> featureData = new ArrayList<FeatureInfo>();
 
         if (featureCollection instanceof UniqueMembersFeatureCollection) {
@@ -1011,6 +1028,52 @@ public abstract class AbstractWmsController extends AbstractController {
                 featureData.add(featureInfo);
             }
         }
+        
+        Extent<TimePosition> tExtent = featureCollection.getCollectionTimeExtent();
+        if(!tExtent.isEmpty() && !tExtent.getLow().equals(tExtent.getHigh())) {
+            StringBuffer requestURL = httpServletRequest.getRequestURL();
+            StringBuffer requestParams = new StringBuffer();
+            requestURL.append("?REQUEST=GetTimeseries");
+            requestURL.append("&FORMAT=image/png");
+            requestURL.append("&CRS="+featureDataRequest.getCrsCode());
+            requestURL.append("&POINT="+lonLat.getLongitude()+" "+lonLat.getLatitude());
+            String elevationString = featureDataRequest.getColorbyElevationString();
+            if(elevationString == null && !featureDataRequest.getElevationString().contains("/")) {
+                elevationString = featureDataRequest.getElevationString();
+            }
+            if(elevationString != null && !elevationString.equals("")){
+                requestURL.append("&ELEVATION="+elevationString);
+            }
+            requestURL.append("&TIME="+TimeUtils.dateTimeToISO8601(tExtent.getLow())+"/"+TimeUtils.dateTimeToISO8601(tExtent.getHigh()));
+            requestURL.append("&LAYER=");
+            for(FeatureInfo info : featureData) {
+                requestURL.append(info.getFeatureCollectionId()+"/"+info.getFeatureId()+"/"+info.getMemberId()+",");
+            }
+            requestURL.deleteCharAt(requestURL.length() - 1);
+            models.put("timeseriesUrl", requestURL.toString() + URLEncoder.encode(requestParams.toString(), "UTF-8"));
+        }
+        
+        if(!featureCollection.getCollectionVerticalExtent().isEmpty()) {
+            StringBuffer requestURL = httpServletRequest.getRequestURL();
+            StringBuffer requestParams = new StringBuffer();
+            requestURL.append("?REQUEST=GetVerticalProfile");
+            requestURL.append("&FORMAT=image/png");
+            requestURL.append("&CRS="+featureDataRequest.getCrsCode());
+            requestURL.append("&POINT="+lonLat.getLongitude()+" "+lonLat.getLatitude());
+            String featureTimeString = featureDataRequest.getColorbyTimeString();
+            if(featureTimeString == null && !featureDataRequest.getTimeString().contains("/")) {
+                featureTimeString = featureDataRequest.getTimeString();
+            }
+            if(featureTimeString != null && !featureTimeString.equals("")){
+                requestURL.append("&TIME="+featureTimeString);
+            }
+            requestURL.append("&LAYER=");
+            for(FeatureInfo info : featureData) {
+                requestURL.append(info.getFeatureCollectionId()+"/"+info.getFeatureId()+"/"+info.getMemberId()+",");
+            }
+            requestURL.deleteCharAt(requestURL.length() - 1);
+            models.put("profileUrl", requestURL.toString() + URLEncoder.encode(requestParams.toString(), "UTF-8"));
+        }
 
         /*
          * Sort the features in order of distance from the clicked point.
@@ -1033,8 +1096,12 @@ public abstract class AbstractWmsController extends AbstractController {
         models.put("data", featureData);
         if (FEATURE_INFO_XML_FORMAT.equals(outputFormat)) {
             return new ModelAndView("showFeatureInfo_xml", models);
-        } else {
+        } else if (FEATURE_INFO_GML_FORMAT.equals(outputFormat)) {
             return new ModelAndView("showFeatureInfo_gml", models);
+        } else if (FEATURE_INFO_TEXT_FORMAT.equals(outputFormat)) {
+            return new ModelAndView("showFeatureInfo_plain", models);
+        } else {
+            return null;
         }
     }
 
