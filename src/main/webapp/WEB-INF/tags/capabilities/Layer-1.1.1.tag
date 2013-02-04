@@ -4,7 +4,7 @@
 <%@taglib uri="/WEB-INF/taglib/wms/wmsUtils" prefix="utils"%> <%-- tag library for useful utility functions --%>
 <%@attribute name="layer" required="true" type="uk.ac.rdg.resc.ncwms.wms.CapabilitiesLayer" %>
 
-<Layer queryable="1">
+<Layer <c:if test="${layer.queryable}">queryable="1"</c:if>>
     <c:if test="${not empty layer.name}">
         <Name>${layer.name}</Name>
     </c:if>
