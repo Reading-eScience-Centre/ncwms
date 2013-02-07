@@ -75,18 +75,13 @@ public final class NcwmsController extends AbstractWmsController {
             HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
             throws Exception {
         /*
-         * Test code.
-         */
-        boolean posting = httpServletRequest.getMethod().equalsIgnoreCase("POST");
-        if(posting) {
-            return this.postTest(params, httpServletRequest, httpServletResponse, featureFactory);
-        }
-        /*
          * End of test code
          */
         
         if (request.equals("GetCapabilities")) {
             return getCapabilities(params, httpServletRequest);
+        } else if (request.equals("TestStyle")) {
+            return testStyle(params, httpServletRequest, httpServletResponse, featureFactory);
         } else if (request.equals("GetMap")) {
             return getMap(params, featureFactory, httpServletResponse);
         } else if (request.equals("GetFeatureInfo")) {
