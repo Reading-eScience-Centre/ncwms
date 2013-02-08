@@ -30,10 +30,8 @@ package uk.ac.rdg.resc.ncwms.controller;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageProducer;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.text.ParseException;
 import java.util.AbstractList;
@@ -53,7 +51,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
 
-import org.bouncycastle.jce.provider.symmetric.AES.OFB;
 import org.geotoolkit.referencing.crs.DefaultGeographicCRS;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
@@ -68,8 +65,6 @@ import org.jfree.ui.RectangleInsets;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
@@ -113,7 +108,6 @@ import uk.ac.rdg.resc.edal.graphics.style.GlobalPlottingParams;
 import uk.ac.rdg.resc.edal.graphics.style.Id2FeatureAndMember;
 import uk.ac.rdg.resc.edal.graphics.style.StyleXMLParser;
 import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.Image;
-import uk.ac.rdg.resc.edal.graphics.style.datamodel.model.ImageData;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.GeoPosition;
 import uk.ac.rdg.resc.edal.position.HorizontalPosition;
@@ -310,8 +304,7 @@ public abstract class AbstractWmsController extends AbstractController {
         
         String xmlString = params.getString("XML_STYLE");
         System.out.println("XML:"+xmlString);
-        ImageData imageData = StyleXMLParser.deserialise(xmlString);
-        Image image = new Image(imageData);
+        Image image = StyleXMLParser.deserialise(xmlString);
         
         BufferedImage finalImage = image.drawImage(plottingParameters, id2Feature);
         httpServletResponse.setContentType("image/png");
