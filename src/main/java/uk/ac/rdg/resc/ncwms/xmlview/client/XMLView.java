@@ -142,7 +142,7 @@ public class XMLView implements EntryPoint, LayerSelectionHandler, ErrorHandler,
     
     private String getUrl() {
         StringBuilder url = new StringBuilder();
-        url.append(URL.encode("wms?REQUEST=TestStyle&VERSION=1.3.0&XML_STYLE=") + URL.encodeQueryString(xmlEntry.getValue())
+        url.append(URL.encode("wms?REQUEST=GetMap&VERSION=1.3.0&XML_STYLE=") + URL.encodeQueryString(xmlEntry.getValue())
                 + "&BBOX=" + URL.encodeQueryString(bbox)
                 + "&WIDTH=" + URL.encodeQueryString(width.getText())
                 + "&HEIGHT=" + URL.encodeQueryString(height.getText()));
