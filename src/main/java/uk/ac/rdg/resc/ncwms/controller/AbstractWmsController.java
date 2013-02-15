@@ -69,6 +69,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
 import uk.ac.rdg.resc.edal.Extent;
+import uk.ac.rdg.resc.edal.cdm.util.CdmUtils;
 import uk.ac.rdg.resc.edal.coverage.ProfileCoverage;
 import uk.ac.rdg.resc.edal.coverage.domain.PointSeriesDomain;
 import uk.ac.rdg.resc.edal.coverage.domain.impl.HorizontalDomain;
@@ -778,7 +779,7 @@ public abstract class AbstractWmsController extends AbstractController {
         return null;
     }
 
-    private GlobalPlottingParams parsePlottingParams(RequestParams httpParams) {
+    private GlobalPlottingParams parsePlottingParams(RequestParams httpParams) throws WmsException {
         Extent<TimePosition> tExtent = null;
         String timeString = httpParams.getString("time");
         if(timeString != null) {
@@ -853,11 +854,18 @@ public abstract class AbstractWmsController extends AbstractController {
             targetDepth = zExtent.getHigh();
         }
         
+        String crsCode;
+        if(httpParams.getMandatoryWmsVersion().equals("1.3.0")) {
+            crsCode = httpParams.getMandatoryString("CRS");
+        } else {
+            crsCode = httpParams.getMandatoryString("SRS");
+        }
+        
         try {
             return new GlobalPlottingParams(
                     Integer.parseInt(httpParams.getMandatoryString("width")),
                     Integer.parseInt(httpParams.getMandatoryString("height")),
-                    new BoundingBoxImpl(WmsUtils.parseBbox(httpParams.getMandatoryString("bbox"),true), DefaultGeographicCRS.WGS84),
+                    new BoundingBoxImpl(WmsUtils.parseBbox(httpParams.getMandatoryString("bbox"),true), WmsUtils.getCrs(crsCode)),
                     zExtent, tExtent, targetDepth, targetTime);
         } catch (uk.ac.rdg.resc.ncwms.exceptions.InvalidCrsException e) {
             e.printStackTrace();
