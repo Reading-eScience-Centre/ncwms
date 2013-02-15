@@ -270,143 +270,6 @@ public abstract class AbstractWmsController extends AbstractController {
         }
     }
 
-    protected ModelAndView testStyle(RequestParams params, HttpServletRequest httpServletRequest,
-            HttpServletResponse httpServletResponse, final FeatureFactory featureFactory)
-            throws WmsException, uk.ac.rdg.resc.edal.graphics.exceptions.InvalidFormatException,
-            JAXBException, IOException {
-        /*
-         * This is a test method. It currently takes a request, checks
-         * for an XML style, and returns an image. No error checking, not
-         * robust, really, really easy to get it to fail. Probably a security
-         * hole
-         * 
-         * Again, THIS IS A TEST METHOD.
-         * 
-         * If this should be production code, this method shouldn't be here. Why
-         * haven't you already deleted it?
-         */
-        Id2FeatureAndMember id2Feature = new Id2FeatureAndMember() {
-            @Override
-            public FeatureCollectionAndMemberName getFeatureAndMemberName(String id) {
-                try {
-                    return new FeatureCollectionAndMemberName(featureFactory.getFeatureCollection(id), WmsUtils.getMemberName(id));
-                } catch (FeatureNotDefinedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (WmsException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                return null;
-            }
-        };
-        GlobalPlottingParams plottingParameters = parsePlottingParams(params);
-        
-        String xmlString = params.getString("XML_STYLE");
-        System.out.println("XML:"+xmlString);
-        Image image = StyleXMLParser.deserialise(xmlString);
-        
-        BufferedImage finalImage = image.drawImage(plottingParameters, id2Feature);
-        httpServletResponse.setContentType("image/png");
-        httpServletResponse.setHeader("Content-Disposition", "inline; filename=xmlImage.png");
-        
-        ImageIO.write(finalImage, "png", httpServletResponse.getOutputStream());
-        return null;
-    }
-    
-    private GlobalPlottingParams parsePlottingParams(RequestParams httpParams) {
-        Extent<TimePosition> tExtent = null;
-        String timeString = httpParams.getString("time");
-        if(timeString != null) {
-            String[] timeStrings = timeString.split("/");
-            if(timeStrings.length == 1) {
-                try {
-                    TimePosition time = TimeUtils.iso8601ToDateTime(timeStrings[0], CalendarSystem.CAL_ISO_8601);
-                    tExtent = Extents.newExtent(time, time);
-                } catch (ParseException e) {
-                    throw new IllegalArgumentException("Time format is wrong: "+timeStrings[0]);
-                }
-            } else if(timeStrings.length == 2) {
-                try {
-                    tExtent = Extents.newExtent(
-                            TimeUtils.iso8601ToDateTime(timeStrings[0], CalendarSystem.CAL_ISO_8601),
-                            TimeUtils.iso8601ToDateTime(timeStrings[1], CalendarSystem.CAL_ISO_8601));
-                } catch (ParseException e) {
-                    throw new IllegalArgumentException("Time format is wrong: "+timeString);
-                }
-            } else {
-                throw new IllegalArgumentException("Time can either be a single value or a range");
-            }
-        }
-            
-        TimePosition targetTime = null;
-        String targetTimeString = httpParams.getString("colorby/time");
-        if(targetTimeString != null) {
-            try {
-                targetTime = TimeUtils.iso8601ToDateTime(targetTimeString, CalendarSystem.CAL_ISO_8601);
-            } catch (ParseException e) {
-                throw new IllegalArgumentException("colorby/time format is wrong: "+targetTimeString);
-            }
-        }
-        if(targetTime == null && tExtent != null) {
-            targetTime = tExtent.getHigh();
-        }
-        
-        
-        Extent<Double> zExtent = null;
-        String depthString = httpParams.getString("elevation");
-        if(depthString != null) {
-            String[] depthStrings = depthString.split("/");
-            if(depthStrings.length == 1) {
-                try {
-                    Double depth = Double.parseDouble(depthStrings[0]);
-                    zExtent = Extents.newExtent(depth, depth);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Depth format is wrong: "+depthStrings[0]);
-                }
-            } else if(depthStrings.length == 2) {
-                try {
-                    zExtent = Extents.newExtent(
-                            Double.parseDouble(depthStrings[0]),
-                            Double.parseDouble(depthStrings[1]));
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Depth format is wrong: "+depthString);
-                }
-            } else {
-                throw new IllegalArgumentException("Depth can either be a single value or a range");
-            }
-        }
-        
-        Double targetDepth = null;
-        String targetDepthString = httpParams.getString("colorby/depth");
-        if(targetDepthString != null) {
-            try {
-                targetDepth = Double.parseDouble(targetDepthString);
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("colorby/depth format is wrong: "+targetDepthString);
-            }
-        }
-        if(targetDepth == null && zExtent != null) {
-            targetDepth = zExtent.getHigh();
-        }
-        
-        try {
-            return new GlobalPlottingParams(Integer.parseInt(httpParams.getString("width")),
-                    Integer.parseInt(httpParams.getString("height")), new BoundingBoxImpl(
-                            WmsUtils.parseBbox(httpParams.getMandatoryString("bbox"), true),
-                            DefaultGeographicCRS.WGS84), zExtent, tExtent, targetDepth, targetTime);
-        } catch (uk.ac.rdg.resc.ncwms.exceptions.InvalidCrsException e) {
-            e.printStackTrace();
-            throw new IllegalArgumentException("Something's wrong with your parameters");
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-            throw new IllegalArgumentException("Something's wrong with your parameters");
-        } catch (WmsException e) {
-            e.printStackTrace();
-            throw new IllegalArgumentException("Something's wrong with your parameters");
-        }
-    }
-
     /**
      * Object that returns a Feature given a layer Name, which is unique within
      * a Capabilities document
@@ -567,6 +430,10 @@ public abstract class AbstractWmsController extends AbstractController {
      */
     protected ModelAndView getMap(RequestParams params, FeatureFactory featureFactory,
             HttpServletResponse httpServletResponse) throws WmsException, Exception {
+        if(params.getString("XML_STYLE") != null) {
+            return getStyledMap(params, featureFactory, httpServletResponse);
+        }
+        
         GetMapRequest getMapRequest = new GetMapRequest(params);
         GetMapStyleRequest styleRequest = getMapRequest.getStyleRequest();
         String mimeType = styleRequest.getImageFormat();
@@ -866,6 +733,142 @@ public abstract class AbstractWmsController extends AbstractController {
                 timeStrings, zString, legend, frameRate);
 
         return null;
+    }
+
+    protected ModelAndView getStyledMap(RequestParams params, final FeatureFactory featureFactory,
+            HttpServletResponse httpServletResponse) throws WmsException,
+            uk.ac.rdg.resc.edal.graphics.exceptions.InvalidFormatException, JAXBException,
+            IOException {
+        /*
+         * This is a test method. It currently takes a request, checks
+         * for an XML style, and returns an image. No error checking, not
+         * robust, really, really easy to get it to fail. Probably a security
+         * hole
+         * 
+         * Again, THIS IS A TEST METHOD.
+         * 
+         * If this should be production code, this method shouldn't be here. Why
+         * haven't you already deleted it?
+         */
+        Id2FeatureAndMember id2Feature = new Id2FeatureAndMember() {
+            @Override
+            public FeatureCollectionAndMemberName getFeatureAndMemberName(String id) {
+                try {
+                    return new FeatureCollectionAndMemberName(featureFactory.getFeatureCollection(id), WmsUtils.getMemberName(id));
+                } catch (FeatureNotDefinedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (WmsException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        };
+        GlobalPlottingParams plottingParameters = parsePlottingParams(params);
+        
+        String xmlString = params.getString("XML_STYLE");
+        Image image = StyleXMLParser.deserialise(xmlString);
+        
+        BufferedImage finalImage = image.drawImage(plottingParameters, id2Feature);
+        httpServletResponse.setContentType("image/png");
+        httpServletResponse.setHeader("Content-Disposition", "inline; filename=xmlImage.png");
+        
+        ImageIO.write(finalImage, "png", httpServletResponse.getOutputStream());
+        return null;
+    }
+
+    private GlobalPlottingParams parsePlottingParams(RequestParams httpParams) {
+        Extent<TimePosition> tExtent = null;
+        String timeString = httpParams.getString("time");
+        if(timeString != null) {
+            String[] timeStrings = timeString.split("/");
+            if(timeStrings.length == 1) {
+                try {
+                    TimePosition time = TimeUtils.iso8601ToDateTime(timeStrings[0], CalendarSystem.CAL_ISO_8601);
+                    tExtent = Extents.newExtent(time, time);
+                } catch (ParseException e) {
+                    throw new IllegalArgumentException("Time format is wrong: "+timeStrings[0]);
+                }
+            } else if(timeStrings.length == 2) {
+                try {
+                    tExtent = Extents.newExtent(
+                            TimeUtils.iso8601ToDateTime(timeStrings[0], CalendarSystem.CAL_ISO_8601),
+                            TimeUtils.iso8601ToDateTime(timeStrings[1], CalendarSystem.CAL_ISO_8601));
+                } catch (ParseException e) {
+                    throw new IllegalArgumentException("Time format is wrong: "+timeString);
+                }
+            } else {
+                throw new IllegalArgumentException("Time can either be a single value or a range");
+            }
+        }
+            
+        TimePosition targetTime = null;
+        String targetTimeString = httpParams.getString("colorby/time");
+        if(targetTimeString != null) {
+            try {
+                targetTime = TimeUtils.iso8601ToDateTime(targetTimeString, CalendarSystem.CAL_ISO_8601);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("colorby/time format is wrong: "+targetTimeString);
+            }
+        }
+        if(targetTime == null && tExtent != null) {
+            targetTime = tExtent.getHigh();
+        }
+        
+        Extent<Double> zExtent = null;
+        String depthString = httpParams.getString("elevation");
+        if(depthString != null) {
+            String[] depthStrings = depthString.split("/");
+            if(depthStrings.length == 1) {
+                try {
+                    Double depth = Double.parseDouble(depthStrings[0]);
+                    zExtent = Extents.newExtent(depth, depth);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Depth format is wrong: "+depthStrings[0]);
+                }
+            } else if(depthStrings.length == 2) {
+                try {
+                    zExtent = Extents.newExtent(
+                            Double.parseDouble(depthStrings[0]),
+                            Double.parseDouble(depthStrings[1]));
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Depth format is wrong: "+depthString);
+                }
+            } else {
+                throw new IllegalArgumentException("Depth can either be a single value or a range");
+            }
+        }
+        
+        Double targetDepth = null;
+        String targetDepthString = httpParams.getString("colorby/depth");
+        if(targetDepthString != null) {
+            try {
+                targetDepth = Double.parseDouble(targetDepthString);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("colorby/depth format is wrong: "+targetDepthString);
+            }
+        }
+        if(targetDepth == null && zExtent != null) {
+            targetDepth = zExtent.getHigh();
+        }
+        
+        try {
+            return new GlobalPlottingParams(
+                    Integer.parseInt(httpParams.getMandatoryString("width")),
+                    Integer.parseInt(httpParams.getMandatoryString("height")),
+                    new BoundingBoxImpl(WmsUtils.parseBbox(httpParams.getMandatoryString("bbox"),true), DefaultGeographicCRS.WGS84),
+                    zExtent, tExtent, targetDepth, targetTime);
+        } catch (uk.ac.rdg.resc.ncwms.exceptions.InvalidCrsException e) {
+            e.printStackTrace();
+            throw new IllegalArgumentException("Something's wrong with your parameters");
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            throw new IllegalArgumentException("Something's wrong with your parameters");
+        } catch (WmsException e) {
+            e.printStackTrace();
+            throw new IllegalArgumentException("Something's wrong with your parameters");
+        }
     }
 
     /**

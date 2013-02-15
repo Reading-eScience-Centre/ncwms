@@ -80,8 +80,6 @@ public final class NcwmsController extends AbstractWmsController {
         
         if (request.equals("GetCapabilities")) {
             return getCapabilities(params, httpServletRequest);
-        } else if (request.equals("TestStyle")) {
-            return testStyle(params, httpServletRequest, httpServletResponse, featureFactory);
         } else if (request.equals("GetMap")) {
             return getMap(params, featureFactory, httpServletResponse);
         } else if (request.equals("GetFeatureInfo")) {
