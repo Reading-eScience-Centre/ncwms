@@ -3,8 +3,6 @@ package uk.ac.rdg.resc.ncwms.xmlview.client;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.text.StrBuilder;
-
 import uk.ac.rdg.resc.godiva.client.handlers.ElevationSelectionHandler;
 import uk.ac.rdg.resc.godiva.client.handlers.LayerSelectionHandler;
 import uk.ac.rdg.resc.godiva.client.handlers.TimeDateSelectionHandler;
@@ -144,6 +142,7 @@ public class XMLView implements EntryPoint, LayerSelectionHandler, ErrorHandler,
         StringBuilder url = new StringBuilder();
         url.append(URL.encode("wms?REQUEST=GetMap&VERSION=1.3.0&CRS=CRS:84&XML_STYLE=") + URL.encodeQueryString(xmlEntry.getValue())
                 + "&BBOX=" + URL.encodeQueryString(bbox)
+                + "&FORMAT=" + URL.encodeQueryString("image/png")
                 + "&WIDTH=" + URL.encodeQueryString(width.getText())
                 + "&HEIGHT=" + URL.encodeQueryString(height.getText()));
         if(timeSelector.getSelectedDateTime() != null) {
