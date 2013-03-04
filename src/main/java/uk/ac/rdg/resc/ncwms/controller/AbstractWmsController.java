@@ -33,6 +33,7 @@ import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
+import java.net.SocketImplFactory;
 import java.text.ParseException;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -47,6 +48,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
@@ -104,6 +106,7 @@ import uk.ac.rdg.resc.edal.graphics.MapStyleDescriptor;
 import uk.ac.rdg.resc.edal.graphics.PlotStyle;
 import uk.ac.rdg.resc.edal.graphics.formats.ImageFormat;
 import uk.ac.rdg.resc.edal.graphics.formats.KmzFormat;
+import uk.ac.rdg.resc.edal.graphics.formats.SimpleFormat;
 import uk.ac.rdg.resc.edal.graphics.style.FeatureCollectionAndMemberName;
 import uk.ac.rdg.resc.edal.graphics.style.GlobalPlottingParams;
 import uk.ac.rdg.resc.edal.graphics.style.Id2FeatureAndMember;
@@ -400,485 +403,95 @@ public abstract class AbstractWmsController extends AbstractController {
         }
     }
 
-    /**
-     * Executes the GetMap operation. This methods performs the following steps:
-     * <ol>
-     * <li>Creates a {@link GetMapRequest} object from the given
-     * {@link RequestParams}. This parses the parameters and checks their
-     * validity.</li>
-     * <li>Finds the relevant {@link Layer} object from the config system.</li>
-     * <li>Creates a {@link HorizontalGrid} object that represents the grid on
-     * which the final image will sit (based on the requested CRS and image
-     * width/height).</li>
-     * <li>Looks for TIME and ELEVATION parameters (TIME may be expressed as a
-     * start/end range, in which case we will produce an animation).</li>
-     * <li>Extracts the data, returning an array of floats, representing the
-     * data values at each pixel in the final image.</li>
-     * <li>Uses an {@link ImageProducer} object to turn the array of data into a
-     * {@link java.awt.image.BufferedImage} (or, in the case of an animation,
-     * several {@link java.awt.image.BufferedImage}s).</li>
-     * <li>Uses a {@link ImageFormat} object to write the image to the servlet's
-     * output stream in the requested format.</li>
-     * </ol>
-     * 
-     * @throws WmsException
-     *             if the user has provided invalid parameters
-     * @throws Exception
-     *             if an internal error occurs
-     * @see uk.ac.rdg.resc.ncwms.datareader.DataReader#read DataReader.read()
-     * @see uk.ac.rdg.resc.ncwms.datareader.DefaultDataReader#read
-     *      DefaultDataReader.read()
-     */
-    protected ModelAndView getMap(RequestParams params, FeatureFactory featureFactory,
-            HttpServletResponse httpServletResponse) throws WmsException, Exception {
-        if(params.getString("XML_STYLE") != null) {
-            return getStyledMap(params, featureFactory, httpServletResponse);
-        }
-        
-        GetMapRequest getMapRequest = new GetMapRequest(params);
-        GetMapStyleRequest styleRequest = getMapRequest.getStyleRequest();
-        String mimeType = styleRequest.getImageFormat();
+    protected ModelAndView getMap(RequestParams params, final FeatureFactory featureFactory,
+            HttpServletResponse httpServletResponse) throws WmsException {
         /*
-         * This only supports a simple image format (i.e. not KMZ). If we want
-         * KMZ, get it from a separate method
-         */
-        ImageFormat imageFormat = ImageFormat.get(mimeType);
-        /*
-         * Need to make sure that the images will be compatible with the
-         * requested image format
-         */
-        if (styleRequest.isTransparent() && !imageFormat.supportsFullyTransparentPixels()) {
-            throw new WmsException("The image format " + mimeType
-                    + " does not support fully-transparent pixels");
-        }
-        if (styleRequest.getOpacity() < 100 && !imageFormat.supportsPartiallyTransparentPixels()) {
-            throw new WmsException("The image format " + mimeType
-                    + " does not support partially-transparent pixels");
-        }
-
-        GetMapDataRequest mapDataRequest = getMapRequest.getDataRequest();
-
-        /*
-         * Check the dimensions of the image
-         */
-        if (mapDataRequest.getHeight() > this.serverConfig.getMaxImageHeight()
-                || mapDataRequest.getWidth() > this.serverConfig.getMaxImageWidth()) {
-            throw new WmsException("Requested image size exceeds the maximum of "
-                    + this.serverConfig.getMaxImageWidth() + "x"
-                    + this.serverConfig.getMaxImageHeight());
-        }
-
-        String[] layers = mapDataRequest.getLayers();
-        String[] styles = styleRequest.getStyles();
-
-        if (layers.length != styles.length) {
-            throw new WmsException("Must have exactly one style per layer requested");
-        }
-
-        if (layers.length > LAYER_LIMIT) {
-            throw new WmsException("Only " + LAYER_LIMIT + " layer(s) can be plotted at once");
-        }
-
-        /*
-         * The following is only valid if we have a LAYER_LIMIT of 1.
+         * TODO
          * 
-         * This is currently the case, since we have made a conscious decision
-         * to only support single layer querying (multiple layers can of course
-         * be composited by the client). If this changes, changes will have to
-         * be made here (specifically looping through all layers and styles)
-         */
-
-        String layerName = layers[0];
-        String style = styles[0];
-
-        FeatureCollection<? extends Feature> featureCollection = featureFactory
-                .getFeatureCollection(layerName);
-        if(featureCollection == null){
-            throw new WmsException("Layer not yet loaded");
-        }
-        
-        String memberName = WmsUtils.getMemberName(layerName);
-
-        FeaturePlottingMetadata metadata = WmsUtils.getMetadata((Config) serverConfig, layerName);
-
-        /*
-         * Now set all of the styling information for this layer
-         */
-        Extent<Float> scaleRange = styleRequest.getColorScaleRange();
-        if (scaleRange == null) {
-            scaleRange = metadata.getColorScaleRange();
-        }
-        Boolean logScale = styleRequest.isScaleLogarithmic();
-        if (logScale == null) {
-            logScale = metadata.isLogScaling();
-        }
-
-        /*
-         * We start with a default plot style
-         */
-        PlotStyle plotStyle = PlotStyle.DEFAULT;
-
-        String[] styleStrEls = style.split("/");
-        /*
-         * We choose the plot style based on the request
-         */
-        String styleType = styleStrEls[0];
-        try {
-            plotStyle = PlotStyle.valueOf(styleType.toUpperCase());
-        } catch (IllegalArgumentException iae) {
-            /*
-             * Ignore this, and just use default
-             */
-        }
-
-        MapStyleDescriptor styleDescriptor = new MapStyleDescriptor();
-        styleDescriptor.setColorPalette(metadata.getPaletteName());
-
-        /*
-         * And set the palette
-         */
-        String paletteName = null;
-        if (plotStyle.usesPalette()) {
-            if (styleStrEls.length > 1) {
-                paletteName = styleStrEls[1];
-            }
-            styleDescriptor.setColorPalette(paletteName);
-        }
-        styleDescriptor.setScaleRange(scaleRange);
-        styleDescriptor.setTransparent(styleRequest.isTransparent());
-        styleDescriptor.setLogarithmic(logScale);
-        styleDescriptor.setOpacity(styleRequest.getOpacity());
-        styleDescriptor.setBgColor(styleRequest.getBackgroundColour());
-        styleDescriptor.setNumColourBands(styleRequest.getNumColourBands());
-        /*
-         * All styling information set
-         */
-
-        /*
-         * Create the map plotter object
-         */
-        BoundingBox bbox = new BoundingBoxImpl(mapDataRequest.getBbox(),
-                WmsUtils.getCrs(mapDataRequest.getCrsCode()));
-        MapPlotter mapPlotter = new MapPlotter(styleDescriptor, mapDataRequest.getWidth(),
-                mapDataRequest.getHeight(), bbox, mapDataRequest.isAnimation());
-
-        /*
-         * All this is needed for KML.
-         */
-        String name = "";
-        String description = "";
-        String zString = "";
-        String units = "";
-        List<String> timeStrings = null;
-
-        if (featureCollection instanceof UniqueMembersFeatureCollection) {
-            /*-
-             * There will only be a single feature plotted. This means that the
-             * UI will have sent:
-             * 
-             * ELEVATION - a single value or none
-             * TIME - a single value or none for a map, multiple values for an animation
-             * 
-             * No COLORBY/XXXX parameters
-             */
-
-            Feature feature = ((UniqueMembersFeatureCollection<? extends Feature>) featureCollection)
-                    .getFeatureContainingMember(memberName);
-
-            VerticalPosition zValue = GISUtils.getExactElevation(
-                    mapDataRequest.getElevationString(), GISUtils.getVerticalAxis(feature));
-
-            /*
-             * Cycle through all the provided timesteps, extracting data for
-             * each step
-             */
-            List<TimePosition> timeValues = WmsUtils.getTimePositionsForString(
-                    mapDataRequest.getTimeString(), feature);
-            /*
-             * Use a single null time value if the layer has no time axis
-             */
-            if (timeValues.isEmpty()) {
-                timeValues = Arrays.asList((TimePosition) null);
-            }
-
-            timeStrings = new ArrayList<String>();
-            for (TimePosition timeValue : timeValues) {
-                /*
-                 * Needed for KML
-                 */
-                String timeString = TimeUtils.dateTimeToISO8601(timeValue);
-                timeStrings.add(timeString);
-
-                /*
-                 * Only add a label if this is part of an animation
-                 */
-                String label = null;
-                if (mapDataRequest.isAnimation()) {
-                    label = timeString;
-                }
-
-                /*
-                 * This will layer images on top of one another, unless an
-                 * animation is set, in which case, each different time value
-                 * creates a new frame
-                 */
-                mapPlotter.addToFrame(feature, memberName, zValue, timeValue, label, plotStyle);
-            }
-
-            /*
-             * Needed for KML
-             */
-            units = MetadataUtils.getScalarMetadata(feature, memberName).getUnits().getUnitString();
-            description = MetadataUtils.getScalarMetadata(feature, memberName).getDescription();
-            if (zValue != null) {
-                zString = zValue.toString();
-            }
-        } else {
-            /*
-             * Multiple features will be plotted. The most common use case is
-             * in-situ data, but this is not guaranteed. What is guaranteed:
-             * 
-             * ELEVATION - a range, or none
-             * 
-             * TIME - a range, or none
-             * 
-             * COLORBY/TIME - if features can vary by time. If not present,
-             * defaults to the latest in the range.
-             * 
-             * COLORBY/DEPTH - if features can vary by depth. If not present,
-             * defaults to the closest to sea level in the range.
-             * 
-             * We don't currently support animations with this, because we
-             * haven't decided on a protocol that defines the time steps
-             */
-            if (mapDataRequest.isAnimation()) {
-                throw new WmsException("Cannot create animations with this type of dataset");
-            }
-
-            Collection<? extends Feature> features = getMatchingFeatures(mapDataRequest,
-                    featureCollection, BorderedGrid.getLargeBoundingBox(bbox,
-                            mapDataRequest.getWidth(), mapDataRequest.getHeight(), 8), memberName);
-
-            TimePosition colorByTime = null;
-            if (mapDataRequest.getColorbyTimeString() != null) {
-                colorByTime = TimeUtils.iso8601ToDateTime(mapDataRequest.getColorbyTimeString(),
-                        CalendarSystem.CAL_ISO_8601);
-            }
-
-            Double colorByDepth = null;
-            if (mapDataRequest.getColorbyElevationString() != null) {
-                colorByDepth = Double.parseDouble(mapDataRequest.getColorbyElevationString());
-            }
-
-            for (Feature feature : features) {
-                VerticalPosition vPos = GISUtils.getClosestElevationTo(colorByDepth, GISUtils.getVerticalAxis(feature));
-                TimePosition tPos = GISUtils.getClosestTimeTo(colorByTime,
-                        GISUtils.getTimes(feature, false));
-                mapPlotter.addToFrame(feature, memberName, vPos, tPos, null, plotStyle);
-            }
-
-            /*
-             * Needed for KML.
-             * 
-             * Note that we don't set zString or timeStrings. That's because we
-             * don't have a single value z, and we don't support animations for
-             * this type of Dataset
-             */
-            if (features.size() > 0) {
-                Feature feature = features.iterator().next();
-                ScalarMetadata scalarMetadata = MetadataUtils
-                        .getScalarMetadata(feature, memberName);
-                if(scalarMetadata != null){
-                    description = scalarMetadata.getDescription();
-                    units = scalarMetadata.getUnits().getUnitString();
-                }
-            }
-        }
-        /*
-         * Needed for KML
-         */
-        name = metadata.getTitle();
-
-        /*
-         * Write the image to the client. First we set the HTTP headers
-         */
-        httpServletResponse.setStatus(HttpServletResponse.SC_OK);
-        httpServletResponse.setContentType(mimeType);
-
-        Integer frameRate = null;
-        String fpsString = params.getString("frameRate");
-        if (fpsString != null) {
-            try {
-                frameRate = Integer.parseInt(fpsString);
-            } catch (NumberFormatException nfe) {
-                /*
-                 * Ignore this and just use the default
-                 */
-            }
-        }
-
-        BufferedImage legend = null;
-        if (imageFormat.requiresLegend()) {
-            legend = styleDescriptor.getLegend(name, units);
-        }
-        if (imageFormat instanceof KmzFormat) {
-            httpServletResponse.setHeader("Content-Disposition", "inline; filename=" + name
-                    + ".kmz");
-        }
-
-        /*
-         * Write the images to the output stream
-         */
-        imageFormat.writeImage(mapPlotter.getRenderedFrames(),
-                httpServletResponse.getOutputStream(), name, description, mapDataRequest.getBbox(),
-                timeStrings, zString, legend, frameRate);
-
-        return null;
-    }
-
-    protected ModelAndView getStyledMap(RequestParams params, final FeatureFactory featureFactory,
-            HttpServletResponse httpServletResponse) throws WmsException,
-            uk.ac.rdg.resc.edal.graphics.exceptions.InvalidFormatException, JAXBException,
-            IOException {
-        /*
-         * This is a test method. It currently takes a request, checks
-         * for an XML style, and returns an image. No error checking, not
-         * robust, really, really easy to get it to fail. Probably a security
-         * hole
-         * 
-         * Again, THIS IS A TEST METHOD.
-         * 
-         * If this should be production code, this method shouldn't be here. Why
-         * haven't you already deleted it?
+         * This would be nicer if featureFactory was a member of this class, but
+         * it's actually a member of a concrete subclass. Not sure if separation
+         * is still necessary, but for now this method works fine.
          */
         Id2FeatureAndMember id2Feature = new Id2FeatureAndMember() {
             @Override
             public FeatureCollectionAndMemberName getFeatureAndMemberName(String id) {
                 try {
-                    return new FeatureCollectionAndMemberName(featureFactory.getFeatureCollection(id), WmsUtils.getMemberName(id));
+                    return new FeatureCollectionAndMemberName(
+                            featureFactory.getFeatureCollection(id), WmsUtils.getMemberName(id));
                 } catch (FeatureNotDefinedException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 } catch (WmsException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
                 return null;
             }
         };
-        GlobalPlottingParams plottingParameters = parsePlottingParams(params);
-        
-        String xmlString = params.getString("XML_STYLE");
-        Image image = StyleXMLParser.deserialise(xmlString);
-        
-        BufferedImage finalImage = image.drawImage(plottingParameters, id2Feature);
-        httpServletResponse.setContentType("image/png");
-        httpServletResponse.setHeader("Content-Disposition", "inline; filename=xmlImage.png");
-        
-        ImageIO.write(finalImage, "png", httpServletResponse.getOutputStream());
+
+        GetMapParameters getMapParams = new GetMapParameters(params);
+
+        GlobalPlottingParams plottingParameters = getMapParams.getPlottingParameters();
+        GetMapStyleParams styleParameters = getMapParams.getStyleParameters();
+        if (!(getMapParams.getImageFormat() instanceof SimpleFormat)) {
+            throw new WmsException("Currently KML is not supported.");
+        }
+        SimpleFormat simpleFormat = (SimpleFormat) getMapParams.getImageFormat();
+
+        /*
+         * Do some checks on the style parameters.
+         * 
+         * These only apply to non-XML styles. XML ones are more complex to
+         * handle.
+         * 
+         * TODO sort out some checks on XML styles.
+         */
+        if (!styleParameters.isXmlDefined()) {
+            if (styleParameters.isTransparent()
+                    && !getMapParams.getImageFormat().supportsFullyTransparentPixels()) {
+                throw new WmsException("The image format "
+                        + getMapParams.getImageFormat().getMimeType()
+                        + " does not support fully-transparent pixels");
+            }
+            if (styleParameters.getOpacity() < 100
+                    && !getMapParams.getImageFormat().supportsPartiallyTransparentPixels()) {
+                throw new WmsException("The image format "
+                        + getMapParams.getImageFormat().getMimeType()
+                        + " does not support partially-transparent pixels");
+            }
+            if (styleParameters.getNumLayers() > LAYER_LIMIT) {
+                throw new WmsException("Only " + LAYER_LIMIT + " layer(s) can be plotted at once");
+            }
+        }
+
+        /*
+         * Check the dimensions of the image
+         */
+        if (plottingParameters.getHeight() > serverConfig.getMaxImageHeight()
+                || plottingParameters.getWidth() > serverConfig.getMaxImageWidth()) {
+            throw new WmsException("Requested image size exceeds the maximum of "
+                    + this.serverConfig.getMaxImageWidth() + "x"
+                    + this.serverConfig.getMaxImageHeight());
+        }
+
+        Image imageGenerator = styleParameters.getImageGenerator();
+
+        try {
+            ServletOutputStream outputStream = httpServletResponse.getOutputStream();
+            simpleFormat.writeImage(
+                    Arrays.asList(imageGenerator.drawImage(plottingParameters, id2Feature)),
+                    outputStream, null);
+            outputStream.close();
+        } catch (IOException e) {
+            /*
+             * The client can quite often cancel requests when loading tiled maps.
+             * 
+             * This gives Broken pipe errors which can be ignored.
+             */
+//            e.printStackTrace();
+//            throw new WmsException("Problem writing to output stream.  Check logs for stack trace");
+        }
         return null;
     }
-
-    private GlobalPlottingParams parsePlottingParams(RequestParams httpParams) throws WmsException {
-        Extent<TimePosition> tExtent = null;
-        String timeString = httpParams.getString("time");
-        if(timeString != null) {
-            String[] timeStrings = timeString.split("/");
-            if(timeStrings.length == 1) {
-                try {
-                    TimePosition time = TimeUtils.iso8601ToDateTime(timeStrings[0], CalendarSystem.CAL_ISO_8601);
-                    tExtent = Extents.newExtent(time, time);
-                } catch (ParseException e) {
-                    throw new IllegalArgumentException("Time format is wrong: "+timeStrings[0]);
-                }
-            } else if(timeStrings.length == 2) {
-                try {
-                    tExtent = Extents.newExtent(
-                            TimeUtils.iso8601ToDateTime(timeStrings[0], CalendarSystem.CAL_ISO_8601),
-                            TimeUtils.iso8601ToDateTime(timeStrings[1], CalendarSystem.CAL_ISO_8601));
-                } catch (ParseException e) {
-                    throw new IllegalArgumentException("Time format is wrong: "+timeString);
-                }
-            } else {
-                throw new IllegalArgumentException("Time can either be a single value or a range");
-            }
-        }
-            
-        TimePosition targetTime = null;
-        String targetTimeString = httpParams.getString("colorby/time");
-        if(targetTimeString != null) {
-            try {
-                targetTime = TimeUtils.iso8601ToDateTime(targetTimeString, CalendarSystem.CAL_ISO_8601);
-            } catch (ParseException e) {
-                throw new IllegalArgumentException("colorby/time format is wrong: "+targetTimeString);
-            }
-        }
-        if(targetTime == null && tExtent != null) {
-            targetTime = tExtent.getHigh();
-        }
-        
-        Extent<Double> zExtent = null;
-        String depthString = httpParams.getString("elevation");
-        if(depthString != null) {
-            String[] depthStrings = depthString.split("/");
-            if(depthStrings.length == 1) {
-                try {
-                    Double depth = Double.parseDouble(depthStrings[0]);
-                    zExtent = Extents.newExtent(depth, depth);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Depth format is wrong: "+depthStrings[0]);
-                }
-            } else if(depthStrings.length == 2) {
-                try {
-                    zExtent = Extents.newExtent(
-                            Double.parseDouble(depthStrings[0]),
-                            Double.parseDouble(depthStrings[1]));
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Depth format is wrong: "+depthString);
-                }
-            } else {
-                throw new IllegalArgumentException("Depth can either be a single value or a range");
-            }
-        }
-        
-        Double targetDepth = null;
-        String targetDepthString = httpParams.getString("colorby/depth");
-        if(targetDepthString != null) {
-            try {
-                targetDepth = Double.parseDouble(targetDepthString);
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("colorby/depth format is wrong: "+targetDepthString);
-            }
-        }
-        if(targetDepth == null && zExtent != null) {
-            targetDepth = zExtent.getHigh();
-        }
-        
-        String crsCode;
-        if(httpParams.getMandatoryWmsVersion().equals("1.3.0")) {
-            crsCode = httpParams.getMandatoryString("CRS");
-        } else {
-            crsCode = httpParams.getMandatoryString("SRS");
-        }
-        
-        try {
-            return new GlobalPlottingParams(
-                    Integer.parseInt(httpParams.getMandatoryString("width")),
-                    Integer.parseInt(httpParams.getMandatoryString("height")),
-                    new BoundingBoxImpl(WmsUtils.parseBbox(httpParams.getMandatoryString("bbox"),true), WmsUtils.getCrs(crsCode)),
-                    zExtent, tExtent, targetDepth, targetTime);
-        } catch (uk.ac.rdg.resc.ncwms.exceptions.InvalidCrsException e) {
-            e.printStackTrace();
-            throw new IllegalArgumentException("Something's wrong with your parameters");
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-            throw new IllegalArgumentException("Something's wrong with your parameters");
-        } catch (WmsException e) {
-            e.printStackTrace();
-            throw new IllegalArgumentException("Something's wrong with your parameters");
-        }
-    }
-
+    
     /**
      * Executes the GetFeatureInfo operation
      * 
