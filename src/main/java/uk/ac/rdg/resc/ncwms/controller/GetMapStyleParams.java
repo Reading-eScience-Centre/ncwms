@@ -16,6 +16,7 @@ import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.ContourLayer;
 import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.ContourLayer.ContourLineStyle;
 import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.Drawable;
 import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.Image;
+import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.PaletteColourScheme;
 import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.PatternScale;
 import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.RasterLayer;
 import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.StippleLayer;
@@ -182,7 +183,7 @@ public class GetMapStyleParams {
                     colorScaleRange.getHigh(), logarithmic);
             ColourMap colourPalette = new ColourMap(Color.black, Color.black, new Color(0, true),
                     paletteName, numColourBands);
-            ColourScheme colourScheme = new ColourScheme(scaleRange, colourPalette);
+            ColourScheme colourScheme = new PaletteColourScheme(scaleRange, colourPalette);
             layer = new RasterLayer(layerName, colourScheme);
         } else if(plotStyleName.equalsIgnoreCase("contour")) {
             layer = new ContourLayer(layerName, new ColourScale(colorScaleRange.getLow(),
