@@ -74,6 +74,10 @@ public final class NcwmsController extends AbstractWmsController {
     protected ModelAndView dispatchWmsRequest(String request, RequestParams params,
             HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
             throws Exception {
+        /*
+         * End of test code
+         */
+        
         if (request.equals("GetCapabilities")) {
             return getCapabilities(params, httpServletRequest);
         } else if (request.equals("GetMap")) {
