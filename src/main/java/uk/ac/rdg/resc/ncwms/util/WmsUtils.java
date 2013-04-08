@@ -44,6 +44,7 @@ import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.impl.RegularGridImpl;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
+import uk.ac.rdg.resc.edal.coverage.metadata.StatisticsCollection;
 import uk.ac.rdg.resc.edal.coverage.metadata.impl.MetadataUtils;
 import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.feature.GridFeature;
@@ -370,6 +371,14 @@ public class WmsUtils {
             for(PlotStyle style : PlotStyle.getAllowedPlotStyles(feature, scalarMetadata)){
                 styles.add(style);
             }
+        }
+        if(metadata instanceof StatisticsCollection) {
+            styles.add(PlotStyle.DEFAULT_CONFIDENCE);
+            styles.add(PlotStyle.DEFAULT_CONTOUR);
+            styles.add(PlotStyle.DEFAULT_CONTOUR_SMOOTH);
+            styles.add(PlotStyle.DEFAULT_STIPPLE);
+            styles.add(PlotStyle.DEFAULT_FADE_BLACK);
+            styles.add(PlotStyle.DEFAULT_FADE_WHITE);
         }
         return styles;
     }

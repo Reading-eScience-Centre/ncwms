@@ -1,6 +1,7 @@
 package uk.ac.rdg.resc.ncwms.controller;
 
 import java.text.ParseException;
+import java.util.Map;
 
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
@@ -8,10 +9,12 @@ import uk.ac.rdg.resc.edal.geometry.impl.BoundingBoxImpl;
 import uk.ac.rdg.resc.edal.graphics.exceptions.InvalidFormatException;
 import uk.ac.rdg.resc.edal.graphics.formats.ImageFormat;
 import uk.ac.rdg.resc.edal.graphics.style.GlobalPlottingParams;
+import uk.ac.rdg.resc.edal.graphics.style.Id2FeatureAndMember;
 import uk.ac.rdg.resc.edal.position.CalendarSystem;
 import uk.ac.rdg.resc.edal.position.TimePosition;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
+import uk.ac.rdg.resc.ncwms.config.Dataset;
 import uk.ac.rdg.resc.ncwms.exceptions.WmsException;
 import uk.ac.rdg.resc.ncwms.util.WmsUtils;
 
@@ -32,11 +35,12 @@ public class GetMapParameters {
 
     /**
      * Creates a new instance of GetMapParameter from the given RequestParams
+     * @param map 
      * 
      * @throws WmsException
      *             if the request is invalid
      */
-    public GetMapParameters(RequestParams params) throws WmsException {
+    public GetMapParameters(RequestParams params, Id2FeatureAndMember id2Feature, Map<String, Dataset> datasets) throws WmsException {
         this.wmsVersion = params.getMandatoryWmsVersion();
         if (!WmsUtils.SUPPORTED_VERSIONS.contains(this.wmsVersion)) {
             throw new WmsException("VERSION " + this.wmsVersion + " not supported");
@@ -48,7 +52,7 @@ public class GetMapParameters {
         }
         animation = params.getBoolean("animation", false);
         globalPlottingParams = parsePlottingParams(params);
-        styleParameters = new GetMapStyleParams(params);
+        styleParameters = new GetMapStyleParams(params, id2Feature, datasets);
     }
 
     public GlobalPlottingParams getPlottingParameters() {
