@@ -39,7 +39,7 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
             </c:when>
             <c:otherwise>
                 <b>Stack trace:</b><br />
-                ${err.class.name}: ${err.message}<br />
+                ${err['class'].name}: ${err.message}<br />
                 <c:forEach var="stacktraceelement" items="${err.stackTrace}">
                 ${stacktraceelement}<br />
                 </c:forEach>
