@@ -808,7 +808,8 @@ public abstract class AbstractWmsController extends AbstractController {
             requestURL.append("&CRS=" + featureDataRequest.getCrsCode());
             requestURL.append("&POINT=" + lonLat.getLongitude() + " " + lonLat.getLatitude());
             String elevationString = featureDataRequest.getColorbyElevationString();
-            if (elevationString == null && !featureDataRequest.getElevationString().contains("/")) {
+            if (elevationString == null && featureDataRequest.getElevationString() != null
+                    && !featureDataRequest.getElevationString().contains("/")) {
                 elevationString = featureDataRequest.getElevationString();
             }
             if (elevationString != null && !elevationString.equals("")) {
