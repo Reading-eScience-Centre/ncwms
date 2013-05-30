@@ -7,6 +7,8 @@ import java.util.Map;
 
 import javax.xml.bind.JAXBException;
 
+import net.sf.json.JSONException;
+
 import uk.ac.rdg.resc.edal.Extent;
 import uk.ac.rdg.resc.edal.coverage.metadata.RangeMetadata;
 import uk.ac.rdg.resc.edal.coverage.metadata.ScalarMetadata;
@@ -21,6 +23,7 @@ import uk.ac.rdg.resc.edal.feature.Feature;
 import uk.ac.rdg.resc.edal.graphics.style.ColourPalette;
 import uk.ac.rdg.resc.edal.graphics.style.FeatureCollectionAndMemberName;
 import uk.ac.rdg.resc.edal.graphics.style.Id2FeatureAndMember;
+import uk.ac.rdg.resc.edal.graphics.style.StyleJSONParser;
 import uk.ac.rdg.resc.edal.graphics.style.StyleXMLParser;
 import uk.ac.rdg.resc.edal.graphics.style.StyleXMLParser.ColorAdapter;
 import uk.ac.rdg.resc.edal.graphics.style.datamodel.impl.ArrowLayer;
@@ -92,10 +95,20 @@ public class GetMapStyleParams {
         
         xmlStyle = params.getString("XML_STYLE");
         
+        String jsonStyle = params.getString("JSON_STYLE");
+        if (jsonStyle != null && xmlStyle == null) {
+        	try {
+        		xmlStyle = StyleJSONParser.JSONtoXMLString(jsonStyle);
+        	} catch (JSONException e) {
+        		e.printStackTrace();
+        		throw new WmsException("Problem parsing JSON style to XML style.  Check logs for stack trace");
+        	}
+        }
+        
         if(xmlStyle == null) {
             xmlSpecified = false;
             if(layers == null) {
-                throw new WmsException("You must specify either XML_STYLE or LAYERS and STYLES");
+                throw new WmsException("You must specify either XML_STYLE, JSON_STYLE or LAYERS and STYLES");
             }
             if (styles.length != layers.length && styles.length != 0) {
                 throw new WmsException("You must request exactly one STYLE per layer, "
