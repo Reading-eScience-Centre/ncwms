@@ -73,6 +73,7 @@ import uk.ac.rdg.resc.edal.coverage.domain.PointSeriesDomain;
 import uk.ac.rdg.resc.edal.coverage.domain.impl.HorizontalDomain;
 import uk.ac.rdg.resc.edal.coverage.domain.impl.PointSeriesDomainImpl;
 import uk.ac.rdg.resc.edal.coverage.grid.GridCell2D;
+import uk.ac.rdg.resc.edal.coverage.grid.GridCoordinates;
 import uk.ac.rdg.resc.edal.coverage.grid.HorizontalGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.RegularGrid;
 import uk.ac.rdg.resc.edal.coverage.grid.VerticalAxis;
@@ -950,10 +951,29 @@ public abstract class AbstractWmsController extends AbstractController {
             /*
              * First get a 8 pixel bounding box around the clicked position
              */
-            HorizontalPosition lowerCorner = grid.transformCoordinates(new GridCoordinates2DImpl(
-                    featureDataRequest.getPixelColumn() - 4, j - 4));
-            HorizontalPosition upperCorner = grid.transformCoordinates(new GridCoordinates2DImpl(
-                    featureDataRequest.getPixelColumn() + 4, j + 4));
+            int lli = featureDataRequest.getPixelColumn() - 4;
+            int llj = j - 4;
+            int uri = featureDataRequest.getPixelColumn() + 4;
+            int urj = j + 4;
+            
+            GridCoordinates llGrid = grid.getGridExtent().getLow();
+            GridCoordinates urGrid = grid.getGridExtent().getHigh();
+            if(lli < llGrid.getIndex(0)) {
+                lli = llGrid.getIndex(0);
+            }
+            if(llj < llGrid.getIndex(1)) {
+                llj = llGrid.getIndex(1);
+            }
+            if(uri > urGrid.getIndex(0)) {
+                uri = urGrid.getIndex(0);
+            }
+            if(urj > urGrid.getIndex(1)) {
+                urj = urGrid.getIndex(1);
+            }
+            
+            HorizontalPosition lowerCorner = grid.transformCoordinates(new GridCoordinates2DImpl(lli,llj));
+            HorizontalPosition upperCorner = grid.transformCoordinates(new GridCoordinates2DImpl(uri,urj));
+            
             BoundingBox bbox = new BoundingBoxImpl(lowerCorner, upperCorner);
 
             Collection<? extends Feature> features = getMatchingFeatures(featureDataRequest,
