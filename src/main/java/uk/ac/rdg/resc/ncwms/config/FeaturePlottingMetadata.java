@@ -67,7 +67,7 @@ public class FeaturePlottingMetadata {
 
     private Dataset dataset;
 
-    private Extent<Float> colorScaleRange = null;
+    private Extent<Float> colorScaleRange = Extents.emptyExtent(Float.class);
 
     private boolean logScaling = false;
 
@@ -200,7 +200,7 @@ public class FeaturePlottingMetadata {
 
     public void setColorScaleRange(Extent<Float> colorScaleRange) {
         this.colorScaleRange = colorScaleRange;
-        this.colorScaleRangeStr = colorScaleRange == null ? null
+        this.colorScaleRangeStr = (colorScaleRange == null || colorScaleRange.isEmpty()) ? null
                 : formatColorScaleRange(colorScaleRange);
     }
 

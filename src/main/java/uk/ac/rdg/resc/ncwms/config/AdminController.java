@@ -298,9 +298,6 @@ public class AdminController extends MultiActionController {
                  * layerId is of the form featureId/memberId
                  */
                 String newTitle = request.getParameter(layerId + ".title").trim();
-                // Find the min and max colour scale range for this variable
-                float min = Float.parseFloat(request.getParameter(layerId + ".scaleMin").trim());
-                float max = Float.parseFloat(request.getParameter(layerId + ".scaleMax").trim());
 
                 /*
                  * Get the plotting metadata for this layer, and save the
@@ -308,7 +305,16 @@ public class AdminController extends MultiActionController {
                  */
                 FeaturePlottingMetadata var = ds.getPlottingMetadataMap().get(layerId);
                 var.setTitle(newTitle);
-                var.setColorScaleRange(Extents.newExtent(min, max));
+                try {
+                    // Find the min and max colour scale range for this variable
+                    float min = Float.parseFloat(request.getParameter(layerId + ".scaleMin").trim());
+                    float max = Float.parseFloat(request.getParameter(layerId + ".scaleMax").trim());
+                    var.setColorScaleRange(Extents.newExtent(min, max));
+                } catch (NumberFormatException nfe) {
+                    /*
+                     * If there were not valid inputs in the max/min box, don't set the scale range
+                     */
+                }
                 var.setPaletteName(request.getParameter(layerId + ".palette"));
                 var.setNumColorBands(Integer.parseInt(request.getParameter(layerId
                         + ".numColorBands")));
