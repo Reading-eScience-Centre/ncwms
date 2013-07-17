@@ -733,9 +733,23 @@ public abstract class AbstractWmsController extends AbstractController {
                 throw new WmsException("Cannot create animations with this type of dataset");
             }
 
-            Collection<? extends Feature> features = getMatchingFeatures(mapDataRequest,
-                    featureCollection, BorderedGrid.getLargeBoundingBox(bbox,
-                            mapDataRequest.getWidth(), mapDataRequest.getHeight(), 8), memberName);
+            Collection<? extends Feature> features;
+            if (memberName.equals("*")) {
+                /*
+                 * Use the ** to indicate that we want all features but we don't want their values.
+                 * 
+                 * This only happens in GetMap - for GetFeatureInfo we ALWAYS want values
+                 */
+                features = getMatchingFeatures(mapDataRequest, featureCollection,
+                        BorderedGrid.getLargeBoundingBox(bbox, mapDataRequest.getWidth(),
+                                mapDataRequest.getHeight(), 8), "**");
+            } else {
+                features = getMatchingFeatures(mapDataRequest, featureCollection,
+                        BorderedGrid.getLargeBoundingBox(bbox, mapDataRequest.getWidth(),
+                                mapDataRequest.getHeight(), 8), memberName);
+            }
+            
+            
 
             TimePosition colorByTime = null;
             if (mapDataRequest.getColorbyTimeString() != null) {
@@ -1155,6 +1169,8 @@ public abstract class AbstractWmsController extends AbstractController {
         Set<String> members;
         if(memberName.equals("*")){
             members = null;
+        } else if(memberName.equals("**")){
+            members = Collections.emptySet();
         } else {
             members = CollectionUtils.setOf(memberName);
         }
