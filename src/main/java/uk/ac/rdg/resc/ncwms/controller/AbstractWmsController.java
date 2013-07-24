@@ -1447,7 +1447,7 @@ public abstract class AbstractWmsController extends AbstractController {
                 VerticalPosition zValue = GISUtils.getExactElevation(params.getString("elevation"),
                         GISUtils.getVerticalAxis(feature));
                 
-                HorizontalPosition pos = getHorizontalPosition(params);
+                HorizontalPosition pos = getHorizontalPositionForTimeseries(params);
 
                 GridSeriesFeature gridSeriesFeature = (GridSeriesFeature) feature;
 
@@ -1469,7 +1469,7 @@ public abstract class AbstractWmsController extends AbstractController {
                  * it did to implement...
                  */
                 List<TimePosition> times = GISUtils.getTimes(feature, true);
-                HorizontalPosition hPos = getHorizontalPosition(params);
+                HorizontalPosition hPos = getHorizontalPositionForTimeseries(params);
                 Double targetDepth = null;
                 if (params.getString("elevation") != null) {
                     targetDepth = Double.parseDouble(params.getString("elevation"));
@@ -1515,7 +1515,7 @@ public abstract class AbstractWmsController extends AbstractController {
         return null;
     }
     
-    private HorizontalPosition getHorizontalPosition(RequestParams params) throws WmsException{
+    private HorizontalPosition getHorizontalPositionForTimeseries(RequestParams params) throws WmsException{
         String crsCode = params.getString("crs");
         /*
          * Get the required coordinate reference system, forcing
@@ -1531,15 +1531,11 @@ public abstract class AbstractWmsController extends AbstractController {
         if (coords.length != 2) {
             throw new WmsException("Invalid POINT format");
         }
+        /*
+         * Note that we always have lon lat order in Timeseries requests
+         */
         int lonIndex = 0;
         int latIndex = 1;
-        // If we have lat lon order...
-        if (crsCode.equalsIgnoreCase("EPSG:4326")
-                && params.getWmsVersion().equalsIgnoreCase("1.3.0")) {
-            // Swap the co-ordinates to lon lat order
-            latIndex = 0;
-            lonIndex = 1;
-        }
 
         double x, y;
         try {
