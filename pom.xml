@@ -22,42 +22,20 @@
 			<artifactId>edal-graphics</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>uk.ac.rdg.resc</groupId>
-			<artifactId>edal-godiva</artifactId>
-			<version>${project.version}</version>
-		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>uk.ac.rdg.resc</groupId> -->
+<!-- 			<artifactId>edal-godiva</artifactId> -->
+<!-- 			<version>${project.version}</version> -->
+<!-- 		</dependency> -->
 		<dependency>
 			<groupId>uk.ac.rdg.resc</groupId>
 			<artifactId>edal-cdm</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>commons-httpclient</groupId>
-			<artifactId>commons-httpclient</artifactId>
-			<version>3.1</version>
-		</dependency>
-		<!-- Next 2 needed for file upload -->
-		<dependency>
-		    <groupId>commons-fileupload</groupId>
-		    <artifactId>commons-fileupload</artifactId>
-		    <version>1.2.2</version>
-		</dependency>
-		<dependency>
-		    <groupId>commons-io</groupId>
-		    <artifactId>commons-io</artifactId>
-		    <version>2.4</version>
-		</dependency>
-		<!-- done -->
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webmvc</artifactId>
-			<version>2.5.6</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-dao</artifactId>
-			<version>2.0.8</version>
+			<groupId>uk.ac.rdg.resc</groupId>
+			<artifactId>edal-wms</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -65,112 +43,24 @@
 			<version>2.5</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>net.sf.ehcache</groupId>
-			<artifactId>ehcache-core</artifactId>
-			<version>2.6.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.simpleframework</groupId>
-			<artifactId>simple-xml</artifactId>
-			<version>2.6.7</version>
-		</dependency>
-		<dependency>
-			<groupId>org.acegisecurity</groupId>
-			<artifactId>acegi-security</artifactId>
-			<version>1.0.7</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>spring-core</artifactId>
-					<groupId>org.springframework</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>spring-support</artifactId>
-					<groupId>org.springframework</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>spring-remoting</artifactId>
-					<groupId>org.springframework</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>spring-jdbc</artifactId>
-					<groupId>org.springframework</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
-			<version>2.5.6</version>
-		</dependency>
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<version>1.3.159</version>
-		</dependency>
-		<dependency>
-			<groupId>jstl</groupId>
-			<artifactId>jstl</artifactId>
-			<version>1.2</version>
-		</dependency>
-		<dependency>
-			<groupId>json</groupId>
-			<artifactId>json-taglib</artifactId>
-			<version>0.4.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.geotoolkit</groupId>
-			<artifactId>geotk-epsg</artifactId>
-			<version>3.20-geoapi-3.0</version>
-		</dependency>
-		<dependency>
-			<groupId>javax.validation</groupId>
-			<artifactId>validation-api</artifactId>
-			<version>1.0.0.GA</version>
-		</dependency>
-		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
-			<version>1.2.16</version>
-		</dependency>
-		<dependency>
-	        <groupId>net.sf.json-lib</groupId>
-	        <artifactId>json-lib</artifactId>
-	        <version>2.3</version>
-	        <type>jar</type>
-	        <classifier>jdk15</classifier>
-	        <scope>compile</scope>
-	    </dependency>
-	    <dependency>
-	        <groupId>org.apache.commons</groupId>
-	        <artifactId>commons-io</artifactId>
-	        <version>1.3.2</version>
-	        <type>jar</type>
-	        <scope>compile</scope>
-	    </dependency>
-	    <dependency>
-	        <groupId>xom</groupId>
-	        <artifactId>xom</artifactId>
-	        <version>1.2.5</version>
-	    </dependency>
 	</dependencies>
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>gwt-maven-plugin</artifactId>
-				<version>2.4.0</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<inplace>true</inplace>
-				</configuration>
-			</plugin>
+<!-- 			<plugin> -->
+<!-- 				<groupId>org.codehaus.mojo</groupId> -->
+<!-- 				<artifactId>gwt-maven-plugin</artifactId> -->
+<!-- 				<version>2.4.0</version> -->
+<!-- 				<executions> -->
+<!-- 					<execution> -->
+<!-- 						<goals> -->
+<!-- 							<goal>compile</goal> -->
+<!-- 						</goals> -->
+<!-- 					</execution> -->
+<!-- 				</executions> -->
+<!-- 				<configuration> -->
+<!-- 					<inplace>true</inplace> -->
+<!-- 				</configuration> -->
+<!-- 			</plugin> -->
 			<plugin>
 				<artifactId>maven-war-plugin</artifactId>
 				<version>2.2</version>
@@ -178,38 +68,6 @@
 					<attachClasses>true</attachClasses>
 				</configuration>
 			</plugin>
-            <plugin>
-                <groupId>de.akquinet.maven</groupId>
-                <artifactId>maven-latex-plugin</artifactId>
-                <version>1.1</version>
-                <executions>
-                    <execution>
-                        <phase>site</phase>
-                        <goals>
-                            <goal>latex</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
 		</plugins>
 	</build>
-	<repositories>
-		<repository>
-			<!-- This has the JSON taglib in it -->
-			<id>intalio-maven</id>
-			<name>Intalio maven repository</name>
-			<url>http://www.intalio.org/public/maven2/</url>
-		</repository>
-	</repositories>
-	<pluginRepositories>
-	    <!-- Plugin used to generate PDF ncWMS user manual -->
-		<pluginRepository>
-			<id>maven-latex-plugin-repo</id>
-			<url>http://akquinet.github.com/maven-latex-plugin/maven2/</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-		</pluginRepository>
-	</pluginRepositories>
-
 </project>
