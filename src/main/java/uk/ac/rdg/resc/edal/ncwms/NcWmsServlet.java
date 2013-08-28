@@ -9,10 +9,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import uk.ac.rdg.resc.edal.exceptions.EdalException;
 import uk.ac.rdg.resc.edal.wms.GetMapParameters;
 import uk.ac.rdg.resc.edal.wms.RequestParams;
 import uk.ac.rdg.resc.edal.wms.WmsServlet;
-import uk.ac.rdg.resc.edal.wms.exceptions.WmsException;
 
 /**
  * Servlet implementation class NcWmsServlet
