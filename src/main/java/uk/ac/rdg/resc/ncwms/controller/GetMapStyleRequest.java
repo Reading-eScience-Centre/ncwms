@@ -56,6 +56,8 @@ public class GetMapStyleRequest
     // These are the data values that correspond with the extremes of the
     // colour scale
     private Extent<Float> colorScaleRange;
+    private Color aboveMaxColour;
+    private Color belowMinColour;
     
     /**
      * Creates a new instance of GetMapStyleRequest from the given parameters
@@ -73,18 +75,52 @@ public class GetMapStyleRequest
 
         this.transparent = params.getBoolean("transparent", false);
         
-        try
-        {
+        try {
             String bgc = params.getString("bgcolor", "0xFFFFFF");
-            if (bgc.length() != 8 || !bgc.startsWith("0x")) throw new Exception();
+            if (bgc.length() != 8 || !bgc.startsWith("0x"))
+                throw new Exception();
             // Parse the hexadecimal string, ignoring the "0x" prefix
             this.backgroundColour = new Color(Integer.parseInt(bgc.substring(2), 16));
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             throw new WmsException("Invalid format for BGCOLOR");
         }
         
+        String aboveMaxColourStr = params.getString("abovemaxcolor");
+        if(aboveMaxColourStr == null) {
+            aboveMaxColour = Color.black;
+        } else if(aboveMaxColourStr.equalsIgnoreCase("extend")) {
+            aboveMaxColour = null;
+        } else if(aboveMaxColourStr.equalsIgnoreCase("transparent")) {
+            aboveMaxColour = new Color(0, 0, 0, 0);
+        } else {
+            try {
+                if (aboveMaxColourStr.length() != 8 || !aboveMaxColourStr.startsWith("0x"))
+                    throw new Exception();
+                // Parse the hexadecimal string, ignoring the "0x" prefix
+                aboveMaxColour= new Color(Integer.parseInt(aboveMaxColourStr.substring(2), 16));
+            } catch (Exception e) {
+                throw new WmsException("Invalid format for ABOVEMAXCOLOR");
+            }
+        }
+        
+        String belowMinColourStr = params.getString("belowmincolor");
+        if(belowMinColourStr == null) {
+            belowMinColour = Color.black;
+        } else if(belowMinColourStr.equalsIgnoreCase("extend")) {
+            belowMinColour = null;
+        } else if(belowMinColourStr.equalsIgnoreCase("transparent")) {
+            belowMinColour = new Color(0, 0, 0, 0);
+        } else {
+            try {
+                if (belowMinColourStr.length() != 8 || !belowMinColourStr.startsWith("0x"))
+                    throw new Exception();
+                // Parse the hexadecimal string, ignoring the "0x" prefix
+                belowMinColour= new Color(Integer.parseInt(belowMinColourStr.substring(2), 16));
+            } catch (Exception e) {
+                throw new WmsException("Invalid format for BELOWMINCOLOR");
+            }
+        }
+
         this.opacity = params.getPositiveInt("opacity", 100);
         if (this.opacity > 100) this.opacity = 100;
         
@@ -207,6 +243,14 @@ public class GetMapStyleRequest
     public int getNumColourBands()
     {
         return numColourBands;
+    }
+
+    public Color getAboveMaxColour() {
+        return aboveMaxColour;
+    }
+
+    public Color getBelowMinColour() {
+        return belowMinColour;
     }
     
 }

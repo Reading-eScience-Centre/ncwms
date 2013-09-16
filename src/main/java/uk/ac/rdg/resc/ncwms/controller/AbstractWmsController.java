@@ -628,6 +628,8 @@ public abstract class AbstractWmsController extends AbstractController {
         styleDescriptor.setOpacity(styleRequest.getOpacity());
         styleDescriptor.setBgColor(styleRequest.getBackgroundColour());
         styleDescriptor.setNumColourBands(styleRequest.getNumColourBands());
+        styleDescriptor.setAboveMaxColour(styleRequest.getAboveMaxColour());
+        styleDescriptor.setBelowMinColour(styleRequest.getBelowMinColour());
         /*
          * All styling information set
          */
