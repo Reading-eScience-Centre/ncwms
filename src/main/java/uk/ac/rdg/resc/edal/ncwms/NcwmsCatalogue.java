@@ -58,12 +58,12 @@ public class NcwmsCatalogue extends WmsCatalogue {
         datasets = new HashMap<String, Dataset>();
         CdmGridDatasetFactory cdmGridDatasetFactory = new CdmGridDatasetFactory();
         
-        GridDataset curvilinear = cdmGridDatasetFactory.createDataset("curv",
-                "/home/guy/Data/Signell_curvilinear/useast/useast_his_0001.nc");
-        datasets.put(curvilinear.getId(), curvilinear);
-        for (String varId : curvilinear.getVariableIds()) {
-            System.out.println(varId + " is part of the curv dataset");
-        }
+//        GridDataset curvilinear = cdmGridDatasetFactory.createDataset("curv",
+//                "/home/guy/Data/Signell_curvilinear/useast/useast_his_0001.nc");
+//        datasets.put(curvilinear.getId(), curvilinear);
+//        for (String varId : curvilinear.getVariableIds()) {
+//            System.out.println(varId + " is part of the curv dataset");
+//        }
         
         GridDataset dataset = cdmGridDatasetFactory.createDataset("foam",
                 "/home/guy/Data/FOAM_ONE/FOAM_one.ncml");
