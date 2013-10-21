@@ -65,13 +65,20 @@ public class NcwmsCatalogue extends WmsCatalogue {
 //            System.out.println(varId + " is part of the curv dataset");
 //        }
         
-        GridDataset dataset = cdmGridDatasetFactory.createDataset("foam",
+        GridDataset foam = cdmGridDatasetFactory.createDataset("foam",
                 "/home/guy/Data/FOAM_ONE/FOAM_one.ncml");
-        datasets.put(dataset.getId(), dataset);
-        for (String varId : dataset.getVariableIds()) {
+        datasets.put(foam.getId(), foam);
+        for (String varId : foam.getVariableIds()) {
             System.out.println(varId + " is part of the foam dataset");
         }
 
+        GridDataset rotated = cdmGridDatasetFactory.createDataset("rotated",
+                "/home/guy/Data/Rotated-pole/Veradej/precip.DMI.F50.ncml");
+        datasets.put(rotated.getId(), rotated);
+        for (String varId : rotated.getVariableIds()) {
+            System.out.println(varId + " is part of the rotated dataset");
+        }
+        
     }
 
     @Override
