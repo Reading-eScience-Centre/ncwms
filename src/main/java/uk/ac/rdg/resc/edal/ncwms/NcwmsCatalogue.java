@@ -35,6 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
+
 import uk.ac.rdg.resc.edal.dataset.Dataset;
 import uk.ac.rdg.resc.edal.dataset.GridDataset;
 import uk.ac.rdg.resc.edal.dataset.cdm.CdmGridDatasetFactory;
@@ -129,6 +131,11 @@ public class NcwmsCatalogue extends WmsCatalogue {
     @Override
     public String getServerContactEmail() {
         return "g.g@r.ac.uk";
+    }
+    
+    @Override
+    public DateTime getServerLastUpdate() {
+        return new DateTime();
     }
 
     @Override
