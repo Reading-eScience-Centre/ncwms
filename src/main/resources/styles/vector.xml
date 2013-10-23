@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<resc:Image xmlns:resc='http://www.resc.reading.ac.uk'
+	xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+	<RasterLayer>
+		<DataFieldName>$layerName-mag</DataFieldName>
+		<PaletteColourScheme>
+            <ScaleRange>
+    			<ScaleMin>$scaleMin</ScaleMin>
+    			<ScaleMax>$scaleMax</ScaleMax>
+    			<Logarithmic>$logarithmic</Logarithmic>
+            </ScaleRange>
+            <ColourMap>
+    			<AboveMaxColour>$aboveMaxColor</AboveMaxColour>
+    			<BelowMinColour>$belowMinColor</BelowMinColour>
+    			<MissingDataColour>$bgColor</MissingDataColour>
+    			<Palette>$paletteName</Palette>
+    			<NumberOfColourBands>$numColorBands</NumberOfColourBands>
+            </ColourMap>
+		</PaletteColourScheme>
+	</RasterLayer>
+    <ArrowLayer>
+        <DirectionFieldName>$layerName-dir</DirectionFieldName>
+        <ArrowSize>11</ArrowSize>
+        <ArrowColour>#aa0000</ArrowColour>
+    </ArrowLayer>
+</resc:Image>
