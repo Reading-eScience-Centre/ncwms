@@ -20,7 +20,7 @@
 	</RasterLayer>
     <ArrowLayer>
         <DirectionFieldName>$layerName-dir</DirectionFieldName>
-        <ArrowSize>11</ArrowSize>
-        <ArrowColour>#aa0000</ArrowColour>
+        <ArrowSize>8</ArrowSize>
+        <ArrowColour>#000000</ArrowColour>
     </ArrowLayer>
 </resc:Image>

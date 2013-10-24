@@ -80,7 +80,6 @@ public class NcwmsCatalogue extends WmsCatalogue {
         for (String varId : rotated.getVariableIds()) {
             System.out.println(varId + " is part of the rotated dataset");
         }
-        
     }
 
     @Override
@@ -227,5 +226,4 @@ public class NcwmsCatalogue extends WmsCatalogue {
             }
         };
     }
-
 }
