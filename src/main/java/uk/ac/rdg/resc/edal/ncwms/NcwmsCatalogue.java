@@ -29,8 +29,7 @@
 package uk.ac.rdg.resc.edal.ncwms;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,48 +37,52 @@ import java.util.Map;
 import org.joda.time.DateTime;
 
 import uk.ac.rdg.resc.edal.dataset.Dataset;
-import uk.ac.rdg.resc.edal.dataset.GridDataset;
-import uk.ac.rdg.resc.edal.dataset.cdm.CdmGridDatasetFactory;
-import uk.ac.rdg.resc.edal.domain.Extent;
-import uk.ac.rdg.resc.edal.util.Extents;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig.DatasetStorage;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDataset;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsVariable;
 import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
 import uk.ac.rdg.resc.edal.wms.WmsLayerMetadata;
+import uk.ac.rdg.resc.edal.wms.exceptions.WmsLayerNotFoundException;
+import uk.ac.rdg.resc.edal.wms.util.ContactInfo;
 
-public class NcwmsCatalogue extends WmsCatalogue {
+public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
 
+    private NcwmsConfig config;
     private Map<String, Dataset> datasets;
+    private Map<String, WmsLayerMetadata> layerMetadata;
 
-    public NcwmsCatalogue() throws IOException {
+    private DateTime lastUpdateTime = new DateTime();
+
+    public NcwmsCatalogue(NcwmsConfig config) throws IOException {
         /*
-         * When finished, this catalogue will read dataset
-         * locations/configurations from disk.
-         * 
-         * For now, we initialise some stuff statically so that we can do an
-         * end-to-end test
+         * Initialise the storage for datasets and layer metadata.
          */
         datasets = new HashMap<String, Dataset>();
-        CdmGridDatasetFactory cdmGridDatasetFactory = new CdmGridDatasetFactory();
-        
-//        GridDataset curvilinear = cdmGridDatasetFactory.createDataset("curv",
-//                "/home/guy/Data/Signell_curvilinear/useast/useast_his_0001.nc");
-//        datasets.put(curvilinear.getId(), curvilinear);
-//        for (String varId : curvilinear.getVariableIds()) {
-//            System.out.println(varId + " is part of the curv dataset");
-//        }
-        
-        GridDataset foam = cdmGridDatasetFactory.createDataset("foam",
-                "/home/guy/Data/FOAM_ONE/FOAM_one.ncml");
-        datasets.put(foam.getId(), foam);
-        for (String varId : foam.getVariableIds()) {
-            System.out.println(varId + " is part of the foam dataset");
-        }
+        layerMetadata = new HashMap<String, WmsLayerMetadata>();
 
-        GridDataset rotated = cdmGridDatasetFactory.createDataset("rotated",
-                "/home/guy/Data/Rotated-pole/Veradej/precip.DMI.F50.ncml");
-        datasets.put(rotated.getId(), rotated);
-        for (String varId : rotated.getVariableIds()) {
-            System.out.println(varId + " is part of the rotated dataset");
+        this.config = config;
+
+        this.config.loadDatasets(this);
+    }
+
+    @Override
+    public void datasetLoaded(Dataset dataset, Collection<NcwmsVariable> variables) {
+        /*
+         * If we already have a dataset with this ID, it will be replaced. This
+         * is exactly what we want.
+         */
+        datasets.put(dataset.getId(), dataset);
+
+        /*
+         * Now add the layer metadata to a map for future reference
+         */
+        for (NcwmsVariable ncwmsVariable : variables) {
+            String layerName = getLayerName(ncwmsVariable.getNcwmsDataset().getId(),
+                    ncwmsVariable.getId());
+            layerMetadata.put(layerName, ncwmsVariable);
         }
+        lastUpdateTime = new DateTime();
     }
 
     @Override
@@ -89,62 +92,51 @@ public class NcwmsCatalogue extends WmsCatalogue {
 
     @Override
     public int getMaxImageWidth() {
-        return 1024;
+        return config.getServerInfo().getMaxImageWidth();
     }
 
     @Override
     public int getMaxImageHeight() {
-        return 512;
+        return config.getServerInfo().getMaxImageHeight();
     }
 
     @Override
     public String getServerName() {
-        return "ncWMS Server";
+        return config.getServerInfo().getTitle();
     }
 
     @Override
     public String getServerAbstract() {
-        return "This server isn't a real server - it's a mock up for WMS testing...";
+        return config.getServerInfo().getAdminPassword();
     }
 
     @Override
     public List<String> getServerKeywords() {
-        return Arrays.asList("test", "mockup", "fake");
+        return config.getServerInfo().getKeywords();
     }
 
     @Override
-    public String getServerContactName() {
-        return "Guy & \"'>< Griffiths";
+    public ContactInfo getContactInfo() {
+        return config.getContactInfo();
     }
 
-    @Override
-    public String getServerContactOrganisation() {
-        return "ESSC";
-    }
-
-    @Override
-    public String getServerContactTelephone() {
-        return "x5217";
-    }
-
-    @Override
-    public String getServerContactEmail() {
-        return "g.g@r.ac.uk";
-    }
-    
     @Override
     public DateTime getServerLastUpdate() {
-        return new DateTime();
+        return lastUpdateTime;
     }
 
     @Override
-    public List<Dataset> getAllDatasets() {
-        return new ArrayList<Dataset>(datasets.values());
+    public Collection<Dataset> getAllDatasets() {
+        return datasets.values();
     }
 
     @Override
     public String getDatasetTitle(String datasetId) {
-        return "Full title for " + datasets.get(datasetId).getId();
+        NcwmsDataset datasetInfo = config.getDatasetInfo(datasetId);
+        if(datasetInfo == null) {
+            return "";
+        }
+        return datasetInfo.getTitle();
     }
 
     @Override
@@ -177,53 +169,11 @@ public class NcwmsCatalogue extends WmsCatalogue {
     }
 
     @Override
-    public WmsLayerMetadata getLayerMetadata(final String layerName) {
-        return new WmsLayerMetadata() {
-
-            @Override
-            public Boolean isLogScaling() {
-                return false;
-            }
-
-            @Override
-            public String getTitle() {
-                return "A better title for " + layerName;
-            }
-
-            @Override
-            public String getDescription() {
-                return "This layer (" + layerName + ") is a WMS layer.";
-            }
-
-            @Override
-            public String getPalette() {
-                return "default";
-            }
-
-            @Override
-            public Integer getNumColorBands() {
-                return 123;
-            }
-
-            @Override
-            public Extent<Float> getColorScaleRange() {
-                return Extents.newExtent(-123f, 123f);
-            }
-
-            @Override
-            public String getCopyright() {
-                return "COPYRIGHT INFO";
-            }
-
-            @Override
-            public String getMoreInfo() {
-                return "MORE INFO";
-            }
-
-            @Override
-            public boolean isQueryable() {
-                return true;
-            }
-        };
+    public WmsLayerMetadata getLayerMetadata(final String layerName)
+            throws WmsLayerNotFoundException {
+        if (!layerMetadata.containsKey(layerName)) {
+            throw new WmsLayerNotFoundException("The layer: " + layerName + " doesn't exist");
+        }
+        return layerMetadata.get(layerName);
     }
 }
