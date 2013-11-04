@@ -66,6 +66,14 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
         this.config.loadDatasets(this);
     }
 
+    /**
+     * @return The NcwmsConfig object used by this catalogue. Package-private
+     *         since this should not be accessed by external users
+     */
+    public NcwmsConfig getConfig() {
+        return config;
+    }
+
     @Override
     public void datasetLoaded(Dataset dataset, Collection<NcwmsVariable> variables) {
         /*
@@ -124,7 +132,7 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     public boolean allowsGlobalCapabilities() {
         return config.getServerInfo().allowsGlobalCapabilities();
     }
-    
+
     @Override
     public DateTime getServerLastUpdate() {
         return lastUpdateTime;
@@ -138,14 +146,19 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     @Override
     public String getDatasetTitle(String datasetId) {
         NcwmsDataset datasetInfo = config.getDatasetInfo(datasetId);
-        if(datasetInfo == null) {
+        if (datasetInfo == null) {
             return "";
         }
         return datasetInfo.getTitle();
     }
 
     @Override
-    public Dataset getDatasetFromId(String layerName) {
+    public Dataset getDatasetFromId(String datasetId) {
+        return datasets.get(datasetId);
+    }
+    
+    @Override
+    public Dataset getDatasetFromLayerName(String layerName) {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
             /*
