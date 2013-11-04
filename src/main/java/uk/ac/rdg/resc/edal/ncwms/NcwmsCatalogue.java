@@ -121,6 +121,11 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     }
 
     @Override
+    public boolean allowsGlobalCapabilities() {
+        return config.getServerInfo().allowsGlobalCapabilities();
+    }
+    
+    @Override
     public DateTime getServerLastUpdate() {
         return lastUpdateTime;
     }
