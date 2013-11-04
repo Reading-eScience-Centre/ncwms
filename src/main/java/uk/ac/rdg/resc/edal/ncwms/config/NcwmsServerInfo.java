@@ -107,7 +107,7 @@ public class NcwmsServerInfo {
         return adminPassword;
     }
 
-    public boolean isGlobalCapabilities() {
+    public boolean allowsGlobalCapabilities() {
         return globalCapabilities;
     }
 
