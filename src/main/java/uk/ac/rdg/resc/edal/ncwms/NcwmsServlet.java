@@ -28,38 +28,27 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.xml.bind.JAXBException;
 
-import org.xml.sax.SAXException;
-
-import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
-import uk.ac.rdg.resc.edal.dataset.cdm.CdmGridDatasetFactory;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.wms.WmsServlet;
 
 /**
  * Servlet implementation class NcWmsServlet
  */
-public class NcWmsServlet extends WmsServlet implements Servlet {
+public class NcwmsServlet extends WmsServlet implements Servlet {
     private static final long serialVersionUID = 1L;
 
     /**
      * @see WmsServlet#WmsServlet()
      */
-    public NcWmsServlet() {
+    public NcwmsServlet() {
         super();
         /*
-         * TODO in the real world:
-         * Get Javadoc uploading somewhere
-         * Cookbook documentation
+         * TODO in the real world: Get Javadoc uploading somewhere Cookbook
+         * documentation
          */
     }
 
@@ -68,53 +57,17 @@ public class NcWmsServlet extends WmsServlet implements Servlet {
         super.destroy();
         NcwmsConfig.shutdown();
     }
-    
+
     @Override
     public void init(ServletConfig servletConfig) throws ServletException {
         super.init(servletConfig);
-        try {
-            /*
-             * Set the default dataset factory - will be used when a dataset
-             * factory name is not specified
-             */
-            DatasetFactory.setDefaultDatasetFactoryClass(CdmGridDatasetFactory.class);
-
-            /*
-             * Load the XML config for ncWMS, or create it if it doesn't yet
-             * exist.
-             */
-            /*
-             * TODO Perhaps this could be configurable from a properties file in
-             * the webapp somewhere?
-             */
-            String homeDir = System.getProperty("user.home");
-            File configFile = new File(homeDir + File.separator + ".ncWMS-edal" + File.separator,
-                    "config.xml");
-            NcwmsConfig config;
-            if (configFile.exists()) {
-                config = NcwmsConfig.deserialise(new FileReader(configFile));
-            } else {
-                config = new NcwmsConfig();
-            }
-
-            /*
-             * Create a new catalogue from this configuration. The catalogue
-             * will then perform all the steps needed to load the datasets into
-             * memory etc.
-             * 
-             * We will then have a working WMS server up-and-running.
-             */
-            NcwmsCatalogue ncwmsCatalogue = new NcwmsCatalogue(config);
+        Object config = servletConfig.getServletContext().getAttribute("NcwmsCatalogue");
+        if (config instanceof NcwmsCatalogue) {
+            NcwmsCatalogue ncwmsCatalogue = (NcwmsCatalogue) config;
             setCatalogue(ncwmsCatalogue);
-        } catch (IOException e) {
-            /*
-             * TODO Deal with these exceptions
-             */
-            e.printStackTrace();
-        } catch (JAXBException e) {
-            e.printStackTrace();
-//        } catch (SAXException e) {
-//            e.printStackTrace();
+        } else {
+            throw new ServletException(
+                    "ncWMS configuration object is incorrect type.  The \"NcwmsConfig\" attribute of the ServletContext has been incorrectly set.");
         }
     }
 

@@ -345,6 +345,13 @@ public class NcwmsDataset {
         return disabled;
     }
 
+    /**
+     * @return true if this dataset is ready for use
+     */
+    public synchronized boolean isReady() {
+        return !isDisabled() && (state == DatasetState.READY || state == DatasetState.UPDATING);
+    }
+
     public String getTitle() {
         return title;
     }
@@ -369,13 +376,8 @@ public class NcwmsDataset {
      * By making getVariables() and setVariables() both deal with arrays of
      * NcwmsVariable, JAXB is able to instantiate them. If we used Collections
      * instead this would not work.
-     * 
-     * Both methods are private, so the fact that that the result of
-     * getVariables isn't backed by the Map is not a problem - it is only used
-     * by JAXB which only uses it when persisting the config to disk anyway.
      */
-    @SuppressWarnings("unused")
-    private NcwmsVariable[] getVariables() {
+    public NcwmsVariable[] getVariables() {
         return variables.values().toArray(new NcwmsVariable[0]);
     }
 
