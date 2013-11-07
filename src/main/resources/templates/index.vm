@@ -3,11 +3,11 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>$config.serverInfo.title</title>
+        <title>$config.serverInfo.name</title>
     </head>
     <body>
 
-    <h1>$config.serverInfo.title</h1>
+    <h1>$config.serverInfo.name</h1>
 
     <p><a href="Godiva.html">Godiva3 interface</a></p>
 #if($config.serverInfo.allowsGlobalCapabilities())
