@@ -190,8 +190,8 @@
         
         <h2>Server settings</h2>
         <table border="1">
-            <tr><th>Title</th><td><input type="text" name="server.title" value="${config.serverInfo.title}"/></td><td>Title for this WMS</td></tr>
-            <tr><th>Abstract</th><td><input type="text" name="server.abstract" value="${config.serverInfo.description}"/></td><td>More details about this server</td></tr>
+            <tr><th>Title</th><td><input type="text" name="server.title" value="${config.serverInfo.name}"/></td><td>Title for this WMS</td></tr>
+            <tr><th>Abstract</th><td><input type="text" name="server.abstract" value="${config.serverInfo.abstract}"/></td><td>More details about this server</td></tr>
 #set($keywords = "")
 #foreach($keyword in $config.serverInfo.keywords)
 #set($keywords = $keywords + $keyword)
