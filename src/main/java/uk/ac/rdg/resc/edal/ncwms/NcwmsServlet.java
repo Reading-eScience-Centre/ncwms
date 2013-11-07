@@ -46,10 +46,6 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
      */
     public NcwmsServlet() {
         super();
-        /*
-         * TODO in the real world: Get Javadoc uploading somewhere Cookbook
-         * documentation
-         */
     }
 
     @Override
@@ -70,9 +66,4 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
                     "ncWMS configuration object is incorrect type.  The \"NcwmsConfig\" attribute of the ServletContext has been incorrectly set.");
         }
     }
-
-    /*-
-     * Test URL for this servlet.
-     * http://localhost:8080/ncWMS/wms?REQUEST=GetMap&VERSION=1.3.0&FORMAT=image/png&CRS=CRS:84&BBOX=-180,-90,180,90&WIDTH=1024&HEIGHT=512&LAYERS=foam/TMP&STYLES=boxfill/alg&COLORSCALERANGE=265,305&TIME=2010-01-30T12:00:00.000Z&ELEVATION=5&NUMCOLORBANDS=50
-     */
 }

@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<link rel=StyleSheet href="../css/ncWMS.css" type="text/css"/>   
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Edit variables in dataset: ${dataset.id} (admin)</title>
+    </head>
+    <body>
+
+        <h1>Edit variables in dataset: ${dataset.id} (${dataset.title})</h1>
+
+        <form id="updateVars" action="updateVariables" method="POST">
+
+            <input type="hidden" name="dataset.id" value="${dataset.id}"/>
+            
+            <table border="1">
+                <thead>
+                    <tr><th rowspan="2">Variable ID</th><th rowspan="2">Title</th><th colspan="2">Default colour scale range</th><th rowspan="2">Default palette</th><th rowspan="2">Default number of colour bands</th><th rowspan="2">Default scaling</th><th colspan="3">Metadata</th></tr>
+                    <tr><th>Min</th><th>Max</th><th>URL</th><th>Description</th><th>Mimetype</th></tr>
+                </thead>
+                <tbody>
+#foreach($variable in $dataset.variables)                    
+                    <tr>
+                        <td>${variable.id}</td>
+                        <td><input type="text" name="${variable.id}.title" value="${variable.title}" size="20"/></td>
+                        <td><input type="text" name="${variable.id}.scaleMin" value="${variable.colorScaleRange.low}" size="10"/></td>
+                        <td><input type="text" name="${variable.id}.scaleMax" value="${variable.colorScaleRange.high}" size="10"/></td>
+                        <td>
+                            <select name="${variable.id}.palette">
+#foreach($paletteName in $paletteNames)                                
+                                    <option value="${paletteName}"#if($variable.palette == $paletteName)selected="selected"#end>${paletteName}</option>
+#end
+                            </select>
+                        </td>
+                        <td><input type="text" name="${variable.id}.numColorBands" value="${variable.numColorBands}" size="5"/></td>
+                        <td>
+                            <select name="${variable.id}.scaling">
+                                <option value="linear"#if(!${variable.logScaling}) selected="selected"#end>linear</option>
+                                <option value="logarithmic"#if(${variable.logScaling}) selected="selected"#end>logarithmic</option>
+                            </select>
+                        </td>
+                        <td><input type="text" name="${variable.id}.metadataUrl" value="${variable.metadataUrl}" size="15"/></td>
+                        <td><input type="text" name="${variable.id}.metadataDesc" value="${variable.metadataDesc}" size="15"/></td>
+                        <td><input type="text" name="${variable.id}.metadataMimetype" value="${variable.metadataMimetype}" size="15"/></td>
+                    </tr>
+#end                    
+                </tbody>
+            </table>
+            
+            <br />
+            <input type="submit" value="Save" name="save"/>
+            <input type="submit" value="Cancel" name="cancel"/>
+
+        </form>
+
+    </body>
+</html>

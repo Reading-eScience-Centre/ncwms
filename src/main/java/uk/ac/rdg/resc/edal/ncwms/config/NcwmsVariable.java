@@ -28,7 +28,11 @@
 
 package uk.ac.rdg.resc.edal.ncwms.config;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
@@ -37,12 +41,17 @@ import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.wms.WmsLayerMetadata;
 
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class NcwmsVariable implements WmsLayerMetadata {
     @XmlAttribute(name = "id", required = true)
     private String id;
 
     @XmlAttribute(name = "title")
     private String title = null;
+    
+    @XmlAttribute(name = "description")
+    private String description = null;
 
     @XmlAttribute(name = "colorScaleRange")
     @XmlJavaTypeAdapter(ScaleRangeAdapter.class)
@@ -58,26 +67,28 @@ public class NcwmsVariable implements WmsLayerMetadata {
     private int numColorBands = ColourPalette.MAX_NUM_COLOURS;
 
     @XmlAttribute(name = "metadataUrl")
-    private String metadataUrl = null;
+    private String metadataUrl = "";
 
     @XmlAttribute(name = "metadataDesc")
-    private String metadataDesc = null;
+    private String metadataDesc = "";
 
     @XmlAttribute(name = "metadataMimetype")
-    private String metadataMimetype = null;
-    
+    private String metadataMimetype = "";
+
     /* The dataset to which this variable belongs */
+    @XmlTransient
     private NcwmsDataset dataset;
 
     NcwmsVariable() {
     }
-    
-    public NcwmsVariable(String id, String title, Extent<Float> colorScaleRange, String paletteName,
-            String scaling, int numColorBands, String metadataUrl, String metadataDesc,
-            String metadataMimetype) {
+
+    public NcwmsVariable(String id, String title, String description, Extent<Float> colorScaleRange,
+            String paletteName, String scaling, int numColorBands, String metadataUrl,
+            String metadataDesc, String metadataMimetype) {
         super();
         this.id = id;
         this.title = title;
+        this.description = description;
         this.colorScaleRange = colorScaleRange;
         this.paletteName = paletteName;
         this.scaling = scaling;
@@ -130,7 +141,7 @@ public class NcwmsVariable implements WmsLayerMetadata {
 
     @Override
     public String getDescription() {
-        return "description of variable";
+        return description;
     }
 
     @Override
@@ -147,23 +158,60 @@ public class NcwmsVariable implements WmsLayerMetadata {
     public boolean isQueryable() {
         return dataset.isQueryable();
     }
+    
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setColorScaleRange(Extent<Float> colorScaleRange) {
+        this.colorScaleRange = colorScaleRange;
+    }
+
+    public void setPaletteName(String paletteName) {
+        this.paletteName = paletteName;
+    }
+
+    public void setScaling(String scaling) {
+        this.scaling = scaling;
+    }
+
+    public void setNumColorBands(int numColorBands) {
+        this.numColorBands = numColorBands;
+    }
+
+    public void setMetadataUrl(String metadataUrl) {
+        this.metadataUrl = metadataUrl;
+    }
+
+    public void setMetadataDesc(String metadataDesc) {
+        this.metadataDesc = metadataDesc;
+    }
+
+    public void setMetadataMimetype(String metadataMimetype) {
+        this.metadataMimetype = metadataMimetype;
+    }
 
     private static class ScaleRangeAdapter extends XmlAdapter<String, Extent<Float>> {
-        private ScaleRangeAdapter() {}
-        
+        private ScaleRangeAdapter() {
+        }
+
         @Override
         public Extent<Float> unmarshal(String scaleRangeStr) throws Exception {
             String[] split = scaleRangeStr.split(" ");
-            return Extents.newExtent(Float.parseFloat(split[0]), Float.parseFloat(split[0]));
+            return Extents.newExtent(Float.parseFloat(split[0]), Float.parseFloat(split[1]));
         }
-    
+
         @Override
         public String marshal(Extent<Float> scaleRange) throws Exception {
             return scaleRange.getLow() + " " + scaleRange.getHigh();
         }
-        
+
         private static ScaleRangeAdapter adapter = new ScaleRangeAdapter();
-        
+
         @SuppressWarnings("unused")
         public static ScaleRangeAdapter getInstance() {
             return adapter;
@@ -173,7 +221,7 @@ public class NcwmsVariable implements WmsLayerMetadata {
     void setNcwmsDataset(NcwmsDataset dataset) {
         this.dataset = dataset;
     }
-    
+
     public NcwmsDataset getNcwmsDataset() {
         return dataset;
     }

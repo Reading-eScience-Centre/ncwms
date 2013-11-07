@@ -53,7 +53,6 @@ table {
     border-width: 1px;
 }
 table th {
-    background-color: white;
     border-color: gray;
     border-style: solid;
     border-width: 1px;
@@ -61,9 +60,9 @@ table th {
     font-weight: bold;
 }
 table td {
-    background-color: white;
     border-color: gray;
     border-style: solid;
     border-width: 1px;
     padding: 2px;
 }
+

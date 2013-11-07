@@ -31,6 +31,7 @@ package uk.ac.rdg.resc.edal.ncwms.config;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -64,7 +65,9 @@ public class NcwmsConfigTest {
 
 //    @Test
     public void testSerialise() throws JAXBException {
-        String serialise = NcwmsConfig.serialise(config);
+        StringWriter serialiseWriter = new StringWriter();
+        NcwmsConfig.serialise(config, serialiseWriter);
+        String serialise = serialiseWriter.toString(); 
         System.out.println(serialise);
     }
 

@@ -31,11 +31,18 @@ package uk.ac.rdg.resc.edal.ncwms.config;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
-public class NcwmsServerInfo {
+import uk.ac.rdg.resc.edal.wms.util.ServerInfo;
+
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
+public class NcwmsServerInfo implements ServerInfo {
     @XmlElement(name = "title")
     private String title = "ncWMS Server";
     @XmlElement(name = "allowFeatureInfo")
@@ -75,28 +82,38 @@ public class NcwmsServerInfo {
         this.globalCapabilities = globalCapabilities;
     }
 
-    public String getTitle() {
+    @Override
+    public String getName() {
         return title;
     }
 
-    public boolean isAllowFeatureInfo() {
-        return allowFeatureInfo;
+    @Override
+    public String getAbstract() {
+        return description;
     }
 
+    @Override
     public int getMaxImageWidth() {
         return maxImageWidth;
     }
 
+    @Override
     public int getMaxImageHeight() {
         return maxImageHeight;
     }
-
-    public String getDescription() {
-        return description;
+    
+    @Override
+    public int getMaxSimultaneousLayers() {
+        return 1;
     }
 
+    @Override
     public List<String> getKeywords() {
         return keywords;
+    }
+    
+    public boolean isAllowFeatureInfo() {
+        return allowFeatureInfo;
     }
 
     public String getUrl() {
@@ -109,6 +126,43 @@ public class NcwmsServerInfo {
 
     public boolean allowsGlobalCapabilities() {
         return globalCapabilities;
+    }
+    
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setAllowFeatureInfo(boolean allowFeatureInfo) {
+        this.allowFeatureInfo = allowFeatureInfo;
+    }
+
+    public void setMaxImageWidth(int maxImageWidth) {
+        this.maxImageWidth = maxImageWidth;
+    }
+
+    public void setMaxImageHeight(int maxImageHeight) {
+        this.maxImageHeight = maxImageHeight;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setKeywords(String keywords) {
+        String[] split = keywords.split(",\\s*");
+        this.keywords = Arrays.asList(split);
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public void setAdminPassword(String adminPassword) {
+        this.adminPassword = adminPassword;
+    }
+
+    public void setAllowGlobalCapabilities(boolean globalCapabilities) {
+        this.globalCapabilities = globalCapabilities;
     }
 
     @Override

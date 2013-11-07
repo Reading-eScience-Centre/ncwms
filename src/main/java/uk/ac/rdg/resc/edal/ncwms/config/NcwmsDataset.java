@@ -31,12 +31,17 @@ package uk.ac.rdg.resc.edal.ncwms.config;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -46,6 +51,7 @@ import uk.ac.rdg.resc.edal.dataset.Dataset;
 import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
 import uk.ac.rdg.resc.edal.domain.Extent;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
+import uk.ac.rdg.resc.edal.metadata.VariableMetadata;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig.DatasetStorage;
 import uk.ac.rdg.resc.edal.wms.WmsLayerMetadata;
 import uk.ac.rdg.resc.edal.wms.util.WmsUtils;
@@ -59,6 +65,8 @@ import uk.ac.rdg.resc.edal.wms.util.WmsUtils;
  * 
  * @author Guy Griffiths
  */
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class NcwmsDataset {
     private static final Logger log = LoggerFactory.getLogger(NcwmsDataset.class);
     /*
@@ -116,7 +124,8 @@ public class NcwmsDataset {
      * are on the setter, so that we can set each one's NcwmsDataset to this
      * after deserialisation, and add them to a Map with the IDs as keys
      */
-    private Map<String, NcwmsVariable> variables = new HashMap<String, NcwmsVariable>();
+    @XmlTransient
+    private Map<String, NcwmsVariable> variables = new LinkedHashMap<String, NcwmsVariable>();
 
     /*
      * Internal state information related to loading the Dataset which this
@@ -126,31 +135,37 @@ public class NcwmsDataset {
     /*
      * State of this dataset.
      */
+    @XmlTransient
     private DatasetState state = DatasetState.NEEDS_REFRESH;
     /* Set if there is an error loading the dataset */
+    @XmlTransient
     private Exception err;
     /*
      * The number of consecutive times we've seen an error when loading a
      * dataset
      */
+    @XmlTransient
     private int numErrorsInARow = 0;
     /*
      * Used to express progress with loading the metadata for this dataset, one
      * line at a time
      */
+    @XmlTransient
     private List<String> loadingProgress = new ArrayList<String>();
     /*
      * The time at which this dataset's stored Layers were last successfully
      * updated, or null if the Layers have not yet been loaded
      */
+    @XmlTransient
     private DateTime lastSuccessfulUpdateTime = null;
     /*
      * The time at which we last got an error when updating the dataset's
      * metadata, or null if we've never seen an error
      */
+    @XmlTransient
     private DateTime lastFailedUpdateTime = null;
 
-    NcwmsDataset() {
+    public NcwmsDataset() {
     }
 
     /**
@@ -207,53 +222,48 @@ public class NcwmsDataset {
 
     public void createDataset(DatasetStorage datasetStorage) throws InstantiationException,
             IllegalAccessException, ClassNotFoundException, IOException {
+        loadingProgress.add("Starting loading");
+
         /*
          * Get the appropriate DatasetFactory
          */
         DatasetFactory factory = DatasetFactory.forName(dataReaderClass);
+
+        loadingProgress.add("Using dataset factory: " + factory.getClass());
 
         /*
          * TODO In the old version, we dealt with OPeNDAP credentials here...
          */
 
         Dataset dataset = factory.createDataset(id, location);
+
+        loadingProgress.add("Dataset created");
         /*
          * These objects do not necessarily exist yet, depending on how the
          * dataset was created (i.e. whether it was read from file or has just
          * been added).
-         * 
-         * TODO Do something about that...
          */
         for (String varId : dataset.getVariableIds()) {
             if (!variables.containsKey(varId)) {
+                loadingProgress.add("Creating default metadata for variable: " + varId);
                 /*
                  * Create a new variable object with default values.
                  */
                 Extent<Float> colorScaleRange = WmsUtils.estimateValueRange(dataset, varId);
-                NcwmsVariable variable = new NcwmsVariable(varId, varId, colorScaleRange,
+                VariableMetadata variableMetadata = dataset.getVariableMetadata(varId);
+                NcwmsVariable variable = new NcwmsVariable(varId, varId, variableMetadata
+                        .getParameter().getDescription(), colorScaleRange,
                         ColourPalette.DEFAULT_PALETTE_NAME, "linear",
                         ColourPalette.MAX_NUM_COLOURS, null, null, null);
                 variable.setNcwmsDataset(this);
                 variables.put(varId, variable);
-            } else {
-                /*
-                 * Do we need to update the variable?
-                 */
             }
         }
 
+        loadingProgress.add("Making this dataset available through the WMS catalogue");
         datasetStorage.datasetLoaded(dataset, variables.values());
 
-        /*
-         * TODO Add to the loading progress? The stages are probably just going
-         * to be "Hasn't done anything" and "Loaded", so it's probably not
-         * necessary...
-         */
-//        this.appendLoadingProgress("loaded layers");
-//        // Look for overriding attributes in the configuration
-//        this.readLayerConfig();
-//        this.appendLoadingProgress("attributes overridden");
-//        this.appendLoadingProgress("Finished loading metadata");
+        loadingProgress.add("Finished loading dataset metadata");
     }
 
     private boolean needsRefresh() {
@@ -352,6 +362,31 @@ public class NcwmsDataset {
         return !isDisabled() && (state == DatasetState.READY || state == DatasetState.UPDATING);
     }
 
+    public DatasetState getState() {
+        return state;
+    }
+
+    /**
+     * @return true if this dataset is not ready because it is being loaded
+     */
+    public synchronized boolean isLoading() {
+        return !isDisabled()
+                && (state == DatasetState.NEEDS_REFRESH || state == DatasetState.LOADING);
+    }
+
+    public boolean hasError() {
+        /*
+         * Note that we don't use state == ERROR here because it's possible for
+         * a dataset to be loading and have an error from a previous loading
+         * attempt that an admin might want to see
+         */
+        return err != null;
+    }
+
+    public Exception getException() {
+        return err;
+    }
+
     public String getTitle() {
         return title;
     }
@@ -372,6 +407,10 @@ public class NcwmsDataset {
         return metadataMimetype;
     }
 
+    public List<String> getLoadingProgress() {
+        return loadingProgress;
+    }
+
     /*
      * By making getVariables() and setVariables() both deal with arrays of
      * NcwmsVariable, JAXB is able to instantiate them. If we used Collections
@@ -379,6 +418,10 @@ public class NcwmsDataset {
      */
     public NcwmsVariable[] getVariables() {
         return variables.values().toArray(new NcwmsVariable[0]);
+    }
+
+    public NcwmsVariable getVariablesById(String variableId) {
+        return variables.get(variableId);
     }
 
     @XmlElementWrapper(name = "variables")
@@ -389,6 +432,78 @@ public class NcwmsDataset {
             variable.setNcwmsDataset(this);
             this.variables.put(variable.getId(), variable);
         }
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public void setQueryable(boolean queryable) {
+        this.queryable = queryable;
+    }
+
+    public void setDataReaderClass(String dataReaderClass) {
+        this.dataReaderClass = dataReaderClass;
+    }
+
+    public void setCopyrightStatement(String copyrightStatement) {
+        this.copyrightStatement = copyrightStatement;
+    }
+
+    public void setMoreInfo(String moreInfo) {
+        this.moreInfo = moreInfo;
+    }
+
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
+    }
+
+    public void setUpdateInterval(int updateInterval) {
+        this.updateInterval = updateInterval;
+    }
+
+    public void setMetadataUrl(String metadataUrl) {
+        this.metadataUrl = metadataUrl;
+    }
+
+    public void setMetadataDesc(String metadataDesc) {
+        this.metadataDesc = metadataDesc;
+    }
+
+    public void setMetadataMimetype(String metadataMimetype) {
+        this.metadataMimetype = metadataMimetype;
+    }
+
+    public void setState(DatasetState state) {
+        this.state = state;
+    }
+
+    public void setErr(Exception err) {
+        this.err = err;
+    }
+
+    public void setNumErrorsInARow(int numErrorsInARow) {
+        this.numErrorsInARow = numErrorsInARow;
+    }
+
+    public void setLoadingProgress(List<String> loadingProgress) {
+        this.loadingProgress = loadingProgress;
+    }
+
+    public void setLastSuccessfulUpdateTime(DateTime lastSuccessfulUpdateTime) {
+        this.lastSuccessfulUpdateTime = lastSuccessfulUpdateTime;
+    }
+
+    public void setLastFailedUpdateTime(DateTime lastFailedUpdateTime) {
+        this.lastFailedUpdateTime = lastFailedUpdateTime;
     }
 
     @Override

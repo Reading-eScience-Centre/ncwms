@@ -1,0 +1,225 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<link rel=StyleSheet href="../css/ncWMS.css" type="text/css" />
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Administrative interface to ncWMS</title>
+    </head>
+    <body>
+
+    <h1>ncWMS Admin page</h1>
+
+    <p><a href="../Godiva.html">Godiva3 interface</a></p>
+#if($config.serverInfo.allowsGlobalCapabilities())    
+    <p><a href="../wms?SERVICE=WMS&amp;REQUEST=GetCapabilities&amp;VERSION=1.3.0">WMS 1.3.0 Capabilities</a></p>
+    <p><a href="../wms?SERVICE=WMS&amp;REQUEST=GetCapabilities&amp;VERSION=1.1.1">WMS 1.1.1 Capabilities</a></p>
+#else        
+    <em>The generation of Capabilities documents that include all datasets
+    on this server is disabled: see Server Settings below.</em>
+#end    
+    <p><a href="../">ncWMS Front page</a></p>
+    
+    <form id="config" action="updateConfig" method="POST">
+        <input type="submit" value="Save configuration" name="submit1"/>
+        
+        <h2>Datasets</h2>
+        <table border="1">
+        <tr><th>Edit variables</th><th>Required Data</th><th>Optional Metadata</th><th>Status</th><th>Refresh</th><th>Options</th><th>Data reading class</th><th>Remove?</th></tr>
+#foreach($dataset in $config.datasets)
+                <tr #if($dataset.disabled)style="background-color:lightgrey"#end>
+                    <td>
+#if($dataset.ready)                        
+                            <a href="editVariables?dataset=$dataset.id">edit</a>
+#end                        
+                    </td>
+                    <td align="right" width="270px">
+	                    ID:
+	                    <input type="text" name="dataset.${dataset.id}.id" value="${dataset.id}" size="22"/>
+	                    <br />
+	                    Title:
+	                    <input type="text" name="dataset.${dataset.id}.title" value="${dataset.title}" size="22"/>
+	                    <br />
+	                    Location:
+	                    <input type="text" name="dataset.${dataset.id}.location" value="${dataset.location}"size="22"/>
+                    </td>
+                    <td align="right" width="220px">
+                        More Info URL:
+                        <input type="text" name="dataset.${dataset.id}.moreinfo" value="${dataset.moreInfo}" size="10"/>
+	                    <br />
+                        Copyright:
+                        <input type="text" name="dataset.${dataset.id}.copyright" value="${dataset.copyrightStatement}" size="10"/>
+                    </td>
+                    <td width="200px">
+                        State:
+#if($dataset.hasError() || $dataset.loading)                        
+                            <a target="_blank" href="datasetStatus?dataset=${dataset.id}">${dataset.state}</a>
+#else
+                            ${dataset.state}
+#end                            
+                        <br />
+                        Last update date:
+#if(!$catalogue.serverLastUpdate)
+                        never
+#else                        
+                        $TimeUtils.formatUtcDateOnly($dataset.serverLastUpdate)
+#end                            
+                        <br />
+                        Last update time:
+#if(!$catalogue.serverLastUpdate)
+                        never
+#else                        
+                        $TimeUtils.formatUtcTimeOnly($dataset.serverLastUpdate)
+#end                            
+                    </td>
+                    <td align="right" width="190px">
+                        Auto-refresh rate:
+                        <select name="dataset.${dataset.id}.updateinterval">
+                            <option value="-1"#if($dataset.updateInterval < 0) selected="selected"#end>Never</option>
+                            <option value="1"#if($dataset.updateInterval == 1) selected="selected"#end>1 min</option>
+                            <option value="10"#if($dataset.updateInterval == 10) selected="selected"#end>10 min</option>
+                            <option value="30"#if($dataset.updateInterval == 30) selected="selected"#end>30 min</option>
+                            <option value="60"#if($dataset.updateInterval == 60) selected="selected"#end>1 hr</option>
+                            <option value="360"#if($dataset.updateInterval == 360) selected="selected"#end>6 hr</option>
+                            <option value="720"#if($dataset.updateInterval == 720) selected="selected"#end>12 hr</option>
+                            <option value="1440"#if($dataset.updateInterval == 1440) selected="selected"#end>24 hr</option>
+                        </select>
+                        <br />
+                        Force refresh:
+                        <input type="checkbox" name="dataset.${dataset.id}.refresh"/>
+                    </td>
+                    <td align="right" width="100px">
+                        Disabled:
+                        <input type="checkbox" name="dataset.${dataset.id}.disabled"#if(${dataset.disabled}) checked="checked"#end/>
+                        <br />
+                        Queryable:
+                        <input type="checkbox" name="dataset.${dataset.id}.queryable"#if(${dataset.queryable}) checked="checked"#end/>
+                    </td>
+                    <td><input type="text" name="dataset.${dataset.id}.reader" value="${dataset.dataReaderClass}" size="10"/></td>
+                    <td><input type="checkbox" name="dataset.${dataset.id}.remove"/></td>
+                </tr>
+#end
+#foreach($i in [0..2])        
+                <tr>
+                    <td></td>
+                    <td align="right">
+                        ID:
+                        <input type="text" name="dataset.new${i}.id" value="" size="22"/>
+                        <br />
+                        Title:
+                        <input type="text" name="dataset.new${i}.title" value="" size="22"/>
+                        <br />
+                        Location:
+                        <input type="text" name="dataset.new${i}.location" value="" size="22"/>
+                    </td>
+                    <td align="right">
+                        More Info URL:
+                        <input type="text" name="dataset.new${i}.moreinfo" value="" size="10"/>
+                        <br />
+                        Copyright:
+                        <input type="text" name="dataset.new${i}.copyright" value="" size="10"/>
+                    </td>
+                    <td>N/A</td>
+                    <td align="right">
+                        Auto-refresh rate:
+                        <select name="dataset.new${i}.updateinterval">
+                            <option value="-1">Never</option>
+                            <option value="1">1 min</option>
+                            <option value="10">10 min</option>
+                            <option value="30">30 min</option>
+                            <option value="60">1 hr</option>
+                            <option value="360">6 hr</option>
+                            <option value="720">12 hr</option>
+                            <option value="1440">24 hr</option>
+                        </select>
+                    </td>
+                    <td align="right">
+                        Disabled:
+                        <input type="checkbox" name="dataset.new${i}.disabled"/>
+                        <br />
+                        Queryable:
+                        <input type="checkbox" name="dataset.new${i}.queryable" checked="checked"/>
+                    </td>
+                    <td><input type="text" name="dataset.new${i}.reader" value="" size="10"/></td>
+                    <td>N/A</td>
+                </tr>
+#end            
+        </table>
+        
+        <h2>Cache settings</h2>
+        <p>This ncWMS server uses a cache of recently-extracted data arrays to increase
+        performance and reduce the load on the server.  Note that the cache will use up
+        some memory and some disk space (configurable below).</p>
+        <table border="1">
+            <tr>
+                <th>Enable cache?</th>
+                <td><input type="checkbox" name="cache.enable"#if(${config.cacheSettings.enabled}) checked="checked"#end/></td>
+                <td>Check this box to enable the cache.  <font color="red">This can be changed while the server is running.</font></td>
+            </tr>
+            <tr>
+                <th>Lifetime of each cached array (minutes)</th>
+                <td><input type="text" name="cache.elementLifetime" value="${config.cacheSettings.elementLifetimeMinutes}"/></td>
+                <td>Data arrays will expire automatically from the cache after this number of minutes.
+                <font color="red">If you change this value you must restart the server for your change to take effect.</font></td>
+            </tr>
+            <tr>
+#set($memoryFootprintMB = 256*256*4*$config.cacheSettings.maxItemsMemory / (1024*1024))                 
+                <th>Maximum number of items to hold in memory</th>
+                <td><input type="text" name="cache.maxNumItemsInMemory" value="${config.cacheSettings.maxItemsMemory}"/></td>
+                <td>If each item in the cache is a 256x256 array of 4-byte floating point data then 
+                    this value gives a memory footprint for the cache of <b>${memoryFootprintMB} megabytes</b>.
+                <font color="red">If you change this value you must restart the server for your change to take effect.</font></td>
+            </tr>
+            <tr>
+                <th>Enable disk store?</th>
+                <td><input type="checkbox" name="cache.enableDiskStore"#if(${config.cacheSettings.enableDiskStore}) checked="checked"#end/></td>
+                <td>Check this box to enable the disk store (recommended).  If enabled, items that
+                    do not fit into the memory footprint will overflow to disk.  All
+                    items in the cache will automatically be written to disk when the
+                    server is shut down or restarted.
+                <font color="red">If you change this value you must restart the server for your change to take effect.</font></td>
+            </tr>
+            <tr>
+#set($diskFootprintMB = 256*256*4*$config.cacheSettings.maxItemsDisk / (1024*1024))                 
+                <th>Maximum number of items to hold on disk</th>
+                <td><input type="text" name="cache.maxNumItemsOnDisk" value="${config.cacheSettings.maxItemsDisk}"/></td>
+                <td>If each item in the cache is a 256x256 array of 4-byte floating point data then 
+                    this value gives a disk footprint for the cache of <b>${diskFootprintMB} megabytes</b>.
+                <font color="red">If you change this value you must restart the server for your change to take effect.</font></td>
+            </tr>
+        </table>
+        
+        <h2>Server settings</h2>
+        <table border="1">
+            <tr><th>Title</th><td><input type="text" name="server.title" value="${config.serverInfo.title}"/></td><td>Title for this WMS</td></tr>
+            <tr><th>Abstract</th><td><input type="text" name="server.abstract" value="${config.serverInfo.description}"/></td><td>More details about this server</td></tr>
+#set($keywords = "")
+#foreach($keyword in $config.serverInfo.keywords)
+#set($keywords = $keywords + $keyword)
+#if($foreach.hasNext)
+#set($keywords = $keywords + ", ")
+#end
+#end
+            <tr><th>Keywords</th><td><input type="text" name="server.keywords" value="${keywords}"/></td><td>Comma-separated list of keywords</td></tr>
+            <tr><th>URL</th><td><input type="text" name="server.url" value="${config.serverInfo.url}"/></td><td>Web site of the service provider</td></tr>
+            <tr><th>Max image width</th><td><input type="text" name="server.maximagewidth" value="${config.serverInfo.maxImageWidth}"/></td><td>Maximum width of image that can be requested</td></tr>
+            <tr><th>Max image height</th><td><input type="text" name="server.maximageheight" value="${config.serverInfo.maxImageHeight}"/></td><td>Maximum width of image that can be requested</td></tr>
+            <tr><th>Allow GetFeatureInfo</th><td><input type="checkbox" name="server.allowfeatureinfo"#if(${config.serverInfo.allowFeatureInfo}) checked="checked"#end/></td><td>Check this box to enable the GetFeatureInfo operation</td></tr>
+            <tr><th>Allow global Capabilities</th><td><input type="checkbox" name="server.allowglobalcapabilities"#if(${config.serverInfo.allowsGlobalCapabilities()}) checked="checked"#end/></td><td>Check this box to allow clients to request a
+            WMS Capabilities document including all datasets on this server (not recommended if this server hosts a large number of datasets)</td></tr>
+        </table>
+        
+        <h2>Contact information</h2>
+        <table border="1">
+            <tr><th>Name</th><td><input type="text" name="contact.name" value="${config.contactInfo.name}"/></td><td>Name of server administrator</td></tr>
+            <tr><th>Organization</th><td><input type="text" name="contact.org" value="${config.contactInfo.organisation}"/></td><td>Organization of server administrator</td></tr>
+            <tr><th>Telephone</th><td><input type="text" name="contact.tel" value="${config.contactInfo.telephone}"/></td><td>Telephone number of server administrator</td></tr>
+            <tr><th>Email</th><td><input type="text" name="contact.email" value="${config.contactInfo.email}"/></td><td>Email address of server administrator</td></tr>
+        </table>
+        
+        <br />
+        <input type="submit" value="Save configuration" name="submit2"/>
+        
+    </form>
+    
+    </body>
+</html>
