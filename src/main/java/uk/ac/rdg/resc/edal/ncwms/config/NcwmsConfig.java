@@ -29,11 +29,15 @@
 package uk.ac.rdg.resc.edal.ncwms.config;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringWriter;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,12 +52,13 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.transform.Result;
 import javax.xml.transform.stream.StreamResult;
 
 import uk.ac.rdg.resc.edal.dataset.Dataset;
-import uk.ac.rdg.resc.edal.wms.util.ContactInfo;
+import uk.ac.rdg.resc.edal.wms.util.WmsUtils;
 
 /**
  * Deals purely with the (de)serialisation of the ncWMS config file. All objects
@@ -76,6 +81,12 @@ public class NcwmsConfig {
     private NcwmsServerInfo serverInfo = new NcwmsServerInfo();
     @XmlElement(name = "cache")
     private NcwmsCacheInfo cacheInfo = new NcwmsCacheInfo();
+    @XmlTransient
+    private DatasetStorage datasetStorage = null;
+    @XmlTransient
+    private File configFile;
+    @XmlTransient
+    private File configBackup;
 
     /** The scheduler that will handle the background (re)loading of datasets */
     private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
@@ -83,9 +94,19 @@ public class NcwmsConfig {
      * Contains handles to background threads that can be used to cancel
      * reloading of datasets. Maps dataset IDs to Future objects
      */
-    private Map<String, ScheduledFuture<?>> futures = new HashMap<String, ScheduledFuture<?>>();
+    private static Map<String, ScheduledFuture<?>> futures = new HashMap<String, ScheduledFuture<?>>();
 
-    public NcwmsConfig() {
+    /*
+     * Used for JAX-B
+     */
+    @SuppressWarnings("unused")
+    private NcwmsConfig() {
+    }
+    
+    public NcwmsConfig(File configFile) throws IOException, JAXBException {
+        datasets = new LinkedHashMap<String, NcwmsDataset>();
+        this.configFile = configFile;
+        save();
     }
 
     public NcwmsConfig(NcwmsDataset[] datasets, NcwmsContact contact, NcwmsServerInfo serverInfo,
@@ -97,7 +118,11 @@ public class NcwmsConfig {
         this.cacheInfo = cacheInfo;
     }
 
-    public void loadDatasets(final DatasetStorage datasetStorage) {
+    public void setDatasetLoadedHandler(DatasetStorage datasetStorage) {
+        this.datasetStorage = datasetStorage;
+    }
+
+    public void loadDatasets() {
         /*
          * Loop through all NcwmsDatasets and load Datasets from each.
          * 
@@ -109,29 +134,35 @@ public class NcwmsConfig {
          * NcwmsVariables...)
          */
         for (final NcwmsDataset dataset : datasets.values()) {
-            Runnable reloader = new Runnable() {
-                @Override
-                public void run() {
-                    /*
-                     * This will check to see if the metadata need reloading,
-                     * then go ahead if so.
-                     */
-                    dataset.refresh(datasetStorage);
-//                    /* Here we're checking for leaks of open file handles */
-//                    log.debug("num RAFs open = {}", RandomAccessFile.getOpenFiles().size());
-                }
-            };
-            /*
-             * Run the task immediately, and then redo it every 1s
-             */
-            ScheduledFuture<?> future = scheduler.scheduleWithFixedDelay(reloader, 0, 1,
-                    TimeUnit.SECONDS);
-            /* We need to keep a handle to the Future object so we can cancel it */
-            futures.put(dataset.getId(), future);
+            scheduleReload(dataset);
         }
     }
 
-    public ContactInfo getContactInfo() {
+    private void scheduleReload(final NcwmsDataset dataset) {
+        if (datasetStorage == null) {
+            throw new IllegalStateException(
+                    "You need to set something to handle loaded datasets before loading them.");
+        }
+        Runnable reloader = new Runnable() {
+            @Override
+            public void run() {
+                /*
+                 * This will check to see if the metadata need reloading, then
+                 * go ahead if so.
+                 */
+                dataset.refresh(datasetStorage);
+            }
+        };
+        /*
+         * Run the task immediately, and then redo it every 1s
+         */
+        ScheduledFuture<?> future = scheduler.scheduleWithFixedDelay(reloader, 0, 1,
+                TimeUnit.SECONDS);
+        /* We need to keep a handle to the Future object so we can cancel it */
+        futures.put(dataset.getId(), future);
+    }
+
+    public NcwmsContact getContactInfo() {
         return contact;
     }
 
@@ -163,16 +194,55 @@ public class NcwmsConfig {
     @XmlElementWrapper(name = "datasets")
     @XmlElement(name = "dataset")
     public void setDatasets(NcwmsDataset[] datasets) {
-        this.datasets = new HashMap<String, NcwmsDataset>();
+        this.datasets = new LinkedHashMap<String, NcwmsDataset>();
         for (NcwmsDataset dataset : datasets) {
             this.datasets.put(dataset.getId(), dataset);
         }
     }
 
+    public synchronized void addDataset(NcwmsDataset dataset) {
+        datasets.put(dataset.getId(), dataset);
+        scheduleReload(dataset);
+    }
+
+    public synchronized void removeDataset(NcwmsDataset dataset) {
+        datasets.remove(dataset.getId());
+        futures.get(dataset.getId()).cancel(true);
+        futures.remove(dataset.getId());
+    }
+
+    public synchronized void changeDatasetId(NcwmsDataset dataset, String newId) {
+        datasets.remove(dataset.getId());
+        ScheduledFuture<?> removedScheduler = futures.remove(dataset.getId());
+        dataset.setId(newId);
+
+        datasets.put(newId, dataset);
+        futures.put(dataset.getId(), removedScheduler);
+    }
+
+    public synchronized void save() throws IOException, JAXBException {
+        if (configFile == null) {
+            throw new IllegalStateException("No location set for config file");
+        }
+        /* Take a backup of the existing config file */
+        if (configBackup == null) {
+            String backupName = configFile.getAbsolutePath() + ".backup";
+            configBackup = new File(backupName);
+        }
+        /* Copy current config file to the backup file. */
+        if (configFile.exists()) {
+            /* Delete existing backup */
+            configBackup.delete();
+            WmsUtils.copyFile(configFile, configBackup);
+        }
+
+        serialise(this, new FileWriter(configFile));
+    }
+
     public static void shutdown() {
         scheduler.shutdownNow();
     }
-    
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -196,22 +266,19 @@ public class NcwmsConfig {
         sb.append(cacheInfo.toString());
         return sb.toString();
     }
-    
+
     public interface DatasetStorage {
         public void datasetLoaded(Dataset dataset, Collection<NcwmsVariable> variables);
     }
 
-    public static String serialise(NcwmsConfig config) throws JAXBException {
+    public static void serialise(NcwmsConfig config, Writer writer) throws JAXBException {
         JAXBContext context = JAXBContext.newInstance(NcwmsConfig.class);
 
         Marshaller marshaller = context.createMarshaller();
 
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
 
-        StringWriter stringWriter = new StringWriter();
-        marshaller.marshal(config, stringWriter);
-
-        return stringWriter.toString();
+        marshaller.marshal(config, writer);
     }
 
     public static NcwmsConfig deserialise(Reader xmlConfig) throws JAXBException {
@@ -234,6 +301,13 @@ public class NcwmsConfig {
                 return new StreamResult(new File(path, suggestedFileName));
             }
         });
+    }
+
+    public static NcwmsConfig readFromFile(File configFile) throws FileNotFoundException,
+            JAXBException {
+        NcwmsConfig config = deserialise(new FileReader(configFile));
+        config.configFile = configFile;
+        return config;
     }
 
 //    public static void main(String[] args) throws IOException, JAXBException {

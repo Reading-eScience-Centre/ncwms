@@ -28,9 +28,14 @@
 
 package uk.ac.rdg.resc.edal.ncwms.config;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class NcwmsCacheInfo {
     @XmlAttribute(name = "enabled")
     private boolean enabled = false;
@@ -45,7 +50,7 @@ public class NcwmsCacheInfo {
 
     NcwmsCacheInfo() {
     }
-    
+
     public NcwmsCacheInfo(boolean enabled, int elementLifetimeMinutes, int maxItemsMemory,
             boolean diskStore, int maxItemsDisk) {
         super();
@@ -53,6 +58,46 @@ public class NcwmsCacheInfo {
         this.elementLifetimeMinutes = elementLifetimeMinutes;
         this.maxItemsMemory = maxItemsMemory;
         this.diskStore = diskStore;
+        this.maxItemsDisk = maxItemsDisk;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public int getElementLifetimeMinutes() {
+        return elementLifetimeMinutes;
+    }
+
+    public int getMaxItemsMemory() {
+        return maxItemsMemory;
+    }
+
+    public boolean isDiskStore() {
+        return diskStore;
+    }
+
+    public int getMaxItemsDisk() {
+        return maxItemsDisk;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public void setElementLifetimeMinutes(int elementLifetimeMinutes) {
+        this.elementLifetimeMinutes = elementLifetimeMinutes;
+    }
+
+    public void setMaxItemsMemory(int maxItemsMemory) {
+        this.maxItemsMemory = maxItemsMemory;
+    }
+
+    public void setEnableDiskStore(boolean diskStore) {
+        this.diskStore = diskStore;
+    }
+
+    public void setMaxItemsDisk(int maxItemsDisk) {
         this.maxItemsDisk = maxItemsDisk;
     }
 

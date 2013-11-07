@@ -30,7 +30,6 @@ package uk.ac.rdg.resc.edal.ncwms;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -88,33 +87,55 @@ public class NcwmsApplicationServlet extends HttpServlet {
         super.init(servletConfig);
 
         NcwmsConfig config;
+        /*
+         * Set the default dataset factory - will be used when a dataset factory
+         * name is not specified
+         */
+        DatasetFactory.setDefaultDatasetFactoryClass(CdmGridDatasetFactory.class);
+
+        /*
+         * Load the XML config for ncWMS, or create it if it doesn't yet exist.
+         */
+        Properties appProperties = new Properties();
+
+        String configDir = null;
+        String homeDir = System.getProperty("user.home");
         try {
             /*
-             * Set the default dataset factory - will be used when a dataset
-             * factory name is not specified
+             * See if we have a properties file which defines a configDir,
+             * replacing $HOME with the actual home directory
              */
-            DatasetFactory.setDefaultDatasetFactoryClass(CdmGridDatasetFactory.class);
+            appProperties.load(getClass().getResourceAsStream("/config.properties"));
+            configDir = appProperties.getProperty("configDir");
+            configDir = configDir.replaceAll("\\$HOME", homeDir);
+        } catch (Exception e) {
+            configDir = null;
+            e.printStackTrace();
+        }
 
-            /*
-             * Load the XML config for ncWMS, or create it if it doesn't yet
-             * exist.
-             */
-            /*
-             * TODO Perhaps this could be configurable from a properties file in
-             * the webapp somewhere?
-             */
-            String homeDir = System.getProperty("user.home");
-            File configFile = new File(homeDir + File.separator + ".ncWMS-edal" + File.separator,
-                    "config.xml");
+        /*
+         * If we didn't define a config directory, use the user's home as a
+         * default
+         */
+        if (configDir == null) {
+            configDir = homeDir + File.separator + ".ncWMS-edal";
+        }
+
+        File configFile = new File(configDir + File.separator, "config.xml");
+        try {
             if (configFile.exists()) {
-                config = NcwmsConfig.deserialise(new FileReader(configFile));
+                config = NcwmsConfig.readFromFile(configFile);
             } else {
-                config = new NcwmsConfig();
+                config = new NcwmsConfig(configFile);
             }
 
         } catch (JAXBException e) {
             log.error("Config file is invalid - creating new one", e);
-            config = new NcwmsConfig();
+            try {
+                config = new NcwmsConfig(configFile);
+            } catch (Exception e1) {
+                throw new ServletException("Old config is invalid, and a new one cannot be created", e1);
+            }
         } catch (FileNotFoundException e) {
             /*
              * We shouldn't get here. It means that we've checked that a config
@@ -124,14 +145,21 @@ public class NcwmsApplicationServlet extends HttpServlet {
             log.error(
                     "Cannot find config file - has it been deleted during startup?  Creating new one",
                     e);
-            config = new NcwmsConfig();
+            try {
+                config = new NcwmsConfig(configFile);
+            } catch (Exception e1) {
+                throw new ServletException("Old config is missing, and a new one cannot be created", e1);
+            }
+        } catch (IOException e) {
+            log.error("Problem writing new config file", e);
+            throw new ServletException("Cannot create a new config file", e);
         }
         try {
             catalogue = new NcwmsCatalogue(config);
         } catch (IOException e) {
             log.error("Problem loading datasets", e);
         }
-        
+
         /*
          * Store the config in the ServletContext, so that the other servlets
          * can access it. All other servlets are loaded after this one.

@@ -28,10 +28,15 @@
 
 package uk.ac.rdg.resc.edal.ncwms.config;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import uk.ac.rdg.resc.edal.wms.util.ContactInfo;
 
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class NcwmsContact implements ContactInfo {
     @XmlElement(name = "name")
     private String name = "";
@@ -71,6 +76,22 @@ public class NcwmsContact implements ContactInfo {
     @Override
     public String getEmail() {
         return email;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setOrganisation(String organisation) {
+        this.organisation = organisation;
+    }
+
+    public void setTelephone(String telephone) {
+        this.telephone = telephone;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     @Override

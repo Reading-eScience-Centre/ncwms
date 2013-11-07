@@ -34,6 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.bind.JAXBException;
+
 import org.joda.time.DateTime;
 
 import uk.ac.rdg.resc.edal.dataset.Dataset;
@@ -45,6 +47,7 @@ import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
 import uk.ac.rdg.resc.edal.wms.WmsLayerMetadata;
 import uk.ac.rdg.resc.edal.wms.exceptions.WmsLayerNotFoundException;
 import uk.ac.rdg.resc.edal.wms.util.ContactInfo;
+import uk.ac.rdg.resc.edal.wms.util.ServerInfo;
 
 public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
 
@@ -62,8 +65,8 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
         layerMetadata = new HashMap<String, WmsLayerMetadata>();
 
         this.config = config;
-
-        this.config.loadDatasets(this);
+        this.config.setDatasetLoadedHandler(this);
+        this.config.loadDatasets();
     }
 
     /**
@@ -74,8 +77,36 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
         return config;
     }
 
+    /**
+     * Removes a dataset from the catalogue. This will also delete any config
+     * information about the dataset from the config file.
+     * 
+     * @param id
+     *            The ID of the dataset to remove
+     */
+    public void removeDataset(String id) {
+        datasets.remove(id);
+        config.removeDataset(config.getDatasetInfo(id));
+    }
+
+    /**
+     * Changes a dataset's ID. This will also change the name in the saved
+     * config file.
+     * 
+     * @param oldId
+     *            The old ID
+     * @param newId
+     *            The new ID
+     */
+    public void changeDatasetId(String oldId, String newId) {
+        Dataset dataset = datasets.get(oldId);
+        datasets.remove(oldId);
+        datasets.put(newId, dataset);
+        config.changeDatasetId(config.getDatasetInfo(oldId), newId);
+    }
+
     @Override
-    public void datasetLoaded(Dataset dataset, Collection<NcwmsVariable> variables) {
+    public synchronized void datasetLoaded(Dataset dataset, Collection<NcwmsVariable> variables) {
         /*
          * If we already have a dataset with this ID, it will be replaced. This
          * is exactly what we want.
@@ -91,36 +122,22 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
             layerMetadata.put(layerName, ncwmsVariable);
         }
         lastUpdateTime = new DateTime();
+
+        /*
+         * The config has changed, so we save it.
+         */
+        try {
+            config.save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JAXBException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public int getMaxSimultaneousLayers() {
-        return 1;
-    }
-
-    @Override
-    public int getMaxImageWidth() {
-        return config.getServerInfo().getMaxImageWidth();
-    }
-
-    @Override
-    public int getMaxImageHeight() {
-        return config.getServerInfo().getMaxImageHeight();
-    }
-
-    @Override
-    public String getServerName() {
-        return config.getServerInfo().getTitle();
-    }
-
-    @Override
-    public String getServerAbstract() {
-        return config.getServerInfo().getAdminPassword();
-    }
-
-    @Override
-    public List<String> getServerKeywords() {
-        return config.getServerInfo().getKeywords();
+    public ServerInfo getServerInfo() {
+        return config.getServerInfo();
     }
 
     @Override
@@ -156,27 +173,23 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     public Dataset getDatasetFromId(String datasetId) {
         return datasets.get(datasetId);
     }
-    
+
     @Override
-    public Dataset getDatasetFromLayerName(String layerName) {
+    public Dataset getDatasetFromLayerName(String layerName) throws WmsLayerNotFoundException {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
-            /*
-             * TODO
-             */
-            throw new RuntimeException("This should be a concrete WmsException, not a Runtime one!");
+            throw new WmsLayerNotFoundException(
+                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\""); 
         }
         return datasets.get(layerParts[0]);
     }
 
     @Override
-    public String getVariableFromId(String layerName) {
+    public String getVariableFromId(String layerName) throws WmsLayerNotFoundException {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
-            /*
-             * TODO
-             */
-            throw new RuntimeException("This should be a concrete WmsException, not a Runtime one!");
+            throw new WmsLayerNotFoundException(
+                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\""); 
         }
         return layerParts[1];
     }
