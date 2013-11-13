@@ -29,6 +29,7 @@
 package uk.ac.rdg.resc.edal.ncwms;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -157,7 +158,19 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
 
     @Override
     public Collection<Dataset> getAllDatasets() {
-        return datasets.values();
+        /*
+         * This catalogue stores all possible datasets, but this method must
+         * only return those which are available (i.e. not disabled and ready to
+         * go)
+         */
+        List<Dataset> allDatasets = new ArrayList<Dataset>();
+        for (Dataset dataset : datasets.values()) {
+            NcwmsDataset datasetInfo = config.getDatasetInfo(dataset.getId());
+            if (!datasetInfo.isDisabled() && datasetInfo.isReady()) {
+                allDatasets.add(dataset);
+            }
+        }
+        return allDatasets;
     }
 
     @Override
@@ -179,7 +192,7 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
             throw new WmsLayerNotFoundException(
-                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\""); 
+                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
         }
         return datasets.get(layerParts[0]);
     }
@@ -189,7 +202,7 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
             throw new WmsLayerNotFoundException(
-                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\""); 
+                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
         }
         return layerParts[1];
     }
