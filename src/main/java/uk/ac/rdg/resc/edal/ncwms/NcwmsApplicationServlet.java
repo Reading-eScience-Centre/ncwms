@@ -100,7 +100,9 @@ public class NcwmsApplicationServlet extends HttpServlet {
              */
             appProperties.load(getClass().getResourceAsStream("/config.properties"));
             configDir = appProperties.getProperty("configDir");
-            configDir = configDir.replaceAll("\\$HOME", homeDir);
+            if(configDir != null) {
+                configDir = configDir.replaceAll("\\$HOME", homeDir);
+            }
         } catch (Exception e) {
             configDir = null;
             e.printStackTrace();
