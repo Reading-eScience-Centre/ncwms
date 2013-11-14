@@ -24,9 +24,20 @@
         <servlet-class>uk.ac.rdg.resc.edal.ncwms.NcwmsAdminServlet</servlet-class>
         <load-on-startup>3</load-on-startup>
     </servlet>
+    <servlet>
+        <description>The servlet which deals with all screenshot requests</description>
+        <display-name>ScreenshotServlet</display-name>
+        <servlet-name>ScreenshotServlet</servlet-name>
+        <servlet-class>uk.ac.rdg.resc.edal.wms.ScreenshotServlet</servlet-class>
+        <load-on-startup>4</load-on-startup>
+    </servlet>
     <servlet-mapping>
         <servlet-name>NcwmsServlet</servlet-name>
         <url-pattern>/wms</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ScreenshotServlet</servlet-name>
+        <url-pattern>/screenshots/createScreenshot</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>NcwmsApplicationServlet</servlet-name>
