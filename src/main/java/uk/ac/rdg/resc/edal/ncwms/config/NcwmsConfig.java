@@ -224,6 +224,11 @@ public class NcwmsConfig {
         if (configFile == null) {
             throw new IllegalStateException("No location set for config file");
         }
+        File parentDir = configFile.getParentFile();
+        if(!parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+        
         /* Take a backup of the existing config file */
         if (configBackup == null) {
             String backupName = configFile.getAbsolutePath() + ".backup";

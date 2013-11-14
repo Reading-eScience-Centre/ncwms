@@ -57,6 +57,9 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
     @Override
     public void init(ServletConfig servletConfig) throws ServletException {
         super.init(servletConfig);
+        /*
+         * Retrieve the pre-loaded catalogue and wire it up
+         */
         Object config = servletConfig.getServletContext().getAttribute("NcwmsCatalogue");
         if (config instanceof NcwmsCatalogue) {
             NcwmsCatalogue ncwmsCatalogue = (NcwmsCatalogue) config;
