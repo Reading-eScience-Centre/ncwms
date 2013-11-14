@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.ServletConfig;
@@ -65,18 +64,12 @@ import uk.ac.rdg.resc.edal.util.TimeUtils;
 public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger log = LoggerFactory.getLogger(NcwmsAdminServlet.class);
-    
+
     private VelocityEngine velocityEngine;
     private NcwmsCatalogue catalogue;
 
     public NcwmsAdminServlet() throws IOException, Exception {
         super();
-        Properties props = new Properties();
-        props.put("resource.loader", "class");
-        props.put("class.resource.loader.class",
-                "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
-        velocityEngine = new VelocityEngine();
-        velocityEngine.init(props);
     }
 
     @Override
@@ -92,6 +85,16 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
         } else {
             throw new ServletException(
                     "ncWMS configuration object is incorrect type.  The \"NcwmsCatalogue\" attribute of the ServletContext has been incorrectly set.");
+        }
+        /*
+         * Retrieve the pre-loaded velocity engine
+         */
+        Object engine = servletConfig.getServletContext().getAttribute("VelocityEngine");
+        if (engine instanceof VelocityEngine) {
+            velocityEngine = (VelocityEngine) engine;
+        } else {
+            throw new ServletException(
+                    "VelocityEngine object is incorrect type.  The \"VelocityEngine\" attribute of the ServletContext has been incorrectly set.");
         }
     }
 
@@ -430,8 +433,7 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
                 float max = Float.parseFloat(request.getParameter(variableId + ".scaleMax").trim());
 
                 /*
-                 * Get the NcwmsVariable for this layer, and save the
-                 * changes
+                 * Get the NcwmsVariable for this layer, and save the changes
                  */
                 NcwmsVariable var = dataset.getVariablesById(variableId);
                 var.setTitle(newTitle);

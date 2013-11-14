@@ -31,6 +31,7 @@ package uk.ac.rdg.resc.edal.ncwms;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 import javax.servlet.ServletConfig;
@@ -40,11 +41,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
 
+import org.apache.log4j.PropertyConfigurator;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.app.event.EventCartridge;
 import org.apache.velocity.app.event.implement.EscapeHtmlReference;
+import org.apache.velocity.runtime.RuntimeConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,18 +72,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger log = LoggerFactory.getLogger(NcwmsApplicationServlet.class);
 
-    private final VelocityEngine velocityEngine;
+    private VelocityEngine velocityEngine;
     private NcwmsCatalogue catalogue;
-
-    public NcwmsApplicationServlet() {
-        super();
-        Properties props = new Properties();
-        props.put("resource.loader", "class");
-        props.put("class.resource.loader.class",
-                "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
-        velocityEngine = new VelocityEngine();
-        velocityEngine.init(props);
-    }
 
     @Override
     public void init(ServletConfig servletConfig) throws ServletException {
@@ -121,6 +114,42 @@ public class NcwmsApplicationServlet extends HttpServlet {
             configDir = homeDir + File.separator + ".ncWMS-edal";
         }
 
+        /*
+         * If the config location doesn't exist, create it.
+         */
+        File configDirFile = new File(configDir);
+        if(!configDirFile.exists()) {
+            configDirFile.mkdirs();
+        }
+        
+        /*
+         * If necessary, create a directory for logs.
+         */
+        File logDirFile = new File(configDir+File.separator+"logs");
+        if(!logDirFile.exists()) {
+            logDirFile.mkdir();
+        }
+        
+        /*
+         * Get the file appending logger and set the log location
+         */
+        // Set up the log4j logging system
+        Properties logProps = new Properties();
+        InputStream log4jInputStream = getClass().getResourceAsStream("/log4j.properties");
+        try {
+            logProps.load(log4jInputStream);
+            logProps.put("log4j.appender.file.File", logDirFile.getPath()+File.separator+"ncwms.log");
+            PropertyConfigurator.configure(logProps);
+        } catch (IOException e) {
+            log.error("Problem setting logging properties", e);
+            /*
+             * This is a problem, but not a fatal one.  Logging will go to its default location. 
+             */
+        }
+        
+        /*
+         * Now either create or read the ncWMS config.xml
+         */
         File configFile = new File(configDir + File.separator, "config.xml");
         try {
             if (configFile.exists()) {
@@ -165,6 +194,21 @@ public class NcwmsApplicationServlet extends HttpServlet {
          * can access it. All other servlets are loaded after this one.
          */
         servletConfig.getServletContext().setAttribute("NcwmsCatalogue", catalogue);
+        
+        /*
+         * Now create a VelocityEngine to load velocity templates, and make it
+         * available to other servlets in the same way
+         */
+        Properties props = new Properties();
+        props.put("resource.loader", "class");
+        props.put("class.resource.loader.class",
+                "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
+        velocityEngine = new VelocityEngine();
+        velocityEngine.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS,
+                "org.apache.velocity.runtime.log.Log4JLogChute");
+        velocityEngine.setProperty("runtime.log.logsystem.log4j.logger", "velocity");
+        velocityEngine.init(props);
+        servletConfig.getServletContext().setAttribute("VelocityEngine", velocityEngine);
     }
 
     /**
