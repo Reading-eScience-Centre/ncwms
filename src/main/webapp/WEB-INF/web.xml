@@ -31,6 +31,14 @@
         <servlet-class>uk.ac.rdg.resc.edal.wms.ScreenshotServlet</servlet-class>
         <load-on-startup>4</load-on-startup>
     </servlet>
+    <filter>
+        <filter-name>CORS</filter-name>
+        <filter-class>com.thetransactioncompany.cors.CORSFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CORS</filter-name>
+        <servlet-name>NcwmsServlet</servlet-name>
+    </filter-mapping>
     <servlet-mapping>
         <servlet-name>NcwmsServlet</servlet-name>
         <url-pattern>/wms</url-pattern>
