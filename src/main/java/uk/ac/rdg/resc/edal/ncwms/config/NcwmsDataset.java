@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -239,11 +240,23 @@ public class NcwmsDataset {
 
         loadingProgress.add("Dataset created");
         /*
-         * These objects do not necessarily exist yet, depending on how the
-         * dataset was created (i.e. whether it was read from file or has just
-         * been added).
+         * Loop through existing variables and check that they are still there,
+         * removing them if not
          */
-        for (String varId : dataset.getVariableIds()) {
+        Set<String> variableIds = dataset.getVariableIds();
+        List<String> variablesToRemove = new ArrayList<String>();
+        for(String varId : variables.keySet()) {
+            if(!variableIds.contains(varId)) {
+                variablesToRemove.add(varId);
+            }
+        }
+        for(String varToRemove : variablesToRemove) {
+            variables.remove(varToRemove);
+        }
+        /*
+         * Now create any new variable objects which are needed.
+         */
+        for (String varId : variableIds) {
             if (!variables.containsKey(varId)) {
                 loadingProgress.add("Creating default metadata for variable: " + varId);
                 /*
