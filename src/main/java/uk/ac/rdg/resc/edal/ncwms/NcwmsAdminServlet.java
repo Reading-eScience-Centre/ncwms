@@ -442,6 +442,7 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
                 var.setNumColorBands(Integer.parseInt(request.getParameter(variableId
                         + ".numColorBands")));
                 var.setScaling(request.getParameter(variableId + ".scaling"));
+                var.setDisabled(request.getParameter(variableId + ".disabled") != null);
             }
             /* Saves the new configuration information to disk */
             try {
