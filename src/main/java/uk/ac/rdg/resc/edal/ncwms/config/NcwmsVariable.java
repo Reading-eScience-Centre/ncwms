@@ -122,6 +122,9 @@ public class NcwmsVariable implements WmsLayerMetadata {
 
     @Override
     public Boolean isLogScaling() {
+        if(scaling == null) {
+            return false;
+        }
         return scaling.equalsIgnoreCase("log");
     }
 
