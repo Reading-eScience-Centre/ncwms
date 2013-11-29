@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import uk.ac.rdg.resc.edal.dataset.Dataset;
 import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
 import uk.ac.rdg.resc.edal.domain.Extent;
+import uk.ac.rdg.resc.edal.exceptions.EdalException;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
 import uk.ac.rdg.resc.edal.metadata.VariableMetadata;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig.DatasetStorage;
@@ -222,7 +223,7 @@ public class NcwmsDataset {
     }
 
     public void createDataset(DatasetStorage datasetStorage) throws InstantiationException,
-            IllegalAccessException, ClassNotFoundException, IOException {
+            IllegalAccessException, ClassNotFoundException, IOException, EdalException {
         loadingProgress.add("Starting loading");
 
         /*
