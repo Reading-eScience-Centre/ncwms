@@ -37,9 +37,10 @@ import uk.ac.rdg.resc.edal.dataset.AbstractGridDataset;
 import uk.ac.rdg.resc.edal.dataset.DataReadingStrategy;
 import uk.ac.rdg.resc.edal.dataset.GridDataSource;
 import uk.ac.rdg.resc.edal.dataset.plugins.VectorPlugin;
+import uk.ac.rdg.resc.edal.exceptions.DataReadingException;
 import uk.ac.rdg.resc.edal.exceptions.EdalException;
 import uk.ac.rdg.resc.edal.exceptions.InvalidCrsException;
-import uk.ac.rdg.resc.edal.feature.Feature;
+import uk.ac.rdg.resc.edal.feature.GridFeature;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
 import uk.ac.rdg.resc.edal.grid.HorizontalGrid;
 import uk.ac.rdg.resc.edal.grid.RegularGridImpl;
@@ -77,13 +78,13 @@ public class InMemoryNorthPolarStereographicDataset extends AbstractGridDataset 
             hDomain = null;
         }
         GridVariableMetadata xumetadata = new GridVariableMetadata("allx_u", new Parameter(
-                "allx_u", "All X,  u-component", "...", "none"), hDomain, null, null);
+                "allx_u", "All X,  u-component", "...", "none"), hDomain, null, null, true);
         GridVariableMetadata xvmetadata = new GridVariableMetadata("allx_v", new Parameter(
-                "allx_v", "All X,  v-component", "...", "none"), hDomain, null, null);
+                "allx_v", "All X,  v-component", "...", "none"), hDomain, null, null, true);
         GridVariableMetadata yumetadata = new GridVariableMetadata("ally_u", new Parameter(
-                "ally_u", "All Y,  u-component", "...", "none"), hDomain, null, null);
+                "ally_u", "All Y,  u-component", "...", "none"), hDomain, null, null, true);
         GridVariableMetadata yvmetadata = new GridVariableMetadata("ally_v", new Parameter(
-                "ally_v", "All Y,  v-component", "...", "none"), hDomain, null, null);
+                "ally_v", "All Y,  v-component", "...", "none"), hDomain, null, null, true);
         List<GridVariableMetadata> metadataList = new ArrayList<GridVariableMetadata>();
         metadataList.add(xumetadata);
         metadataList.add(xvmetadata);
@@ -153,7 +154,7 @@ public class InMemoryNorthPolarStereographicDataset extends AbstractGridDataset 
     }
 
     @Override
-    public Feature<?> readFeature(String featureId) throws IOException {
+    public GridFeature readFeature(String featureId) throws DataReadingException {
         throw new UnsupportedOperationException("Not implemented - this is a test dataset");
     }
 
