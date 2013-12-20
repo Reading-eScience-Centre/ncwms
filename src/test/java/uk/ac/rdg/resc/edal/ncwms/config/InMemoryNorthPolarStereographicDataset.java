@@ -78,13 +78,13 @@ public class InMemoryNorthPolarStereographicDataset extends AbstractGridDataset 
             hDomain = null;
         }
         GridVariableMetadata xumetadata = new GridVariableMetadata("allx_u", new Parameter(
-                "allx_u", "All X,  u-component", "...", "none"), hDomain, null, null, true);
+                "allx_u", "All X,  u-component", "...", "none", null), hDomain, null, null, true);
         GridVariableMetadata xvmetadata = new GridVariableMetadata("allx_v", new Parameter(
-                "allx_v", "All X,  v-component", "...", "none"), hDomain, null, null, true);
+                "allx_v", "All X,  v-component", "...", "none", null), hDomain, null, null, true);
         GridVariableMetadata yumetadata = new GridVariableMetadata("ally_u", new Parameter(
-                "ally_u", "All Y,  u-component", "...", "none"), hDomain, null, null, true);
+                "ally_u", "All Y,  u-component", "...", "none", null), hDomain, null, null, true);
         GridVariableMetadata yvmetadata = new GridVariableMetadata("ally_v", new Parameter(
-                "ally_v", "All Y,  v-component", "...", "none"), hDomain, null, null, true);
+                "ally_v", "All Y,  v-component", "...", "none", null), hDomain, null, null, true);
         List<GridVariableMetadata> metadataList = new ArrayList<GridVariableMetadata>();
         metadataList.add(xumetadata);
         metadataList.add(xvmetadata);
