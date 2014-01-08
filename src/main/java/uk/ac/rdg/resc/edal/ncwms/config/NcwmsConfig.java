@@ -273,7 +273,7 @@ public class NcwmsConfig {
     }
 
     public interface DatasetStorage {
-        public void datasetLoaded(Dataset dataset, Collection<NcwmsVariable> variables);
+        public void datasetLoaded(Dataset<?> dataset, Collection<NcwmsVariable> variables);
     }
 
     public static void serialise(NcwmsConfig config, Writer writer) throws JAXBException {

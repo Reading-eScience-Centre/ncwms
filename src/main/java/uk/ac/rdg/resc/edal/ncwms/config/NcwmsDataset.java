@@ -237,7 +237,7 @@ public class NcwmsDataset {
          * TODO In the old version, we dealt with OPeNDAP credentials here...
          */
 
-        Dataset dataset = factory.createDataset(id, location);
+        Dataset<?> dataset = factory.createDataset(id, location);
 
         loadingProgress.add("Dataset created");
         /*
