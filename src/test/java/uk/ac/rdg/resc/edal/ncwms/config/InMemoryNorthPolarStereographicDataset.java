@@ -167,11 +167,6 @@ public class InMemoryNorthPolarStereographicDataset extends AbstractGridDataset 
                 return new Array4D<Number>((tmax - tmin + 1), (zmax - zmin + 1), (ymax - ymin + 1),
                         (xmax - xmin + 1)) {
                     @Override
-                    public Class<Number> getValueClass() {
-                        return Number.class;
-                    }
-
-                    @Override
                     public Number get(int... coords) {
                         if (variableId.equalsIgnoreCase("allx_u")) {
                             return 10;
