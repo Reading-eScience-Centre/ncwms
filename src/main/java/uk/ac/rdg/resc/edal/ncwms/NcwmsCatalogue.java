@@ -53,7 +53,7 @@ import uk.ac.rdg.resc.edal.wms.util.ServerInfo;
 public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
 
     private NcwmsConfig config;
-    private Map<String, Dataset<?>> datasets;
+    private Map<String, Dataset> datasets;
     private Map<String, WmsLayerMetadata> layerMetadata;
 
     private DateTime lastUpdateTime = new DateTime();
@@ -62,7 +62,7 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
         /*
          * Initialise the storage for datasets and layer metadata.
          */
-        datasets = new HashMap<String, Dataset<?>>();
+        datasets = new HashMap<String, Dataset>();
         layerMetadata = new HashMap<String, WmsLayerMetadata>();
 
         this.config = config;
@@ -100,14 +100,14 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
      *            The new ID
      */
     public void changeDatasetId(String oldId, String newId) {
-        Dataset<?> dataset = datasets.get(oldId);
+        Dataset dataset = datasets.get(oldId);
         datasets.remove(oldId);
         datasets.put(newId, dataset);
         config.changeDatasetId(config.getDatasetInfo(oldId), newId);
     }
 
     @Override
-    public synchronized void datasetLoaded(Dataset<?> dataset, Collection<NcwmsVariable> variables) {
+    public synchronized void datasetLoaded(Dataset dataset, Collection<NcwmsVariable> variables) {
         /*
          * If we already have a dataset with this ID, it will be replaced. This
          * is exactly what we want.
@@ -157,14 +157,14 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     }
 
     @Override
-    public Collection<Dataset<?>> getAllDatasets() {
+    public Collection<Dataset> getAllDatasets() {
         /*
          * This catalogue stores all possible datasets, but this method must
          * only return those which are available (i.e. not disabled and ready to
          * go)
          */
-        List<Dataset<?>> allDatasets = new ArrayList<Dataset<?>>();
-        for (Dataset<?> dataset : datasets.values()) {
+        List<Dataset> allDatasets = new ArrayList<Dataset>();
+        for (Dataset dataset : datasets.values()) {
             NcwmsDataset datasetInfo = config.getDatasetInfo(dataset.getId());
             if (!datasetInfo.isDisabled() && datasetInfo.isReady()) {
                 allDatasets.add(dataset);
@@ -183,12 +183,12 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     }
 
     @Override
-    public Dataset<?> getDatasetFromId(String datasetId) {
+    public Dataset getDatasetFromId(String datasetId) {
         return datasets.get(datasetId);
     }
 
     @Override
-    public Dataset<?> getDatasetFromLayerName(String layerName) throws WmsLayerNotFoundException {
+    public Dataset getDatasetFromLayerName(String layerName) throws WmsLayerNotFoundException {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
             throw new WmsLayerNotFoundException(
