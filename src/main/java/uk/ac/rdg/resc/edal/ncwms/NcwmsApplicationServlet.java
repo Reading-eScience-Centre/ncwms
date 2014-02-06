@@ -92,7 +92,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
         Properties appProperties = new Properties();
 
         String configDir = null;
-        String homeDir = System.getProperty("user.home");
+        String homeDir = System.getProperty("user.home").replace("\\", "\\\\");
         try {
             /*
              * See if we have a properties file which defines a configDir,
