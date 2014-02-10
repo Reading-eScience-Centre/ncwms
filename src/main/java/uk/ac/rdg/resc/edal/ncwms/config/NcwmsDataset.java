@@ -219,6 +219,7 @@ public class NcwmsDataset {
                 log.error(e.getClass().getName() + " loading metadata for dataset " + id, e);
             }
             err = e;
+            e.printStackTrace();
         }
     }
 
@@ -254,6 +255,7 @@ public class NcwmsDataset {
         for(String varToRemove : variablesToRemove) {
             variables.remove(varToRemove);
         }
+        System.out.println(id+"4");
         /*
          * Now create any new variable objects which are needed.
          */
@@ -263,6 +265,7 @@ public class NcwmsDataset {
                 /*
                  * Create a new variable object with default values.
                  */
+                System.out.println("Estimating range for "+dataset.getId()+", "+varId);
                 Extent<Float> colorScaleRange = WmsUtils.estimateValueRange(dataset, varId);
                 VariableMetadata variableMetadata = dataset.getVariableMetadata(varId);
                 NcwmsVariable variable = new NcwmsVariable(varId, varId, variableMetadata
@@ -273,6 +276,7 @@ public class NcwmsDataset {
                 variables.put(varId, variable);
             }
         }
+        System.out.println(id+"5");
 
         loadingProgress.add("Making this dataset available through the WMS catalogue");
         datasetStorage.datasetLoaded(dataset, variables.values());
