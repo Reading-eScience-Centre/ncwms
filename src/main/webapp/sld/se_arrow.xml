@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<StyledLayerDescriptor version="1.1.0" xsi:schemaLocation="http://www.opengis.net/sld
+StyledLayerDescriptor.xsd" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc"
+xmlns:se="http://www.opengis.net/se" xmlns:xlink="http://www.w3.org/1999/xlink"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.resc.reading.ac.uk">
+  <NamedLayer>
+    <se:Name>FOAM_one/TMP</se:Name>
+    <UserStyle>
+      <se:Name>Red-blue palette showing SST</se:Name>
+      <se:CoverageStyle>
+        <se:Rule>
+          <se:RasterSymbolizer>
+            <se:Opacity>1.0</se:Opacity>
+            <se:ColorMap>
+              <resc:Segment fallbackValue="#FF006400">
+                <se:LookupValue>Rasterdata</se:LookupValue>
+                <resc:BelowMinValue>#FF0000FF</resc:BelowMinValue>
+                <resc:ValueList>
+                  <se:Name>redblue</se:Name>
+                </resc:ValueList>
+                <resc:AboveMaxValue>#FFFF0000</resc:AboveMaxValue>
+                <resc:Range>
+                  <resc:Minimum>270.0</resc:Minimum>
+                  <resc:Maximum>310.0</resc:Maximum>
+                  <resc:Spacing>linear</resc:Spacing>
+                </resc:Range>
+                <resc:NumberOfSegments>254</resc:NumberOfSegments>
+              </resc:Segment>
+            </se:ColorMap>
+          </se:RasterSymbolizer>
+        </se:Rule>
+      </se:CoverageStyle>
+    </UserStyle>
+  </NamedLayer>
+  <NamedLayer>
+    <se:Name>FOAM_one/sea_water_velocity_direction</se:Name>
+    <UserStyle>
+      <se:Name>Arrows showing wind direction</se:Name>
+      <se:CoverageStyle>
+        <se:Rule>
+          <resc:ArrowSymbolizer>
+            <se:Opacity>1.0</se:Opacity>
+            <resc:ArrowSize>8</resc:ArrowSize>
+            <resc:ArrowColour>#FF000000</resc:ArrowColour>
+          </resc:ArrowSymbolizer>
+        </se:Rule>
+      </se:CoverageStyle>
+    </UserStyle>
+  </NamedLayer>
+</StyledLayerDescriptor>

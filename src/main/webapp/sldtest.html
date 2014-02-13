@@ -1,0 +1,69 @@
+<html>
+
+<head>
+<title>Test of new Styled Layer Descriptor XML parser</title>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="js/sldtest.js"></script>
+</head>
+
+<body>
+<h1>SLD Parser Test Tool</h1>
+
+<p>
+Select one of the example XML files below, alter it if desired in the text area or
+paste your own example. XML that is compliant with Styled Layer Descriptor
+(SLD)/Symbology Encoding (SE) and uses the RasterSymbolizer tag will be accepted along
+the lines of the examples "SE Example", "Thresholds 1", "Thresholds 2" and
+"Interpolation". Press submit and please wait for a map of the globe to be generated
+on the right using one of the variables available in the datasets listed below. To refer
+to a variable use the machine readable ID in brackets. In most cases this should be
+quoted in the name of the styled layer except where two variables are referenced.
+</p>
+
+<table style="width: 100%">
+<tr>
+<td>
+<select onchange="loadSampleSLD(this.value)">
+	<option value="sld/no_document.txt">Select a sample SLD document...</option>
+	<option value="sld/se_arrow.xml">Arrows</option>
+	<option value="sld/se_raster2d.xml">Bivariate colour maps</option>
+	<option value="sld/se_confidence_interval.xml">Confidence intervals</option>
+	<option value="sld/se_contour.xml">Contours</option>
+<!--	<option value="sld/se_in_situ_icon.xml">In situ icons</option> -->
+	<option value="sld/se_interpolate.xml">Interpolation</option>
+	<option value="sld/se_linear_opacity.xml">Linear opacity transformations</option>
+	<option value="sld/se_palette.xml">Palettes</option>
+	<option value="sld/se_example.xml">SE example</option>
+	<option value="sld/se_stipple.xml">Stippling</option>
+<!--	<option value="sld/se_subsampled_icon.xml">Subsampled icons</option> -->
+  	<option value="sld/se_threshold.xml">Thresholds 1</option>
+  	<option value="sld/se_threshold_1.xml">Thresholds 2</option>
+</select>
+Font size: <select onchange="sldtext.style.fontSize=this.value">
+	<option value="8pt">8</option>
+	<option value="9pt">9</option>
+  	<option value="10pt" selected>10</option>
+  	<option value="11pt">11</option>
+  	<option value="12pt">12</option>
+</select>
+</td>
+<td></td>
+</tr>
+
+<tr>
+<td><textarea id="sldtext" rows="30" cols="60" style="font-size: 10pt; white-space: pre; word-wrap: normal; overflow-x: scroll;" spellcheck="false">
+Paste your SLD document here... 
+</textarea></td>
+<td><img id="image" src="http://www.resc.reading.ac.uk/images/new_logo_72dpi_web.png"></td>
+</tr>
+
+<tr><td><button type="button" onclick="loadNewImage()">Submit</button></td><td></td></tr>
+</table>
+
+<h2>Available Data Sets</h2>
+<p><span id="layernames"></span></p>
+
+<script>document.getElementById("layernames").innerHTML=getLayerNames()</script>
+</body>
+
+</html>

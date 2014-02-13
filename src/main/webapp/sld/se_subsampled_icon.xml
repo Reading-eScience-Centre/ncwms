@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<StyledLayerDescriptor version="1.1.0" xsi:schemaLocation="http://www.opengis.net/sld
+StyledLayerDescriptor.xsd" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc"
+xmlns:se="http://www.opengis.net/se" xmlns:xlink="http://www.w3.org/1999/xlink"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.resc.reading.ac.uk">
+  <NamedLayer>
+    <se:Name>OSTIA/analysed_sst</se:Name>
+    <UserStyle>
+      <se:Name>Red-blue palette showing SST with subsampled glyphs</se:Name>
+      <se:CoverageStyle>
+        <se:Rule>
+          <resc:SubsampledIconSymbolizer>
+            <se:Opacity>1.0</se:Opacity>
+            <resc:IconName>circle</resc:IconName>
+            <resc:IconSpacing>1.5</resc:IconSpacing>
+            <se:ColorMap>
+              <resc:Segment fallbackValue="#FF006400">
+                <se:LookupValue>Rasterdata</se:LookupValue>
+                <resc:BelowMinValue>#FF0000FF</resc:BelowMinValue>
+                <resc:ValueList>
+                  <se:Name>redblue</se:Name>
+                </resc:ValueList>
+                <resc:AboveMaxValue>#FFFF0000</resc:AboveMaxValue>
+                <resc:Range>
+                  <resc:Minimum>270.0</resc:Minimum>
+                  <resc:Maximum>310.0</resc:Maximum>
+                  <resc:Spacing>linear</resc:Spacing>
+                </resc:Range>
+                <resc:NumberOfSegments>254</resc:NumberOfSegments>
+              </resc:Segment>
+            </se:ColorMap>
+          </resc:SubsampledIconSymbolizer>
+        </se:Rule>
+      </se:CoverageStyle>
+    </UserStyle>
+  </NamedLayer>
+</StyledLayerDescriptor>
