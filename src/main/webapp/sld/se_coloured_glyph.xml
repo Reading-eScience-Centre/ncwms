@@ -4,7 +4,7 @@ StyledLayerDescriptor.xsd" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://
 xmlns:se="http://www.opengis.net/se" xmlns:xlink="http://www.w3.org/1999/xlink"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.resc.reading.ac.uk">
   <NamedLayer>
-    <se:Name>OSTIA/analysed_sst</se:Name>
+    <se:Name>EN3/TEMP</se:Name>
     <UserStyle>
       <se:Name>Red-blue palette showing SST with basic glyphs</se:Name>
       <se:CoverageStyle>
