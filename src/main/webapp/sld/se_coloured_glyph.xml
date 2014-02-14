@@ -9,7 +9,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
       <se:Name>Red-blue palette showing SST with basic glyphs</se:Name>
       <se:CoverageStyle>
         <se:Rule>
-          <resc:InSituIconSymbolizer>
+          <resc:ColoredGlyphSymbolizer>
             <se:Opacity>1.0</se:Opacity>
             <resc:IconName>circle</resc:IconName>
             <se:ColorMap>
@@ -25,10 +25,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
                   <resc:Maximum>310.0</resc:Maximum>
                   <resc:Spacing>linear</resc:Spacing>
                 </resc:Range>
-                <resc:NumberOfSegments>254</resc:NumberOfSegments>
+                <resc:NumberOfSegments>250</resc:NumberOfSegments>
               </resc:Segment>
             </se:ColorMap>
-          </resc:InSituIconSymbolizer>
+          </resc:ColoredGlyphSymbolizer>
         </se:Rule>
       </se:CoverageStyle>
     </UserStyle>
