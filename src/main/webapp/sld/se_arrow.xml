@@ -24,7 +24,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
                   <resc:Maximum>310.0</resc:Maximum>
                   <resc:Spacing>linear</resc:Spacing>
                 </resc:Range>
-                <resc:NumberOfSegments>254</resc:NumberOfSegments>
+                <resc:NumberOfSegments>250</resc:NumberOfSegments>
               </resc:Segment>
             </se:ColorMap>
           </se:RasterSymbolizer>
@@ -33,7 +33,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
     </UserStyle>
   </NamedLayer>
   <NamedLayer>
-    <se:Name>FOAM_one/sea_water_velocity_direction</se:Name>
+    <se:Name>FOAM_one/UV-dir</se:Name>
     <UserStyle>
       <se:Name>Arrows showing wind direction</se:Name>
       <se:CoverageStyle>
