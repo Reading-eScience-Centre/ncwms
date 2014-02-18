@@ -3,8 +3,16 @@
 StyledLayerDescriptor.xsd" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc"
 xmlns:se="http://www.opengis.net/se" xmlns:xlink="http://www.w3.org/1999/xlink"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.resc.reading.ac.uk">
-  <NamedLayer>
-    <se:Name>OSTIA/analysed_sst</se:Name>
+  <UserLayer>
+    <se:Name>OSTIA/analysed_sst_bivariate_colourmap</se:Name>
+    <LayerCoverageConstraints>
+      <CoverageConstraint>
+        <se:CoverageName>OSTIA/analysed_sst</se:CoverageName>
+      </CoverageConstraint>
+      <CoverageConstraint>
+        <se:CoverageName>OSTIA/analysis_error</se:CoverageName>
+      </CoverageConstraint>
+    </LayerCoverageConstraints>
     <UserStyle>
       <se:Name>2D thresholded colour scheme</se:Name>
       <se:CoverageStyle>
@@ -13,7 +21,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
             <se:Opacity>1.0</se:Opacity>
             <resc:ColorMap2D>
               <resc:Categorize2D fallbackValue="#FF006400">
-                <se:LookupValue>OSTIA/analysed_sst,OSTIA/analysis_error</se:LookupValue>
+                <se:LookupValue>Rasterdata</se:LookupValue>
                 <!-- x thresholds define columns -->
                   <resc:XThreshold>276.7</resc:XThreshold>
                   <resc:XThreshold>283.3</resc:XThreshold>
@@ -74,5 +82,5 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
         </se:Rule>
       </se:CoverageStyle>
     </UserStyle>
-  </NamedLayer>
+  </UserLayer>
 </StyledLayerDescriptor>
