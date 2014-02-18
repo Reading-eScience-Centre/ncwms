@@ -3,16 +3,22 @@
 StyledLayerDescriptor.xsd" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc"
 xmlns:se="http://www.opengis.net/se" xmlns:xlink="http://www.w3.org/1999/xlink"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.resc.reading.ac.uk">
-  <NamedLayer>
-    <se:Name>OSTIA/analysed_sst</se:Name>
+  <UserLayer>
+    <se:Name>OSTIA/analysed_sst_confidence_intervals</se:Name>
+    <LayerCoverageConstraints>
+      <CoverageConstraint>
+        <se:CoverageName>OSTIA/sst_lb</se:CoverageName>
+      </CoverageConstraint>
+      <CoverageConstraint>
+        <se:CoverageName>OSTIA/sst_ub</se:CoverageName>
+      </CoverageConstraint>
+    </LayerCoverageConstraints>
     <UserStyle>
       <se:Name>Split triangles with red-blue palette</se:Name>
       <se:CoverageStyle>
         <se:Rule>
           <resc:ConfidenceIntervalSymbolizer>
             <se:Opacity>1.0</se:Opacity>
-            <resc:LowerDataFieldName>OSTIA/sst_lb</resc:LowerDataFieldName>
-            <resc:UpperDataFieldName>OSTIA/sst_ub</resc:UpperDataFieldName>
             <resc:GlyphSize>10</resc:GlyphSize>
             <se:ColorMap>
               <resc:Segment fallbackValue="#FF006400">
@@ -34,5 +40,5 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
         </se:Rule>
       </se:CoverageStyle>
     </UserStyle>
-  </NamedLayer>
+  </UserLayer>
 </StyledLayerDescriptor>
