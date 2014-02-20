@@ -11,7 +11,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
         <se:Rule>
           <se:RasterSymbolizer>
             <resc:OpacityTransform>
-              <se:Interpolate fallbackValue="0.0">
+              <se:Interpolate fallbackValue="1.0">
                 <se:LookupValue>OSTIA/analysis_error</se:LookupValue>
                 <se:InterpolationPoint>
                   <se:Data>0.0</se:Data>
