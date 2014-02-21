@@ -7,10 +7,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
     <se:Name>OSTIA/analysed_sst_bivariate_colourmap</se:Name>
     <LayerCoverageConstraints>
       <CoverageConstraint>
-        <se:CoverageName>OSTIA/analysed_sst</se:CoverageName>
+        <se:CoverageName>OSTIA/analysis_error</se:CoverageName>
       </CoverageConstraint>
       <CoverageConstraint>
-        <se:CoverageName>OSTIA/analysis_error</se:CoverageName>
+        <se:CoverageName>OSTIA/analysed_sst</se:CoverageName>
       </CoverageConstraint>
     </LayerCoverageConstraints>
     <UserStyle>
@@ -20,62 +20,57 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
           <resc:Raster2DSymbolizer>
             <se:Opacity>1.0</se:Opacity>
             <resc:ColorMap2D>
-              <resc:Categorize2D fallbackValue="#FF006400">
+              <resc:Categorize2D fallbackValue="#00000000">
                 <se:LookupValue>Rasterdata</se:LookupValue>
                 <!-- x thresholds define columns -->
-                  <resc:XThreshold>276.7</resc:XThreshold>
-                  <resc:XThreshold>283.3</resc:XThreshold>
-                  <resc:XThreshold>290.0</resc:XThreshold>
-                  <resc:XThreshold>296.7</resc:XThreshold>
-                  <resc:XThreshold>303.3</resc:XThreshold>
+                  <resc:XThreshold>0.0</resc:XThreshold>
+                  <resc:XThreshold>0.8</resc:XThreshold>
+                  <resc:XThreshold>1.6</resc:XThreshold>
+                  <resc:XThreshold>2.4</resc:XThreshold>
                 <!-- y thresholds define rows -->
-                  <resc:YThreshold>0.5</resc:YThreshold>
-                  <resc:YThreshold>1.0</resc:YThreshold>
-                  <resc:YThreshold>1.5</resc:YThreshold>
-                  <resc:YThreshold>2.0</resc:YThreshold>
-                  <resc:YThreshold>2.5</resc:YThreshold>
-                <!-- row #01 -->
-                  <se:Value>#FF0000FF</se:Value>
-                  <se:Value>#FF00FFFF</se:Value>
-                  <se:Value>#FF00FF00</se:Value>
-                  <se:Value>#FFFFFF00</se:Value>
-                  <se:Value>#FFFFC800</se:Value>
-                  <se:Value>#FFFF0000</se:Value>
-                <!-- row #02 -->
-                  <se:Value>#CC0000FF</se:Value>
-                  <se:Value>#CC00FFFF</se:Value>
-                  <se:Value>#CC00FF00</se:Value>
-                  <se:Value>#CCFFFF00</se:Value>
-                  <se:Value>#CCFFC800</se:Value>
-                  <se:Value>#CCFF0000</se:Value>
-                <!-- row #03 -->
-                  <se:Value>#990000FF</se:Value>
-                  <se:Value>#9900FFFF</se:Value>
-                  <se:Value>#9900FF00</se:Value>
-                  <se:Value>#99FFFF00</se:Value>
-                  <se:Value>#99FFC800</se:Value>
-                  <se:Value>#99FF0000</se:Value>
-                <!-- row #04 -->
-                  <se:Value>#660000FF</se:Value>
-                  <se:Value>#6600FFFF</se:Value>
-                  <se:Value>#6600FF00</se:Value>
-                  <se:Value>#66FFFF00</se:Value>
-                  <se:Value>#66FFC800</se:Value>
-                  <se:Value>#66FF0000</se:Value>
-                <!-- row #05 -->
-                  <se:Value>#330000FF</se:Value>
-                  <se:Value>#3300FFFF</se:Value>
-                  <se:Value>#3300FF00</se:Value>
-                  <se:Value>#33FFFF00</se:Value>
-                  <se:Value>#33FFC800</se:Value>
-                  <se:Value>#33FF0000</se:Value>
-                <!-- row #06 -->
-                  <se:Value>#000000FF</se:Value>
-                  <se:Value>#0000FFFF</se:Value>
-                  <se:Value>#0000FF00</se:Value>
-                  <se:Value>#00FFFF00</se:Value>
-                  <se:Value>#00FFC800</se:Value>
-                  <se:Value>#00FF0000</se:Value>
+                  <resc:YThreshold>270.0</resc:YThreshold>
+                  <resc:YThreshold>280.0</resc:YThreshold>
+                  <resc:YThreshold>290.0</resc:YThreshold>
+                  <resc:YThreshold>300.0</resc:YThreshold>
+                  <resc:YThreshold>310.0</resc:YThreshold>
+                <!-- Colors of equal Hue (h = 60.0) -->
+                <!-- Colorfulness (C) and Lightness (J) varied according to CIECAM02. -->
+                <!-- J = 100.0 -->
+                  <se:Value>#FFFF9D80</se:Value>
+                  <se:Value>#FFFFBBA0</se:Value>
+                  <se:Value>#FFFFD5BF</se:Value>
+                  <se:Value>#FFFFECE0</se:Value>
+                  <se:Value>#FFFFFEFE</se:Value>
+                <!-- J = 83.0 -->
+                  <se:Value>#FFFF7B63</se:Value>
+                  <se:Value>#FFFF9980</se:Value>
+                  <se:Value>#FFFFB29F</se:Value>
+                  <se:Value>#FFFFCFA7</se:Value>
+                  <se:Value>#FFDDDBDA</se:Value>
+                <!-- J = 66.0 -->
+                  <se:Value>#FFFF5745</se:Value>
+                  <se:Value>#FFFF7661</se:Value>
+                  <se:Value>#FFF49D4F</se:Value>
+                  <se:Value>#FFD8AB84</se:Value>
+                  <se:Value>#FFB7B5B5</se:Value>
+                <!-- J = 49.0 -->
+                  <se:Value>#FFFE2C25</se:Value>
+                  <se:Value>#FFEB503F</se:Value>
+                  <se:Value>#FFC6772D</se:Value>
+                  <se:Value>#FFAD8460</se:Value>
+                  <se:Value>#FF8F8E8D</se:Value>
+                <!-- J = 32.0 -->
+                  <se:Value>#FFBF0000</se:Value>
+                  <se:Value>#FFB0251C</se:Value>
+                  <se:Value>#FF924E03</se:Value>
+                  <se:Value>#FF7E5939</se:Value>
+                  <se:Value>#FF646362</se:Value>
+                <!-- J = 15.0 -->
+                  <se:Value>#FF720000</se:Value>
+                  <se:Value>#FF690000</se:Value>
+                  <se:Value>#FF5D100A</se:Value>
+                  <se:Value>#FF47290E</se:Value>
+                  <se:Value>#FF323232</se:Value>
               </resc:Categorize2D>
             </resc:ColorMap2D>
           </resc:Raster2DSymbolizer>
