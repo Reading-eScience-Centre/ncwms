@@ -14,7 +14,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
       </CoverageConstraint>
     </LayerCoverageConstraints>
     <UserStyle>
-      <se:Name>Split triangles with red-blue palette</se:Name>
+      <se:Name>Split triangles with perceptual color map</se:Name>
       <se:CoverageStyle>
         <se:Rule>
           <resc:ConfidenceIntervalSymbolizer>
