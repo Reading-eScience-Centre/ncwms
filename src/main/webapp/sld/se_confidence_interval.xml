@@ -21,20 +21,20 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
             <se:Opacity>1.0</se:Opacity>
             <resc:GlyphSize>10</resc:GlyphSize>
             <se:ColorMap>
-              <resc:Segment fallbackValue="#FF006400">
+              <se:Categorize fallbackValue="#00000000">
                 <se:LookupValue>Rasterdata</se:LookupValue>
-                <resc:BelowMinValue>#FF0000FF</resc:BelowMinValue>
-                <resc:ValueList>
-                  <se:Name>redblue</se:Name>
-                </resc:ValueList>
-                <resc:AboveMaxValue>#FFFF0000</resc:AboveMaxValue>
-                <resc:Range>
-                  <resc:Minimum>270.0</resc:Minimum>
-                  <resc:Maximum>310.0</resc:Maximum>
-                  <resc:Spacing>linear</resc:Spacing>
-                </resc:Range>
-                <resc:NumberOfSegments>250</resc:NumberOfSegments>
-              </resc:Segment>
+                <se:Value>#FFFF9D80</se:Value>
+                <se:Threshold>270.0</se:Threshold>
+                <se:Value>#FFFF7B63</se:Value>
+                <se:Threshold>280.0</se:Threshold>
+                <se:Value>#FFFF5745</se:Value>
+                <se:Threshold>290.0</se:Threshold>
+                <se:Value>#FFFE2C25</se:Value>
+                <se:Threshold>300.0</se:Threshold>
+                <se:Value>#FFBF0000</se:Value>
+                <se:Threshold>310.0</se:Threshold>
+                <se:Value>#FF720000</se:Value>
+              </se:Categorize>
             </se:ColorMap>
           </resc:ConfidenceIntervalSymbolizer>
         </se:Rule>
