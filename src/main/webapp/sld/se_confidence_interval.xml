@@ -24,16 +24,44 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
               <se:Categorize fallbackValue="#00000000">
                 <se:LookupValue>Rasterdata</se:LookupValue>
                 <se:Value>#FFFF9D80</se:Value>
-                <se:Threshold>270.0</se:Threshold>
-                <se:Value>#FFFF7B63</se:Value>
+                <se:Threshold>272.0</se:Threshold>
+                <se:Value>#FFFF9378</se:Value>
+                <se:Threshold>274.0</se:Threshold>
+                <se:Value>#FFFF896F</se:Value>
+                <se:Threshold>276.0</se:Threshold>
+                <se:Value>#FFFF7F66</se:Value>
+                <se:Threshold>278.0</se:Threshold>
+                <se:Value>#FFFF755E</se:Value>
                 <se:Threshold>280.0</se:Threshold>
-                <se:Value>#FFFF5745</se:Value>
+                <se:Value>#FFFF6A55</se:Value>
+                <se:Threshold>282.0</se:Threshold>
+                <se:Value>#FFFF5F4C</se:Value>
+                <se:Threshold>284.0</se:Threshold>
+                <se:Value>#FFFF5443</se:Value>
+                <se:Threshold>286.0</se:Threshold>
+                <se:Value>#FFFF493A</se:Value>
+                <se:Threshold>288.0</se:Threshold>
+                <se:Value>#FFFF3C30</se:Value>
                 <se:Threshold>290.0</se:Threshold>
-                <se:Value>#FFFE2C25</se:Value>
+                <se:Value>#FFFF2F27</se:Value>
+                <se:Threshold>292.0</se:Threshold>
+                <se:Value>#FFF01F1D</se:Value>
+                <se:Threshold>294.0</se:Threshold>
+                <se:Value>#FFDE0612</se:Value>
+                <se:Threshold>296.0</se:Threshold>
+                <se:Value>#FFCB0006</se:Value>
+                <se:Threshold>298.0</se:Threshold>
+                <se:Value>#FFB70000</se:Value>
                 <se:Threshold>300.0</se:Threshold>
-                <se:Value>#FFBF0000</se:Value>
-                <se:Threshold>310.0</se:Threshold>
+                <se:Value>#FFA20000</se:Value>
+                <se:Threshold>302.0</se:Threshold>
+                <se:Value>#FF8B0000</se:Value>
+                <se:Threshold>304.0</se:Threshold>
                 <se:Value>#FF720000</se:Value>
+                <se:Threshold>306.0</se:Threshold>
+                <se:Value>#FF550000</se:Value>
+                <se:Threshold>308.0</se:Threshold>
+                <se:Value>#FF320000</se:Value>
               </se:Categorize>
             </se:ColorMap>
           </resc:ConfidenceIntervalSymbolizer>
