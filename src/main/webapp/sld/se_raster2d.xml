@@ -36,39 +36,39 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
                 <!-- Colors of equal Hue (h = 60.0) -->
                 <!-- Colorfulness (C) and Lightness (J) varied according to CIECAM02. -->
                 <!-- J = 100.0 -->
-                  <se:Value>#FFFF9D80</se:Value>
-                  <se:Value>#FFFFBBA0</se:Value>
-                  <se:Value>#FFFFD5BF</se:Value>
-                  <se:Value>#FFFFECE0</se:Value>
+                  <se:Value>#FFFFC400</se:Value>
+                  <se:Value>#FFFFD54E</se:Value>
+                  <se:Value>#FFFFE58E</se:Value>
+                  <se:Value>#FFFFF3C8</se:Value>
                   <se:Value>#FFFFFEFE</se:Value>
                 <!-- J = 83.0 -->
-                  <se:Value>#FFFF7B63</se:Value>
-                  <se:Value>#FFFF9980</se:Value>
-                  <se:Value>#FFFFB29F</se:Value>
+                  <se:Value>#FFFFA200</se:Value>
+                  <se:Value>#FFFFB22D</se:Value>
+                  <se:Value>#FFFFC26F</se:Value>
                   <se:Value>#FFFFCFA7</se:Value>
                   <se:Value>#FFDDDBDA</se:Value>
                 <!-- J = 66.0 -->
-                  <se:Value>#FFFF5745</se:Value>
-                  <se:Value>#FFFF7661</se:Value>
+                  <se:Value>#FFFF7F00</se:Value>
+                  <se:Value>#FFFF8F00</se:Value>
                   <se:Value>#FFF49D4F</se:Value>
                   <se:Value>#FFD8AB84</se:Value>
                   <se:Value>#FFB7B5B5</se:Value>
                 <!-- J = 49.0 -->
-                  <se:Value>#FFFE2C25</se:Value>
-                  <se:Value>#FFEB503F</se:Value>
+                  <se:Value>#FFE85A00</se:Value>
+                  <se:Value>#FFD96900</se:Value>
                   <se:Value>#FFC6772D</se:Value>
                   <se:Value>#FFAD8460</se:Value>
                   <se:Value>#FF8F8E8D</se:Value>
                 <!-- J = 32.0 -->
-                  <se:Value>#FFBF0000</se:Value>
-                  <se:Value>#FFB0251C</se:Value>
+                  <se:Value>#FFAD3100</se:Value>
+                  <se:Value>#FFA14000</se:Value>
                   <se:Value>#FF924E03</se:Value>
                   <se:Value>#FF7E5939</se:Value>
                   <se:Value>#FF646362</se:Value>
                 <!-- J = 15.0 -->
-                  <se:Value>#FF720000</se:Value>
-                  <se:Value>#FF690000</se:Value>
-                  <se:Value>#FF5D100A</se:Value>
+                  <se:Value>#FF640200</se:Value>
+                  <se:Value>#FF5E1200</se:Value>
+                  <se:Value>#FF551F00</se:Value>
                   <se:Value>#FF47290E</se:Value>
                   <se:Value>#FF323232</se:Value>
               </resc:Categorize2D>
