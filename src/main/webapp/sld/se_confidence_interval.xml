@@ -23,45 +23,55 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
             <se:ColorMap>
               <se:Categorize fallbackValue="#00000000">
                 <se:LookupValue>Rasterdata</se:LookupValue>
-                <se:Value>#FFFFC400</se:Value>
-                <se:Threshold>272.0</se:Threshold>
-                <se:Value>#FFFFBA00</se:Value>
-                <se:Threshold>274.0</se:Threshold>
-                <se:Value>#FFFFB000</se:Value>
+                <!-- Colors of equal Hue (h = 65.0) and Colorfulness (C = 25.0) -->
+                <!-- Lightness (J) varied between 16.0 and 85.0 according to CIECAM02. -->
+                <se:Value>#FFFFD5A8</se:Value>
+                <se:Threshold>273.0</se:Threshold>
+                <se:Value>#FFFBCFA2</se:Value>
+                <se:Threshold>274.5</se:Threshold>
+                <se:Value>#FFF4C99C</se:Value>
                 <se:Threshold>276.0</se:Threshold>
-                <se:Value>#FFFFA600</se:Value>
-                <se:Threshold>278.0</se:Threshold>
-                <se:Value>#FFFF9C00</se:Value>
-                <se:Threshold>280.0</se:Threshold>
-                <se:Value>#FFFF9200</se:Value>
+                <se:Value>#FFEDC296</se:Value>
+                <se:Threshold>277.5</se:Threshold>
+                <se:Value>#FFE6BC90</se:Value>
+                <se:Threshold>279.0</se:Threshold>
+                <se:Value>#FFDFB58A</se:Value>
+                <se:Threshold>280.5</se:Threshold>
+                <se:Value>#FFD8AE84</se:Value>
                 <se:Threshold>282.0</se:Threshold>
-                <se:Value>#FFFF8700</se:Value>
-                <se:Threshold>284.0</se:Threshold>
-                <se:Value>#FFFF7D00</se:Value>
-                <se:Threshold>286.0</se:Threshold>
-                <se:Value>#FFFF7200</se:Value>
+                <se:Value>#FFD0A87E</se:Value>
+                <se:Threshold>283.5</se:Threshold>
+                <se:Value>#FFC9A177</se:Value>
+                <se:Threshold>285.0</se:Threshold>
+                <se:Value>#FFC29A71</se:Value>
+                <se:Threshold>286.5</se:Threshold>
+                <se:Value>#FFBA936B</se:Value>
                 <se:Threshold>288.0</se:Threshold>
-                <se:Value>#FFFC6700</se:Value>
-                <se:Threshold>290.0</se:Threshold>
-                <se:Value>#FFEC5C00</se:Value>
-                <se:Threshold>292.0</se:Threshold>
-                <se:Value>#FFDB5100</se:Value>
+                <se:Value>#FFB38C64</se:Value>
+                <se:Threshold>289.5</se:Threshold>
+                <se:Value>#FFAB855E</se:Value>
+                <se:Threshold>291.0</se:Threshold>
+                <se:Value>#FFA37E57</se:Value>
+                <se:Threshold>292.5</se:Threshold>
+                <se:Value>#FF9B7750</se:Value>
                 <se:Threshold>294.0</se:Threshold>
-                <se:Value>#FFCA4500</se:Value>
-                <se:Threshold>296.0</se:Threshold>
-                <se:Value>#FFB83900</se:Value>
-                <se:Threshold>298.0</se:Threshold>
-                <se:Value>#FFA52C00</se:Value>
+                <se:Value>#FF936F4A</se:Value>
+                <se:Threshold>295.5</se:Threshold>
+                <se:Value>#FF8A6843</se:Value>
+                <se:Threshold>297.0</se:Threshold>
+                <se:Value>#FF82603C</se:Value>
+                <se:Threshold>298.5</se:Threshold>
+                <se:Value>#FF795835</se:Value>
                 <se:Threshold>300.0</se:Threshold>
-                <se:Value>#FF911F00</se:Value>
-                <se:Threshold>302.0</se:Threshold>
-                <se:Value>#FF7C1100</se:Value>
-                <se:Threshold>304.0</se:Threshold>
-                <se:Value>#FF640200</se:Value>
+                <se:Value>#FF70502E</se:Value>
+                <se:Threshold>301.5</se:Threshold>
+                <se:Value>#FF674826</se:Value>
+                <se:Threshold>303.0</se:Threshold>
+                <se:Value>#FF5D3F1F</se:Value>
+                <se:Threshold>304.5</se:Threshold>
+                <se:Value>#FF543717</se:Value>
                 <se:Threshold>306.0</se:Threshold>
-                <se:Value>#FF4A0000</se:Value>
-                <se:Threshold>308.0</se:Threshold>
-                <se:Value>#FF290000</se:Value>
+                <se:Value>#FF492E0F</se:Value>
               </se:Categorize>
             </se:ColorMap>
           </resc:ConfidenceIntervalSymbolizer>
