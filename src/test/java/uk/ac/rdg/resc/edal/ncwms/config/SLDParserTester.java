@@ -17,7 +17,7 @@ import uk.ac.rdg.resc.edal.graphics.style.util.FeatureCatalogue;
 import uk.ac.rdg.resc.edal.ncwms.NcwmsCatalogue;
 import uk.ac.rdg.resc.edal.util.PlottingDomainParams;
 
-public class SLDParserTest {
+public class SLDParserTester {
 
 	public static void main(String[] args) {
 		try {
