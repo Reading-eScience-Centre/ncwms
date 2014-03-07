@@ -52,6 +52,10 @@ public class SLDParserTester {
 					// write the image to a PNG file
 					File outputfile = new File("N:\\Documents\\SLDOutput\\" + fileName.replace("xml", "png"));
 					ImageIO.write(image, "png", outputfile);
+					// create the legend
+					BufferedImage legend = mapImage.getLegend(250);
+					outputfile = new File("N:\\Documents\\SLDOutput\\" + fileName.replace(".xml", "_lgd.png"));
+					ImageIO.write(legend, "png", outputfile);
 				}
 			}
 		} catch (Exception e) {
