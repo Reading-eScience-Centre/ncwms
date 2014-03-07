@@ -21,8 +21,8 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:resc="http://www.res
                 </resc:ValueList>
                 <resc:AboveMaxValue>#FFFF0000</resc:AboveMaxValue>
                 <resc:Range>
-                  <resc:Minimum>270.0</resc:Minimum>
-                  <resc:Maximum>310.0</resc:Maximum>
+                  <resc:Minimum>-5.0</resc:Minimum>
+                  <resc:Maximum>40.0</resc:Maximum>
                   <resc:Spacing>linear</resc:Spacing>
                 </resc:Range>
                 <resc:NumberOfSegments>250</resc:NumberOfSegments>
