@@ -52,9 +52,9 @@ import uk.ac.rdg.resc.edal.wms.util.ServerInfo;
 
 public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
 
-    private NcwmsConfig config;
-    private Map<String, Dataset> datasets;
-    private Map<String, WmsLayerMetadata> layerMetadata;
+    protected NcwmsConfig config;
+    protected Map<String, Dataset> datasets;
+    protected Map<String, WmsLayerMetadata> layerMetadata;
 
     private DateTime lastUpdateTime = new DateTime();
 
