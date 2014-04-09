@@ -29,7 +29,6 @@
 package uk.ac.rdg.resc.edal.ncwms.config;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -57,6 +56,9 @@ import javax.xml.bind.annotation.XmlType;
 import javax.xml.transform.Result;
 import javax.xml.transform.stream.StreamResult;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import uk.ac.rdg.resc.edal.dataset.Dataset;
 import uk.ac.rdg.resc.edal.wms.util.WmsUtils;
 
@@ -71,7 +73,7 @@ import uk.ac.rdg.resc.edal.wms.util.WmsUtils;
 @XmlType(name = "config", propOrder = { "datasets", "contact", "serverInfo", "cacheInfo" })
 @XmlRootElement(name = "config")
 public class NcwmsConfig {
-//    private static final Logger log = LoggerFactory.getLogger(NcwmsConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(NcwmsConfig.class);
 
     /* Included in XML - see setDatasets for details */
     private Map<String, NcwmsDataset> datasets;
@@ -102,7 +104,7 @@ public class NcwmsConfig {
     @SuppressWarnings("unused")
     private NcwmsConfig() {
     }
-    
+
     public NcwmsConfig(File configFile) throws IOException, JAXBException {
         datasets = new LinkedHashMap<String, NcwmsDataset>();
         this.configFile = configFile;
@@ -225,10 +227,10 @@ public class NcwmsConfig {
             throw new IllegalStateException("No location set for config file");
         }
         File parentDir = configFile.getParentFile();
-        if(!parentDir.exists()) {
+        if (!parentDir.exists()) {
             parentDir.mkdirs();
         }
-        
+
         /* Take a backup of the existing config file */
         if (configBackup == null) {
             String backupName = configFile.getAbsolutePath() + ".backup";
@@ -290,8 +292,6 @@ public class NcwmsConfig {
         JAXBContext context = JAXBContext.newInstance(NcwmsConfig.class);
 
         Unmarshaller unmarshaller = context.createUnmarshaller();
-//        Schema schema = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI).newSchema(new File("/home/guy/Workspace/edal-java/ncwms/src/main/resources/schemas/schema1.xsd"));
-//        unmarshaller.setSchema(schema);
         NcwmsConfig config = (NcwmsConfig) unmarshaller.unmarshal(xmlConfig);
 
         return config;
@@ -308,14 +308,25 @@ public class NcwmsConfig {
         });
     }
 
-    public static NcwmsConfig readFromFile(File configFile) throws FileNotFoundException,
-            JAXBException {
-        NcwmsConfig config = deserialise(new FileReader(configFile));
-        config.configFile = configFile;
+    public static NcwmsConfig readFromFile(File configFile) throws JAXBException, IOException {
+        NcwmsConfig config;
+        if (!configFile.exists()) {
+            /*
+             * If the file doesn't exist, create it with some default values
+             */
+            log.warn("No config file exists in the given location (" + configFile.getAbsolutePath()
+                    + ").  Creating one with defaults");
+            config = new NcwmsConfig(new NcwmsDataset[0], new NcwmsContact(),
+                    new NcwmsServerInfo(), new NcwmsCacheInfo());
+            config.configFile = configFile;
+            config.save();
+        } else {
+            /*
+             * Otherwise read the file
+             */
+            config = deserialise(new FileReader(configFile));
+            config.configFile = configFile;
+        }
         return config;
     }
-
-//    public static void main(String[] args) throws IOException, JAXBException {
-//        generateSchema("/home/guy/Workspace/edal-java/ncwms/src/main/resources/schemas/");
-//    }
 }
