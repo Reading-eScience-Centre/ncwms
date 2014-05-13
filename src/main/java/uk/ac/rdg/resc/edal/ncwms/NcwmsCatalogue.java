@@ -46,7 +46,7 @@ import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDataset;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsVariable;
 import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
 import uk.ac.rdg.resc.edal.wms.WmsLayerMetadata;
-import uk.ac.rdg.resc.edal.wms.exceptions.WmsLayerNotFoundException;
+import uk.ac.rdg.resc.edal.wms.exceptions.EdalLayerNotFoundException;
 import uk.ac.rdg.resc.edal.wms.util.ContactInfo;
 import uk.ac.rdg.resc.edal.wms.util.ServerInfo;
 
@@ -188,20 +188,20 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     }
 
     @Override
-    public Dataset getDatasetFromLayerName(String layerName) throws WmsLayerNotFoundException {
+    public Dataset getDatasetFromLayerName(String layerName) throws EdalLayerNotFoundException {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
-            throw new WmsLayerNotFoundException(
+            throw new EdalLayerNotFoundException(
                     "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
         }
         return datasets.get(layerParts[0]);
     }
 
     @Override
-    public String getVariableFromId(String layerName) throws WmsLayerNotFoundException {
+    public String getVariableFromId(String layerName) throws EdalLayerNotFoundException {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
-            throw new WmsLayerNotFoundException(
+            throw new EdalLayerNotFoundException(
                     "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
         }
         return layerParts[1];
@@ -214,9 +214,9 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
 
     @Override
     public WmsLayerMetadata getLayerMetadata(final String layerName)
-            throws WmsLayerNotFoundException {
+            throws EdalLayerNotFoundException {
         if (!layerMetadata.containsKey(layerName)) {
-            throw new WmsLayerNotFoundException("The layer: " + layerName + " doesn't exist");
+            throw new EdalLayerNotFoundException("The layer: " + layerName + " doesn't exist");
         }
         return layerMetadata.get(layerName);
     }
