@@ -124,6 +124,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
             configDirFile.mkdirs();
         }
         
+        DatasetFactory.setWorkingDirectory(configDirFile);
+        
         /*
          * If necessary, create a directory for logs.
          */
