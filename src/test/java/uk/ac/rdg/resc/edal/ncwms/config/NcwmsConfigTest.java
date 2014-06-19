@@ -28,21 +28,14 @@
 
 package uk.ac.rdg.resc.edal.ncwms.config;
 
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.xml.bind.JAXBException;
 
 import org.junit.Before;
-import org.junit.Test;
 import org.xml.sax.SAXException;
-
-import uk.ac.rdg.resc.edal.util.Extents;
 
 public class NcwmsConfigTest {
 
@@ -73,9 +66,9 @@ public class NcwmsConfigTest {
 
 //    @Test
     public void testDeserialise() throws JAXBException, SAXException, FileNotFoundException {
-//        NcwmsConfig deserialise = NcwmsConfig.deserialise(new StringReader(XML));
-        NcwmsConfig deserialise = NcwmsConfig.deserialise(new FileReader(new File(
-                "/home/guy/.ncWMS-edal/config.xml")));
+        NcwmsConfig deserialise = NcwmsConfig.deserialise(new StringReader(XML));
+//        NcwmsConfig deserialise = NcwmsConfig.deserialise(new FileReader(new File(
+//                "/home/guy/.ncWMS-edal/config.xml")));
         System.out.println(deserialise);
     }
     

@@ -407,12 +407,6 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
             NcwmsDataset dataset = catalogue.getConfig().getDatasetInfo(
                     request.getParameter("dataset.id"));
             Set<String> variableIds = new HashSet<String>();
-            /*
-             * We suppress this warning, because request.getParameterNames()
-             * returns an Enumeration of Strings, but its return signature is
-             * just an Enumeration
-             */
-            @SuppressWarnings("unchecked")
             Enumeration<String> parameterNames = request.getParameterNames();
             while (parameterNames.hasMoreElements()) {
                 String parameterName = parameterNames.nextElement();
