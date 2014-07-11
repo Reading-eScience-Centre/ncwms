@@ -28,6 +28,8 @@
 
 package uk.ac.rdg.resc.edal.ncwms.config;
 
+import java.awt.Color;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -38,6 +40,7 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import uk.ac.rdg.resc.edal.domain.Extent;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
+import uk.ac.rdg.resc.edal.graphics.style.util.GraphicsUtils.ColorAdapter;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.wms.WmsLayerMetadata;
 
@@ -49,7 +52,7 @@ public class NcwmsVariable implements WmsLayerMetadata {
 
     @XmlAttribute(name = "title")
     private String title = null;
-    
+
     @XmlAttribute(name = "description")
     private String description = null;
 
@@ -60,6 +63,18 @@ public class NcwmsVariable implements WmsLayerMetadata {
     @XmlAttribute(name = "palette")
     private String paletteName = ColourPalette.DEFAULT_PALETTE_NAME;
 
+    @XmlAttribute(name = "belowMinColor")
+    @XmlJavaTypeAdapter(ColorAdapter.class)
+    private Color belowMinColour = Color.black;
+
+    @XmlAttribute(name = "aboveMaxColor")
+    @XmlJavaTypeAdapter(ColorAdapter.class)
+    private Color aboveMaxColour = Color.black;
+
+    @XmlAttribute(name = "noDataColor")
+    @XmlJavaTypeAdapter(ColorAdapter.class)
+    private Color noDataColour = new Color(0, true);
+
     @XmlAttribute(name = "scaling")
     private String scaling = "linear";
 
@@ -67,16 +82,16 @@ public class NcwmsVariable implements WmsLayerMetadata {
     private int numColorBands = ColourPalette.MAX_NUM_COLOURS;
 
     @XmlAttribute(name = "metadataUrl")
-    private String metadataUrl = "";
+    private String metadataUrl = null;
 
     @XmlAttribute(name = "metadataDesc")
-    private String metadataDesc = "";
+    private String metadataDesc = null;
 
     @XmlAttribute(name = "metadataMimetype")
-    private String metadataMimetype = "";
-    
+    private String metadataMimetype = null;
+
     @XmlAttribute(name = "disabled")
-    private boolean disabled = false;
+    private Boolean disabled = null;
 
     /* The dataset to which this variable belongs */
     @XmlTransient
@@ -85,20 +100,38 @@ public class NcwmsVariable implements WmsLayerMetadata {
     NcwmsVariable() {
     }
 
-    public NcwmsVariable(String id, String title, String description, Extent<Float> colorScaleRange,
-            String paletteName, String scaling, int numColorBands, String metadataUrl,
-            String metadataDesc, String metadataMimetype) {
+    public NcwmsVariable(String id, String title, String description,
+            Extent<Float> colorScaleRange, String paletteName, Color belowMinColour,
+            Color aboveMaxColour, Color noDataColour, String scaling, int numColorBands,
+            String metadataUrl, String metadataDesc, String metadataMimetype) {
         super();
         this.id = id;
         this.title = title;
         this.description = description;
         this.colorScaleRange = colorScaleRange;
         this.paletteName = paletteName;
+        this.belowMinColour = belowMinColour;
+        this.aboveMaxColour = aboveMaxColour;
+        this.noDataColour = noDataColour;
         this.scaling = scaling;
         this.numColorBands = numColorBands;
         this.metadataUrl = metadataUrl;
         this.metadataDesc = metadataDesc;
         this.metadataMimetype = metadataMimetype;
+    }
+
+    public NcwmsVariable(String id, Extent<Float> colorScaleRange, String paletteName,
+            Color belowMinColour, Color aboveMaxColour, Color noDataColour, String scaling,
+            int numColorBands) {
+        super();
+        this.id = id;
+        this.colorScaleRange = colorScaleRange;
+        this.paletteName = paletteName;
+        this.belowMinColour = belowMinColour;
+        this.aboveMaxColour = aboveMaxColour;
+        this.noDataColour = noDataColour;
+        this.scaling = scaling;
+        this.numColorBands = numColorBands;
     }
 
     public String getId() {
@@ -119,10 +152,25 @@ public class NcwmsVariable implements WmsLayerMetadata {
     public String getPalette() {
         return paletteName;
     }
+    
+    @Override
+    public Color getBelowMinColour() {
+        return belowMinColour;
+    }
+    
+    @Override
+    public Color getAboveMaxColour() {
+        return aboveMaxColour;
+    }
+    
+    @Override
+    public Color getNoDataColour() {
+        return noDataColour;
+    }
 
     @Override
     public Boolean isLogScaling() {
-        if(scaling == null) {
+        if (scaling == null) {
             return false;
         }
         return scaling.equalsIgnoreCase("log");
@@ -164,12 +212,12 @@ public class NcwmsVariable implements WmsLayerMetadata {
     public boolean isQueryable() {
         return dataset.isQueryable();
     }
-    
+
     @Override
     public boolean isDisabled() {
-        return disabled;
+        return disabled == null ? false : disabled;
     }
-    
+
     public void setId(String id) {
         this.id = id;
     }
@@ -205,7 +253,7 @@ public class NcwmsVariable implements WmsLayerMetadata {
     public void setMetadataMimetype(String metadataMimetype) {
         this.metadataMimetype = metadataMimetype;
     }
-    
+
     public void setDisabled(boolean disabled) {
         this.disabled = disabled;
     }

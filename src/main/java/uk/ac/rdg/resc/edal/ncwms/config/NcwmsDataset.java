@@ -28,6 +28,7 @@
 
 package uk.ac.rdg.resc.edal.ncwms.config;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -247,12 +248,12 @@ public class NcwmsDataset {
          */
         Set<String> variableIds = dataset.getVariableIds();
         List<String> variablesToRemove = new ArrayList<String>();
-        for(String varId : variables.keySet()) {
-            if(!variableIds.contains(varId)) {
+        for (String varId : variables.keySet()) {
+            if (!variableIds.contains(varId)) {
                 variablesToRemove.add(varId);
             }
         }
-        for(String varToRemove : variablesToRemove) {
+        for (String varToRemove : variablesToRemove) {
             variables.remove(varToRemove);
         }
         /*
@@ -268,8 +269,8 @@ public class NcwmsDataset {
                 VariableMetadata variableMetadata = dataset.getVariableMetadata(varId);
                 NcwmsVariable variable = new NcwmsVariable(varId, varId, variableMetadata
                         .getParameter().getDescription(), colorScaleRange,
-                        ColourPalette.DEFAULT_PALETTE_NAME, "linear",
-                        ColourPalette.MAX_NUM_COLOURS, null, null, null);
+                        ColourPalette.DEFAULT_PALETTE_NAME, Color.black, Color.black, new Color(0,
+                                true), "linear", ColourPalette.MAX_NUM_COLOURS, null, null, null);
                 variable.setNcwmsDataset(this);
                 variables.put(varId, variable);
             }
@@ -530,7 +531,7 @@ public class NcwmsDataset {
             sb.append(var.getId());
             sb.append(", ");
         }
-        return sb.substring(0, sb.length() - 2)+"\n";
+        return sb.substring(0, sb.length() - 2) + "\n";
 
     }
 }

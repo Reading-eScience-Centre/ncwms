@@ -28,6 +28,7 @@
 
 package uk.ac.rdg.resc.edal.ncwms.config;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -103,34 +104,38 @@ public class InMemoryNorthPolarStereographicDataset extends AbstractGridDataset 
         ds.setLocation("inmemory");
 
         NcwmsVariable xuVar = new NcwmsVariable("allx_u", "All X u-comp", "", Extents.newExtent(0f,
-                100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250, null, null, null);
+                100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black, Color.black, new Color(0,
+                true), "linear", 250, null, null, null);
         NcwmsVariable xvVar = new NcwmsVariable("allx_v", "All X v-comp", "", Extents.newExtent(0f,
-                100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250, null, null, null);
+                100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black, Color.black, new Color(0,
+                true), "linear", 250, null, null, null);
         NcwmsVariable yuVar = new NcwmsVariable("ally_u", "All Y u-comp", "", Extents.newExtent(0f,
-                100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250, null, null, null);
+                100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black, Color.black, new Color(0,
+                true), "linear", 250, null, null, null);
         NcwmsVariable yvVar = new NcwmsVariable("ally_v", "All Y v-comp", "", Extents.newExtent(0f,
-                100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250, null, null, null);
+                100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black, Color.black, new Color(0,
+                true), "linear", 250, null, null, null);
 
         NcwmsVariable xmagVar = new NcwmsVariable("allx_uallx_v-mag", "All X magnitude", "",
-                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250,
-                null, null, null);
+                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black,
+                Color.black, new Color(0, true), "linear", 250, null, null, null);
         NcwmsVariable xdirVar = new NcwmsVariable("allx_uallx_v-dir", "All X direction", "",
-                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250,
-                null, null, null);
+                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black,
+                Color.black, new Color(0, true), "linear", 250, null, null, null);
 
         NcwmsVariable ymagVar = new NcwmsVariable("ally_ually_v-mag", "All Y magnitude", "",
-                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250,
-                null, null, null);
+                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black,
+                Color.black, new Color(0, true), "linear", 250, null, null, null);
         NcwmsVariable ydirVar = new NcwmsVariable("ally_ually_v-dir", "All Y direction", "",
-                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250,
-                null, null, null);
+                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black,
+                Color.black, new Color(0, true), "linear", 250, null, null, null);
 
         NcwmsVariable xgroupVar = new NcwmsVariable("allx_uallx_v-group", "All X", "",
-                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250,
-                null, null, null);
+                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black,
+                Color.black, new Color(0, true), "linear", 250, null, null, null);
         NcwmsVariable ygroupVar = new NcwmsVariable("ally_ually_v-group", "All Y", "",
-                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, "linear", 250,
-                null, null, null);
+                Extents.newExtent(0f, 100f), ColourPalette.DEFAULT_PALETTE_NAME, Color.black,
+                Color.black, new Color(0, true), "linear", 250, null, null, null);
         List<NcwmsVariable> vars = new ArrayList<NcwmsVariable>();
         xuVar.setNcwmsDataset(ds);
         vars.add(xuVar);
