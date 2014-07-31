@@ -28,6 +28,7 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,10 +41,14 @@ import javax.xml.bind.JAXBException;
 import org.joda.time.DateTime;
 
 import uk.ac.rdg.resc.edal.dataset.Dataset;
+import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
+import uk.ac.rdg.resc.edal.domain.Extent;
+import uk.ac.rdg.resc.edal.exceptions.EdalException;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig.DatasetStorage;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDataset;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsVariable;
+import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
 import uk.ac.rdg.resc.edal.wms.WmsLayerMetadata;
 import uk.ac.rdg.resc.edal.wms.exceptions.EdalLayerNotFoundException;
@@ -191,8 +196,19 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     public Dataset getDatasetFromLayerName(String layerName) throws EdalLayerNotFoundException {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
-            throw new EdalLayerNotFoundException(
-                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
+            if(layerName.startsWith("dods://")) {
+                String[] openDapParts = layerName.split(";");
+                try {
+                    DatasetFactory f = DatasetFactory.forName(null);
+                    return f.createDataset("temp", openDapParts[0]);
+                } catch (IOException | EdalException | InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                    throw new EdalLayerNotFoundException(
+                            "Problem getting OpenDAP dataset", e);
+                }
+            } else {
+                throw new EdalLayerNotFoundException(
+                        "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
+            }
         }
         return datasets.get(layerParts[0]);
     }
@@ -201,8 +217,13 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     public String getVariableFromId(String layerName) throws EdalLayerNotFoundException {
         String[] layerParts = layerName.split("/");
         if (layerParts.length != 2) {
-            throw new EdalLayerNotFoundException(
-                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
+            if(layerName.startsWith("dods://")) {
+                String[] openDapParts = layerName.split(";");
+                return openDapParts[1];
+            } else {
+                throw new EdalLayerNotFoundException(
+                        "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
+            }
         }
         return layerParts[1];
     }
@@ -216,7 +237,76 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     public WmsLayerMetadata getLayerMetadata(final String layerName)
             throws EdalLayerNotFoundException {
         if (!layerMetadata.containsKey(layerName)) {
-            throw new EdalLayerNotFoundException("The layer: " + layerName + " doesn't exist");
+            if(layerName.startsWith("dods://")) {
+                return new WmsLayerMetadata() {
+                    @Override
+                    public boolean isQueryable() {
+                        return false;
+                    }
+                    
+                    @Override
+                    public Boolean isLogScaling() {
+                        return false;
+                    }
+                    
+                    @Override
+                    public boolean isDisabled() {
+                        return false;
+                    }
+                    
+                    @Override
+                    public String getTitle() {
+                        return layerName;
+                    }
+                    
+                    @Override
+                    public String getPalette() {
+                        return "default";
+                    }
+                    
+                    @Override
+                    public Integer getNumColorBands() {
+                        return 250;
+                    }
+                    
+                    @Override
+                    public Color getNoDataColour() {
+                        return new Color(0,true);
+                    }
+                    
+                    @Override
+                    public String getMoreInfo() {
+                        return null;
+                    }
+                    
+                    @Override
+                    public String getDescription() {
+                        return null;
+                    }
+                    
+                    @Override
+                    public String getCopyright() {
+                        return null;
+                    }
+                    
+                    @Override
+                    public Extent<Float> getColorScaleRange() {
+                        return Extents.newExtent(0f, 100f);
+                    }
+                    
+                    @Override
+                    public Color getBelowMinColour() {
+                        return null;
+                    }
+                    
+                    @Override
+                    public Color getAboveMaxColour() {
+                        return null;
+                    }
+                };
+            } else {
+                throw new EdalLayerNotFoundException("The layer: " + layerName + " doesn't exist");
+            }
         }
         return layerMetadata.get(layerName);
     }
