@@ -73,6 +73,8 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
         this.config = config;
         this.config.setDatasetLoadedHandler(this);
         this.config.loadDatasets();
+        
+        setCache(config.getCacheSettings());
     }
 
     /**

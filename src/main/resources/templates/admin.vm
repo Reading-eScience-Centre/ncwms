@@ -233,45 +233,23 @@
         </table>        
         
         <h2>Cache settings</h2>
-        <p>This ncWMS server uses a cache of recently-extracted data arrays to increase
+        <p>This ncWMS server uses a cache of recently-extracted features to increase
         performance and reduce the load on the server.  Note that the cache will use up
-        some memory and some disk space (configurable below).</p>
+        some memory (configurable below).</p>
         <table border="1">
             <tr>
                 <th>Enable cache?</th>
                 <td><input type="checkbox" name="cache.enable"#if(${config.cacheSettings.enabled}) checked="checked"#end/></td>
-                <td>Check this box to enable the cache.  <font color="red">This can be changed while the server is running.</font></td>
+                <td>Check this box to enable the cache.  <font color="red">This can be changed while the server is running, but disabling
+                it will clear the current cache (freeing up memory).</font></td>
             </tr>
             <tr>
-                <th>Lifetime of each cached array (minutes)</th>
-                <td><input type="text" name="cache.elementLifetime" value="${config.cacheSettings.elementLifetimeMinutes}"/></td>
-                <td>Data arrays will expire automatically from the cache after this number of minutes.
-                <font color="red">If you change this value you must restart the server for your change to take effect.</font></td>
-            </tr>
-            <tr>
-#set($memoryFootprintMB = 256*256*4*$config.cacheSettings.maxItemsMemory / (1024*1024))                 
-                <th>Maximum number of items to hold in memory</th>
-                <td><input type="text" name="cache.maxNumItemsInMemory" value="${config.cacheSettings.maxItemsMemory}"/></td>
-                <td>If each item in the cache is a 256x256 array of 4-byte floating point data then 
-                    this value gives a memory footprint for the cache of <b>${memoryFootprintMB} megabytes</b>.
-                <font color="red">If you change this value you must restart the server for your change to take effect.</font></td>
-            </tr>
-            <tr>
-                <th>Enable disk store?</th>
-                <td><input type="checkbox" name="cache.enableDiskStore"#if(${config.cacheSettings.enableDiskStore}) checked="checked"#end/></td>
-                <td>Check this box to enable the disk store (recommended).  If enabled, items that
-                    do not fit into the memory footprint will overflow to disk.  All
-                    items in the cache will automatically be written to disk when the
-                    server is shut down or restarted.
-                <font color="red">If you change this value you must restart the server for your change to take effect.</font></td>
-            </tr>
-            <tr>
-#set($diskFootprintMB = 256*256*4*$config.cacheSettings.maxItemsDisk / (1024*1024))                 
-                <th>Maximum number of items to hold on disk</th>
-                <td><input type="text" name="cache.maxNumItemsOnDisk" value="${config.cacheSettings.maxItemsDisk}"/></td>
-                <td>If each item in the cache is a 256x256 array of 4-byte floating point data then 
-                    this value gives a disk footprint for the cache of <b>${diskFootprintMB} megabytes</b>.
-                <font color="red">If you change this value you must restart the server for your change to take effect.</font></td>
+                <th>Total size of cache in memory (MB)</th>
+                <td><input type="text" name="cache.inMemorySizeMB" value="${config.cacheSettings.inMemorySizeMB}"/></td>
+                <td>The maximum in-memory size of the cache.  Once the cache exceeds this size, elements will be removed from it,
+                based on how frequently they have been used, followed by how recently they have been used.
+                <font color="red">This can be changed while the server is running, but if you change this value the current
+                cache will be emptied.</font></td>
             </tr>
         </table>
         

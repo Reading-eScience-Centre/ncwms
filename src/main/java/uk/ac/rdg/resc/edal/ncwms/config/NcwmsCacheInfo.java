@@ -34,88 +34,47 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import uk.ac.rdg.resc.edal.wms.util.CacheInfo;
+
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
-public class NcwmsCacheInfo {
+public class NcwmsCacheInfo implements CacheInfo {
     @XmlAttribute(name = "enabled")
     private boolean enabled = false;
-    @XmlElement(name = "elementLifetimeMinutes")
-    private int elementLifetimeMinutes = 1440;
-    @XmlElement(name = "maxNumItemsInMemory")
-    private int maxItemsMemory = 200;
-    @XmlElement(name = "enableDiskStore")
-    private boolean diskStore = true;
-    @XmlElement(name = "maxNumItemsOnDisk")
-    private int maxItemsDisk = 2000;
+    @XmlElement(name = "inMemorySizeMB")
+    private int inMemorySizeMB = 256;
 
     NcwmsCacheInfo() {
     }
 
-    public NcwmsCacheInfo(boolean enabled, int elementLifetimeMinutes, int maxItemsMemory,
-            boolean diskStore, int maxItemsDisk) {
-        super();
+    public NcwmsCacheInfo(boolean enabled, int inMemorySizeMB) {
         this.enabled = enabled;
-        this.elementLifetimeMinutes = elementLifetimeMinutes;
-        this.maxItemsMemory = maxItemsMemory;
-        this.diskStore = diskStore;
-        this.maxItemsDisk = maxItemsDisk;
+        this.inMemorySizeMB = inMemorySizeMB;
     }
 
+    @Override
     public boolean isEnabled() {
         return enabled;
     }
 
-    public int getElementLifetimeMinutes() {
-        return elementLifetimeMinutes;
-    }
-
-    public int getMaxItemsMemory() {
-        return maxItemsMemory;
-    }
-
-    public boolean isDiskStore() {
-        return diskStore;
-    }
-
-    public int getMaxItemsDisk() {
-        return maxItemsDisk;
-    }
-
+    /**
+     * @param enabled
+     *            Whether this cache should be used or not
+     */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
-    public void setElementLifetimeMinutes(int elementLifetimeMinutes) {
-        this.elementLifetimeMinutes = elementLifetimeMinutes;
-    }
-
-    public void setMaxItemsMemory(int maxItemsMemory) {
-        this.maxItemsMemory = maxItemsMemory;
-    }
-
-    public void setEnableDiskStore(boolean diskStore) {
-        this.diskStore = diskStore;
-    }
-
-    public void setMaxItemsDisk(int maxItemsDisk) {
-        this.maxItemsDisk = maxItemsDisk;
-    }
-
     @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Cache");
-        sb.append("\n-----");
-        sb.append("\nEnabled: ");
-        sb.append(enabled);
-        sb.append("\nLifetime: ");
-        sb.append(elementLifetimeMinutes);
-        sb.append("\nDisk store: ");
-        sb.append(diskStore);
-        sb.append("\nMax items in memory: ");
-        sb.append(maxItemsMemory);
-        sb.append("\nMax items on disk: ");
-        sb.append(maxItemsDisk);
-        return sb.toString();
+    public int getInMemorySizeMB() {
+        return inMemorySizeMB;
+    }
+
+    /**
+     * @param inMemorySizeMB
+     *            The maximum size of this cache in-memory
+     */
+    public void setInMemorySizeMB(int inMemorySizeMB) {
+        this.inMemorySizeMB = inMemorySizeMB;
     }
 }
