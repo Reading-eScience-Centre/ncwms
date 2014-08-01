@@ -369,12 +369,12 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
 
             /* Set the properties of the cache */
             cache.setEnabled(request.getParameter("cache.enable") != null);
-            cache.setElementLifetimeMinutes(Integer.parseInt(request
-                    .getParameter("cache.elementLifetime")));
-            cache.setMaxItemsMemory(Integer.parseInt(request
-                    .getParameter("cache.maxNumItemsInMemory")));
-            cache.setEnableDiskStore(request.getParameter("cache.enableDiskStore") != null);
-            cache.setMaxItemsDisk(Integer.parseInt(request.getParameter("cache.maxNumItemsOnDisk")));
+            cache.setInMemorySizeMB(Integer.parseInt(request.getParameter("cache.inMemorySizeMB")));
+            /*
+             * Update the cache settings. This will clear any cached items from
+             * memory if the cache has changed.
+             */
+            catalogue.setCache(cache);
 
             /* Save the updated config information to disk */
             try {
