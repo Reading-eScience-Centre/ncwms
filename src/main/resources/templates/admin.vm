@@ -251,6 +251,14 @@
                 <font color="red">This can be changed while the server is running, but if you change this value the current
                 cache will be emptied.</font></td>
             </tr>
+            <tr>
+                <th>Lifetime of in-memory elements (minutes)</th>
+                <td><input type="text" name="cache.elementLifetimeMinutes" value="${config.cacheSettings.elementLifetimeMinutes}"/></td>
+                <td>The time each element will remain in the cache for.  Setting this to zero means that each element will remain
+                indefinitely, only being removed once the memory limit (above) is reached, and cache cleanup occurs.
+                <font color="red">This can be changed while the server is running, but if you change this value the current
+                cache will be emptied.</font></td>
+            </tr>
         </table>
         
         <h2>Server settings</h2>
