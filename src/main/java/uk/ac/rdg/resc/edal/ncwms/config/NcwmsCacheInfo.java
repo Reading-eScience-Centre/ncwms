@@ -43,6 +43,8 @@ public class NcwmsCacheInfo implements CacheInfo {
     private boolean enabled = false;
     @XmlElement(name = "inMemorySizeMB")
     private int inMemorySizeMB = 256;
+    @XmlElement(name = "elementLifetimeMinutes")
+    private float elementLifetimeMinutes = 0;
 
     NcwmsCacheInfo() {
     }
@@ -76,5 +78,19 @@ public class NcwmsCacheInfo implements CacheInfo {
      */
     public void setInMemorySizeMB(int inMemorySizeMB) {
         this.inMemorySizeMB = inMemorySizeMB;
+    }
+
+    /**
+     * @param elementLifetimeMinutes
+     *            The number of minutes each element should remain in the cache
+     *            for. 0 means unlimited.
+     */
+    public void setElementLifetimeMinutes(float elementLifetimeMinutes) {
+        this.elementLifetimeMinutes = elementLifetimeMinutes;
+    }
+
+    @Override
+    public float getElementLifetimeMinutes() {
+        return elementLifetimeMinutes;
     }
 }

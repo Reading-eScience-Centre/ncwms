@@ -370,6 +370,7 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
             /* Set the properties of the cache */
             cache.setEnabled(request.getParameter("cache.enable") != null);
             cache.setInMemorySizeMB(Integer.parseInt(request.getParameter("cache.inMemorySizeMB")));
+            cache.setElementLifetimeMinutes(Float.parseFloat(request.getParameter("cache.elementLifetimeMinutes")));
             /*
              * Update the cache settings. This will clear any cached items from
              * memory if the cache has changed.
