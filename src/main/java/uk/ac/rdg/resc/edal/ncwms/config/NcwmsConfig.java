@@ -70,13 +70,16 @@ import uk.ac.rdg.resc.edal.wms.util.WmsUtils;
  * 
  * @author Guy Griffiths
  */
-@XmlType(name = "config", propOrder = { "datasets", "contact", "serverInfo", "cacheInfo" })
+@XmlType(name = "config", propOrder = { "datasets", "dynamicServices", "contact", "serverInfo",
+        "cacheInfo" })
 @XmlRootElement(name = "config")
 public class NcwmsConfig {
     private static final Logger log = LoggerFactory.getLogger(NcwmsConfig.class);
 
     /* Included in XML - see setDatasets for details */
-    private Map<String, NcwmsDataset> datasets;
+    private Map<String, NcwmsDataset> datasets = new LinkedHashMap<String, NcwmsDataset>();
+    /* Included in XML - see setDynamicServices for details */
+    private Map<String, NcwmsDynamicService> dynamicServices = new LinkedHashMap<String, NcwmsDynamicService>();
     @XmlElement(name = "contact")
     private NcwmsContact contact = new NcwmsContact();
     @XmlElement(name = "server")
@@ -107,14 +110,16 @@ public class NcwmsConfig {
 
     public NcwmsConfig(File configFile) throws IOException, JAXBException {
         datasets = new LinkedHashMap<String, NcwmsDataset>();
+        dynamicServices = new LinkedHashMap<String, NcwmsDynamicService>();
         this.configFile = configFile;
         save();
     }
 
-    public NcwmsConfig(NcwmsDataset[] datasets, NcwmsContact contact, NcwmsServerInfo serverInfo,
-            NcwmsCacheInfo cacheInfo) {
+    public NcwmsConfig(NcwmsDataset[] datasets, NcwmsDynamicService[] dynamicServices,
+            NcwmsContact contact, NcwmsServerInfo serverInfo, NcwmsCacheInfo cacheInfo) {
         super();
         setDatasets(datasets);
+        setDynamicServices(dynamicServices);
         this.contact = contact;
         this.serverInfo = serverInfo;
         this.cacheInfo = cacheInfo;
@@ -184,10 +189,6 @@ public class NcwmsConfig {
      * By making getDatasets() and setDatasets() both deal with arrays of
      * NcwmsDataset, JAXB is able to instantiate them. If we used Collections
      * instead this would not work.
-     * 
-     * Both methods are private, so the fact that that the result of getDatasets
-     * isn't backed by the Map is not a problem - it is only used by JAXB which
-     * only uses it when persisting the config to disk anyway.
      */
     public NcwmsDataset[] getDatasets() {
         return datasets.values().toArray(new NcwmsDataset[0]);
@@ -195,10 +196,33 @@ public class NcwmsConfig {
 
     @XmlElementWrapper(name = "datasets")
     @XmlElement(name = "dataset")
-    public void setDatasets(NcwmsDataset[] datasets) {
+    private void setDatasets(NcwmsDataset[] datasets) {
         this.datasets = new LinkedHashMap<String, NcwmsDataset>();
         for (NcwmsDataset dataset : datasets) {
             this.datasets.put(dataset.getId(), dataset);
+        }
+    }
+
+    /*
+     * By making getDynamicServices() and setDynamicServices() both deal with
+     * arrays of NcwmsDynamicService, JAXB is able to instantiate them. If we
+     * used Collections instead this would not work.
+     */
+
+    /**
+     * @return The {@link NcwmsDynamicService}s which have been configured on
+     *         this server
+     */
+    public NcwmsDynamicService[] getDynamicServices() {
+        return dynamicServices.values().toArray(new NcwmsDynamicService[0]);
+    }
+
+    @XmlElementWrapper(name = "dynamicServices")
+    @XmlElement(name = "dynamicService", required = false)
+    private void setDynamicServices(NcwmsDynamicService[] dynamicServices) {
+        this.dynamicServices = new LinkedHashMap<String, NcwmsDynamicService>();
+        for (NcwmsDynamicService dynamicService : dynamicServices) {
+            this.dynamicServices.put(dynamicService.getAlias(), dynamicService);
         }
     }
 
@@ -220,6 +244,22 @@ public class NcwmsConfig {
 
         datasets.put(newId, dataset);
         futures.put(dataset.getId(), removedScheduler);
+    }
+
+    public synchronized void addDynamicService(NcwmsDynamicService dynamicService) {
+        dynamicServices.put(dynamicService.getAlias(), dynamicService);
+    }
+
+    public synchronized void removeDynamicService(NcwmsDynamicService dynamicService) {
+        dynamicServices.remove(dynamicService.getAlias());
+    }
+
+    public synchronized void changeDynamicServiceId(NcwmsDynamicService dynamicService,
+            String newAlias) {
+        dynamicServices.remove(dynamicService.getAlias());
+        dynamicService.setAlias(newAlias);
+
+        dynamicServices.put(newAlias, dynamicService);
     }
 
     public synchronized void save() throws IOException, JAXBException {
@@ -316,8 +356,8 @@ public class NcwmsConfig {
              */
             log.warn("No config file exists in the given location (" + configFile.getAbsolutePath()
                     + ").  Creating one with defaults");
-            config = new NcwmsConfig(new NcwmsDataset[0], new NcwmsContact(),
-                    new NcwmsServerInfo(), new NcwmsCacheInfo());
+            config = new NcwmsConfig(new NcwmsDataset[0], new NcwmsDynamicService[0],
+                    new NcwmsContact(), new NcwmsServerInfo(), new NcwmsCacheInfo());
             config.configFile = configFile;
             config.save();
         } else {

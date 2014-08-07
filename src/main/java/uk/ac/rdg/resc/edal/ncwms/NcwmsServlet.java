@@ -28,11 +28,17 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
+import uk.ac.rdg.resc.edal.wms.RequestParams;
 import uk.ac.rdg.resc.edal.wms.WmsServlet;
 
 /**
@@ -68,5 +74,63 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
             throw new ServletException(
                     "ncWMS configuration object is incorrect type.  The \"NcwmsConfig\" attribute of the ServletContext has been incorrectly set.");
         }
+    }
+
+    @Override
+    protected void dispatchWmsRequest(String request, RequestParams params,
+            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
+            throws Exception {
+        /*
+         * For dynamic datasets, users can either specify the DATASET URL
+         * parameter, or they can prepend the layer names with the path:
+         * 
+         * alias/location/under/alias/variable_in_location
+         * 
+         * For example, if the local path /mnt/data/ has the alias "local", and
+         * the file /mnt/data/models/global/may1981.nc containing the variable
+         * "sst" is required for a GetMap request, either:
+         * 
+         * DATASET=local/models/global/may1981.nc&LAYERS=sst
+         * 
+         * or
+         * 
+         * LAYERS=local/models/global/may1981.nc/sst
+         * 
+         * is a valid request. To implement this for all requests, we look for
+         * the DATASET parameter and if it exists we prepend it to LAYERS,
+         * QUERY_LAYERS (for GetFeatureInfo) and LAYERNAME (for many GetMetadata
+         * requests)
+         */
+
+        String dataset = params.getString("DATASET"); 
+        if(dataset != null) {
+            Map<String, String> newParams = new HashMap<>();
+            String layersStr = params.getString("LAYERS");
+            if(layersStr != null) {
+                String[] layers = layersStr.split(",");
+                StringBuilder newLayers = new StringBuilder();
+                for(String layer : layers) {
+                    newLayers.append(dataset+"/"+layer+",");
+                }
+                newLayers.deleteCharAt(newLayers.length()-1);
+                newParams.put("LAYERS", newLayers.toString());
+            }
+            String queryLayersStr = params.getString("QUERY_LAYERS");
+            if(queryLayersStr != null) {
+                String[] queryLayers = queryLayersStr.split(",");
+                StringBuilder newQueryLayers = new StringBuilder();
+                for(String queryLayer : queryLayers) {
+                    newQueryLayers.append(dataset+"/"+queryLayer+",");
+                }
+                newQueryLayers.deleteCharAt(newQueryLayers.length()-1);
+                newParams.put("QUERY_LAYERS", newQueryLayers.toString());
+            }
+            String layerNameStr = params.getString("LAYERNAME");
+            if(layerNameStr != null) {
+                newParams.put("LAYERNAME", dataset+"/"+layerNameStr);
+            }
+            params = params.mergeParameters(newParams);
+        }
+        super.dispatchWmsRequest(request, params, httpServletRequest, httpServletResponse);
     }
 }

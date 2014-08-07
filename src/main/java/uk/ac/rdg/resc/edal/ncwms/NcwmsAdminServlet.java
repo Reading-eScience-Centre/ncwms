@@ -39,6 +39,7 @@ import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
@@ -56,11 +57,19 @@ import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsCacheInfo;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsContact;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDataset;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsServerInfo;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsVariable;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 
+/**
+ * An {@link HttpServlet} which deals with the admin pages of ncWMS -
+ * adding/removing datasets, updating contact info, configuring cache etc.
+ *
+ * @author Guy Griffiths
+ * @author Nathan Potter
+ */
 public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger log = LoggerFactory.getLogger(NcwmsAdminServlet.class);
@@ -248,142 +257,223 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
         NcwmsServerInfo server = catalogue.getConfig().getServerInfo();
         NcwmsCacheInfo cache = catalogue.getConfig().getCacheSettings();
 
-        if (request.getParameter("contact.name") != null) {
-            contact.setName(request.getParameter("contact.name"));
-            contact.setOrganisation(request.getParameter("contact.org"));
-            contact.setTelephone(request.getParameter("contact.tel"));
-            contact.setEmail(request.getParameter("contact.email"));
+        contact.setName(request.getParameter("contact.name"));
+        contact.setOrganisation(request.getParameter("contact.org"));
+        contact.setTelephone(request.getParameter("contact.tel"));
+        contact.setEmail(request.getParameter("contact.email"));
 
-            /* Process the server details */
-            server.setTitle(request.getParameter("server.title"));
-            server.setDescription(request.getParameter("server.abstract"));
-            server.setKeywords(request.getParameter("server.keywords"));
-            server.setUrl(request.getParameter("server.url"));
-            server.setMaxImageWidth(Integer.parseInt(request.getParameter("server.maximagewidth")));
-            server.setMaxImageHeight(Integer.parseInt(request.getParameter("server.maximageheight")));
-            server.setAllowFeatureInfo(request.getParameter("server.allowfeatureinfo") != null);
-            server.setAllowGlobalCapabilities(request
-                    .getParameter("server.allowglobalcapabilities") != null);
+        /* Process the server details */
+        server.setTitle(request.getParameter("server.title"));
+        server.setDescription(request.getParameter("server.abstract"));
+        server.setKeywords(request.getParameter("server.keywords"));
+        server.setUrl(request.getParameter("server.url"));
+        server.setMaxImageWidth(Integer.parseInt(request.getParameter("server.maximagewidth")));
+        server.setMaxImageHeight(Integer.parseInt(request.getParameter("server.maximageheight")));
+        server.setAllowFeatureInfo(request.getParameter("server.allowfeatureinfo") != null);
+        server.setAllowGlobalCapabilities(request.getParameter("server.allowglobalcapabilities") != null);
 
-            /*
-             * Save the dataset information, checking for removals First look
-             * through the existing datasets for edits.
-             */
-            List<NcwmsDataset> datasetsToRemove = new ArrayList<NcwmsDataset>();
-            /* Keeps track of dataset IDs that have been changed */
-            Map<NcwmsDataset, String> changedIds = new HashMap<NcwmsDataset, String>();
-            for (NcwmsDataset ds : catalogue.getConfig().getDatasets()) {
-                boolean refreshDataset = false;
-                if (request.getParameter("dataset." + ds.getId() + ".remove") != null) {
-                    datasetsToRemove.add(ds);
-                } else {
-                    ds.setTitle(request.getParameter("dataset." + ds.getId() + ".title"));
-                    String newLocation = request
-                            .getParameter("dataset." + ds.getId() + ".location");
-                    if (!newLocation.trim().equals(ds.getLocation().trim())) {
-                        refreshDataset = true;
-                    }
-                    ds.setLocation(newLocation);
-                    String newDataReaderClass = request.getParameter("dataset." + ds.getId()
-                            + ".reader");
-                    if (!newDataReaderClass.trim().equals(ds.getDataReaderClass().trim())) {
-                        refreshDataset = true;
-                    }
-                    ds.setDataReaderClass(newDataReaderClass);
-                    boolean disabled = request.getParameter("dataset." + ds.getId() + ".disabled") != null;
-                    if (disabled == false && ds.isDisabled()) {
-                        /* We've re-enabled the dataset so need to reload it */
-                        refreshDataset = true;
-                    }
-                    ds.setDisabled(disabled);
-                    ds.setQueryable(request.getParameter("dataset." + ds.getId() + ".queryable") != null);
-                    ds.setUpdateInterval(Integer.parseInt(request.getParameter("dataset."
-                            + ds.getId() + ".updateinterval")));
-                    ds.setMoreInfo(request.getParameter("dataset." + ds.getId() + ".moreinfo"));
-                    ds.setCopyrightStatement(request.getParameter("dataset." + ds.getId()
-                            + ".copyright"));
-
-                    ds.setMetadataUrl(request.getParameter("dataset." + ds.getId() + ".metadataUrl"));
-                    ds.setMetadataDesc(request.getParameter("dataset." + ds.getId()
-                            + ".metadataDesc"));
-                    ds.setMetadataMimetype(request.getParameter("dataset." + ds.getId()
-                            + ".metadataMimetype"));
-
-                    if (request.getParameter("dataset." + ds.getId() + ".refresh") != null) {
-                        refreshDataset = true;
-                    }
-
-                    /* Check to see if we have updated the ID */
-                    String newId = request.getParameter("dataset." + ds.getId() + ".id").trim();
-                    if (!newId.equals(ds.getId())) {
-                        changedIds.put(ds, newId);
-                        /* The ID will be changed later */
-                    }
+        /*
+         * Save the dataset information, checking for removals First look
+         * through the existing datasets for edits.
+         */
+        List<NcwmsDataset> datasetsToRemove = new ArrayList<NcwmsDataset>();
+        /* Keeps track of dataset IDs that have been changed */
+        Map<NcwmsDataset, String> changedIds = new HashMap<NcwmsDataset, String>();
+        for (NcwmsDataset ds : catalogue.getConfig().getDatasets()) {
+            boolean refreshDataset = false;
+            if (request.getParameter("dataset." + ds.getId() + ".remove") != null) {
+                datasetsToRemove.add(ds);
+            } else {
+                ds.setTitle(request.getParameter("dataset." + ds.getId() + ".title"));
+                String newLocation = request.getParameter("dataset." + ds.getId() + ".location");
+                if (!newLocation.trim().equals(ds.getLocation().trim())) {
+                    refreshDataset = true;
                 }
-                if (refreshDataset) {
-                    ds.forceRefresh();
+                ds.setLocation(newLocation);
+                String newDataReaderClass = request.getParameter("dataset." + ds.getId()
+                        + ".reader");
+                if (!newDataReaderClass.trim().equals(ds.getDataReaderClass().trim())) {
+                    refreshDataset = true;
+                }
+                ds.setDataReaderClass(newDataReaderClass);
+                boolean disabled = request.getParameter("dataset." + ds.getId() + ".disabled") != null;
+                if (disabled == false && ds.isDisabled()) {
+                    /* We've re-enabled the dataset so need to reload it */
+                    refreshDataset = true;
+                }
+                ds.setDisabled(disabled);
+                ds.setQueryable(request.getParameter("dataset." + ds.getId() + ".queryable") != null);
+                ds.setUpdateInterval(Integer.parseInt(request.getParameter("dataset." + ds.getId()
+                        + ".updateinterval")));
+                ds.setMoreInfo(request.getParameter("dataset." + ds.getId() + ".moreinfo"));
+                ds.setCopyrightStatement(request.getParameter("dataset." + ds.getId()
+                        + ".copyright"));
+
+                ds.setMetadataUrl(request.getParameter("dataset." + ds.getId() + ".metadataUrl"));
+                ds.setMetadataDesc(request.getParameter("dataset." + ds.getId() + ".metadataDesc"));
+                ds.setMetadataMimetype(request.getParameter("dataset." + ds.getId()
+                        + ".metadataMimetype"));
+
+                if (request.getParameter("dataset." + ds.getId() + ".refresh") != null) {
+                    refreshDataset = true;
+                }
+
+                /* Check to see if we have updated the ID */
+                String newId = request.getParameter("dataset." + ds.getId() + ".id").trim();
+                if (!newId.equals(ds.getId())) {
+                    changedIds.put(ds, newId);
+                    /* The ID will be changed later */
                 }
             }
-            /* Now we can remove the datasets */
-            for (NcwmsDataset ds : datasetsToRemove) {
-                catalogue.removeDataset(ds.getId());
-            }
-            /* Now we change the ids of the relevant datasets */
-            for (NcwmsDataset ds : changedIds.keySet()) {
-                catalogue.changeDatasetId(ds.getId(), changedIds.get(ds));
-                /*
-                 * Force a refresh of the dataset. We do this in case the new ID
-                 * happens to be the same as an existing dataset.
-                 */
+            if (refreshDataset) {
                 ds.forceRefresh();
             }
-
+        }
+        /* Now we can remove the datasets */
+        for (NcwmsDataset ds : datasetsToRemove) {
+            catalogue.removeDataset(ds.getId());
+        }
+        /* Now we change the ids of the relevant datasets */
+        for (NcwmsDataset ds : changedIds.keySet()) {
+            catalogue.changeDatasetId(ds.getId(), changedIds.get(ds));
             /*
-             * Now look for the new datasets. The logic below means that we
-             * don't have to know in advance how many new datasets the user has
-             * created (or how many spaces were available in the admin page)
+             * Force a refresh of the dataset. We do this in case the new ID
+             * happens to be the same as an existing dataset.
              */
-            int i = 0;
-            while (request.getParameter("dataset.new" + i + ".id") != null) {
-                /* Look for non-blank ID fields */
-                if (!request.getParameter("dataset.new" + i + ".id").trim().equals("")) {
-                    NcwmsDataset ds = new NcwmsDataset();
-                    ds.setId(request.getParameter("dataset.new" + i + ".id"));
-                    ds.setTitle(request.getParameter("dataset.new" + i + ".title"));
-                    ds.setLocation(request.getParameter("dataset.new" + i + ".location"));
-                    ds.setDataReaderClass(request.getParameter("dataset.new" + i + ".reader"));
-                    ds.setDisabled(request.getParameter("dataset.new" + i + ".disabled") != null);
-                    ds.setQueryable(request.getParameter("dataset.new" + i + ".queryable") != null);
-                    ds.setUpdateInterval(Integer.parseInt(request.getParameter("dataset.new" + i
-                            + ".updateinterval")));
-                    ds.setMoreInfo(request.getParameter("dataset.new" + i + ".moreinfo"));
-                    ds.setCopyrightStatement(request.getParameter("dataset.new" + i + ".copyright"));
+            ds.forceRefresh();
+        }
+
+        /*
+         * Now look for the new datasets. The logic below means that we don't
+         * have to know in advance how many new datasets the user has created
+         * (or how many spaces were available in the admin page)
+         */
+        int i = 0;
+        while (request.getParameter("dataset.new" + i + ".id") != null) {
+            /* Look for non-blank ID fields */
+            if (!request.getParameter("dataset.new" + i + ".id").trim().equals("")) {
+                NcwmsDataset ds = new NcwmsDataset();
+                ds.setId(request.getParameter("dataset.new" + i + ".id"));
+                ds.setTitle(request.getParameter("dataset.new" + i + ".title"));
+                ds.setLocation(request.getParameter("dataset.new" + i + ".location"));
+                ds.setDataReaderClass(request.getParameter("dataset.new" + i + ".reader"));
+                ds.setDisabled(request.getParameter("dataset.new" + i + ".disabled") != null);
+                ds.setQueryable(request.getParameter("dataset.new" + i + ".queryable") != null);
+                ds.setUpdateInterval(Integer.parseInt(request.getParameter("dataset.new" + i
+                        + ".updateinterval")));
+                ds.setMoreInfo(request.getParameter("dataset.new" + i + ".moreinfo"));
+                ds.setCopyrightStatement(request.getParameter("dataset.new" + i + ".copyright"));
+                /*
+                 * addDataset() contains code to ensure that the dataset loads
+                 * its metadata at the next opportunity
+                 */
+                catalogue.getConfig().addDataset(ds);
+            }
+            i++;
+        }
+
+        List<NcwmsDynamicService> dynamicServicesToRemove = new ArrayList<NcwmsDynamicService>();
+        /*
+         * Keeps track of dataset IDs that have been changed
+         */
+        Map<NcwmsDynamicService, String> changedNcwmsDynamicServiceIds = new HashMap<NcwmsDynamicService, String>();
+        for (NcwmsDynamicService ds : catalogue.getConfig().getDynamicServices()) {
+            if (request.getParameter("dapService." + ds.getAlias() + ".remove") != null) {
+                dynamicServicesToRemove.add(ds);
+            } else {
+                /*
+                 * Check to see if we have updated the ID
+                 */
+                String newId = request.getParameter("dynamicService." + ds.getAlias() + ".alias")
+                        .trim();
+                if (!newId.equals(ds.getAlias())) {
                     /*
-                     * addDataset() contains code to ensure that the dataset
-                     * loads its metadata at the next opportunity
+                     * The ID will be changed later
                      */
-                    catalogue.getConfig().addDataset(ds);
+                    changedNcwmsDynamicServiceIds.put(ds, newId);
                 }
-                i++;
-            }
 
-            /* Set the properties of the cache */
-            cache.setEnabled(request.getParameter("cache.enable") != null);
-            cache.setElementLifetimeMinutes(Integer.parseInt(request
-                    .getParameter("cache.elementLifetime")));
-            cache.setMaxItemsMemory(Integer.parseInt(request
-                    .getParameter("cache.maxNumItemsInMemory")));
-            cache.setEnableDiskStore(request.getParameter("cache.enableDiskStore") != null);
-            cache.setMaxItemsDisk(Integer.parseInt(request.getParameter("cache.maxNumItemsOnDisk")));
+                String servicePath = request.getParameter("dynamicService." + ds.getAlias()
+                        + ".servicePath");
+                ds.setServicePath(servicePath);
 
-            /* Save the updated config information to disk */
-            try {
-                catalogue.getConfig().save();
-            } catch (JAXBException e) {
-                log.error("Problem serialising config", e);
-            } catch (IOException e) {
-                log.error("Problem writing config", e);
+                String matchRegex = request.getParameter("dynamicService." + ds.getAlias()
+                        + ".datasetIdMatch");
+                ds.setDatasetIdMatch(matchRegex);
+
+                ds.setMoreInfo(request.getParameter("dynamicService." + ds.getAlias()
+                        + ".moreinfo"));
+                ds.setCopyrightStatement(request.getParameter("dynamicService." + ds.getAlias()
+                        + ".copyright"));
+
+                boolean disabled = request.getParameter("dynamicService." + ds.getAlias()
+                        + ".disabled") != null;
+                ds.setDisabled(disabled);
+
+                boolean queryable = request.getParameter("dynamicService." + ds.getAlias()
+                        + ".queryable") != null;
+                ds.setQueryable(queryable);
+
+                String newDataReaderClass = request.getParameter("dynamicService." + ds.getAlias()
+                        + ".reader");
+                ds.setDataReaderClass(newDataReaderClass);
             }
+        }
+        /*
+         * Now we can remove the dynamic Services
+         */
+        for (NcwmsDynamicService ds : dynamicServicesToRemove) {
+            catalogue.getConfig().removeDynamicService(ds);
+        }
+        /*
+         * Now we change the ids of the relevant dynamic Services
+         */
+        for (NcwmsDynamicService ds : changedNcwmsDynamicServiceIds.keySet()) {
+            catalogue.getConfig().changeDynamicServiceId(ds, changedNcwmsDynamicServiceIds.get(ds));
+        }
+
+        /*
+         * Now look for the new dynamic Services. The logic below means that we
+         * don't have to know in advance how many new dynamic Services the user
+         * has created (or how many spaces were available in the admin page)
+         */
+        i = 0;
+        while (request.getParameter("dynamicService.new" + i + ".alias") != null) {
+            /*
+             * Look for non-blank alias fields
+             */
+            if (!request.getParameter("dynamicService.new" + i + ".alias").trim().equals("")) {
+                NcwmsDynamicService ds = new NcwmsDynamicService();
+                ds.setAlias(request.getParameter("dynamicService.new" + i + ".alias"));
+                ds.setServicePath(request.getParameter("dynamicService.new" + i + ".servicePath"));
+                ds.setDatasetIdMatch(request.getParameter("dynamicService.new" + i
+                        + ".datasetIdMatch"));
+                ds.setMoreInfo(request.getParameter("dynamicService.new" + i + ".moreinfo"));
+                ds.setCopyrightStatement(request.getParameter("dynamicService.new" + i
+                        + ".copyright"));
+                ds.setDisabled(request.getParameter("dynamicService.new" + i + ".disabled") != null);
+                ds.setQueryable(request.getParameter("dynamicService.new" + i + ".queryable") != null);
+                ds.setDataReaderClass(request.getParameter("dynamicService.new" + i + ".reader"));
+                catalogue.getConfig().addDynamicService(ds);
+            }
+            i++;
+        }
+
+        /* Set the properties of the cache */
+        cache.setEnabled(request.getParameter("cache.enable") != null);
+        cache.setElementLifetimeMinutes(Integer.parseInt(request
+                .getParameter("cache.elementLifetime")));
+        cache.setMaxItemsMemory(Integer.parseInt(request.getParameter("cache.maxNumItemsInMemory")));
+        cache.setEnableDiskStore(request.getParameter("cache.enableDiskStore") != null);
+        cache.setMaxItemsDisk(Integer.parseInt(request.getParameter("cache.maxNumItemsOnDisk")));
+
+        /* Save the updated config information to disk */
+        try {
+            catalogue.getConfig().save();
+        } catch (JAXBException e) {
+            log.error("Problem serialising config", e);
+        } catch (IOException e) {
+            log.error("Problem writing config", e);
         }
 
         /*

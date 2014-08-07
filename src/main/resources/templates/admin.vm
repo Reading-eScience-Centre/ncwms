@@ -145,6 +145,93 @@
 #end            
         </table>
         
+        <h2>Dynamic Services</h2>
+        <p>Dynamic services are either local or DAP services which can be generated when requested, rather than being preconfigured.  This is 
+        aimed at cases where a server wishes to access data stores which may consist of a very large number of datasets.  These datasets can
+        be accessed via all of the usual ncWMS methods by adding the URL parameter DATASET={Dataset Alias}{/path/under/service/path}.</p>
+        
+        <p>For example if you configure a dataset below with the ID "local" and the service URL "/media/data/model_output/" adding the parameter:</p>
+        
+        <p>DATASET=local/mymodel/may_2014.nc</p>
+        
+        <p>will generate a dataset from the NetCDF file at the path /media/data/model_output/mymodel/may_2014.nc</p>
+        
+        <p>Any path will be tested against the <a href="http://en.wikipedia.org/wiki/Regular_expression">regular expression</a> supplied in
+        the "Match regex" and only paths matching that regular expression will be allowed.
+        For example, if the regex is set to ".*may.*" then the above example would work as before, but:</p>
+         
+        <ul>
+        <li>DATASET=local/mymodel/april_2014.nc</li>
+        <li>DATASET=local/mymodel/01-05-2014.nc</li>
+        <li>DATASET=local/mymodel/june_2014.nc</li>
+        </ul>
+        
+        <p>would all be treated as though there were no dataset, regardless of whether the files actually exist.</p>
+           
+        <table border="1">
+        <tr><th>Required Data</th><th>Optional Metadata</th><th>Options</th><th>Data reading class</th><th>Remove?</th></tr>
+#foreach($dynamicService in $config.dynamicServices)
+            <tr #if($dynamicService.disabled)style="background-color:lightgrey"#end>
+                <td align="right" width="300px">
+                    Alias:
+                    <input type="text" name="dynamicService.${dynamicService.alias}.alias" value="${dynamicService.alias}" size="22"/>
+                    <br />
+                    Location:
+                    <input type="text" name="dynamicService.${dynamicService.alias}.servicePath" value="${dynamicService.servicePath}" size="22"/>
+                    <br />
+                    Match regex:
+                    <input type="text" name="dynamicService.${dynamicService.alias}.datasetIdMatch"  value="${dynamicService.datasetIdMatch}" size="22"/>
+                </td>
+                <td align="right" width="220px">
+                    More Info URL:
+                    <input type="text" name="dynamicService.${dynamicService.alias}.moreinfo" value="${dynamicService.moreInfo}" size="10"/>
+                    <br />
+                    Copyright:
+                    <input type="text" name="dynamicService.${dynamicService.alias}.copyright" value="${dynamicService.copyrightStatement}" size="10"/>
+                </td>
+                <td align="right" width="100px">
+                    Disabled:
+                    <input type="checkbox" name="dynamicService.${dynamicService.alias}.disabled"#if(${dynamicService.disabled}) checked="checked"#end/>
+                    <br />
+                    Queryable:
+                    <input type="checkbox" name="dynamicService.${dynamicService.alias}.queryable"#if(${dynamicService.queryable}) checked="checked"#end/>
+                </td>
+                <td><input type="text" name="dynamicService.${dynamicService.alias}.reader" value="${dynamicService.dataReaderClass}" size="22"/></td>
+                <td><input type="checkbox" name="dynamicService.${dynamicService.alias}.remove"/></td>
+            </tr>
+#end
+#foreach($i in [0..2])
+            <tr/>
+                <td align="right" width="300px">
+                        Alias:
+                        <input type="text" name="dynamicService.new${i}.alias" value="" size="22"/>
+                        <br />
+                        Location:
+                        <input type="text" name="dynamicService.new${i}.servicePath" value="" size="22"/>
+                        <br />
+                        Match regex:
+                        <input type="text" name="dynamicService.new${i}.datasetIdMatch"  value=".*" size="22"/>
+                </td>
+                <td align="right" width="220px">
+                    More Info URL:
+                    <input type="text" name="dynamicService.new${i}.moreinfo" value="" size="10"/>
+                    <br />
+                    Copyright:
+                    <input type="text" name="dynamicService.new${i}.copyright" value="" size="10"/>
+                </td>
+                <td align="right" width="100px">
+                    Disabled:
+                    <input type="checkbox" name="dynamicService.new${i}.disabled"/>
+                    <br />
+                    Queryable:
+                    <input type="checkbox" name="dynamicService.new${i}.queryable"}) checked="checked"/>
+                </td>
+                <td><input type="text" name="dynamicService.new${i}.reader" value="" size="22"/></td>
+                <td>N/A</td>
+            </tr>
+#end
+        </table>        
+        
         <h2>Cache settings</h2>
         <p>This ncWMS server uses a cache of recently-extracted data arrays to increase
         performance and reduce the load on the server.  Note that the cache will use up
