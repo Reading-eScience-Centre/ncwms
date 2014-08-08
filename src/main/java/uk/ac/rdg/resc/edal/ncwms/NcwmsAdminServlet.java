@@ -392,7 +392,6 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
                      */
                     changedNcwmsDynamicServiceIds.put(ds, newId);
                 }
-
                 String servicePath = request.getParameter("dynamicService." + ds.getAlias()
                         + ".servicePath");
                 ds.setServicePath(servicePath);
