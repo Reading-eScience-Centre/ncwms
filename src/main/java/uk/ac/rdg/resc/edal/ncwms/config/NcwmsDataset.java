@@ -97,13 +97,13 @@ public class NcwmsDataset {
      * file
      */
     @XmlAttribute(name = "dataReaderClass")
-    private String dataReaderClass = null;
+    private String dataReaderClass = "";
 
     @XmlAttribute(name = "copyrightStatement")
-    private String copyrightStatement = null;
+    private String copyrightStatement = "";
 
     @XmlAttribute(name = "moreInfo")
-    private String moreInfo = null;
+    private String moreInfo = "";
 
     /* Set true to disable the dataset without removing it completely */
     @XmlAttribute(name = "disabled")
@@ -114,13 +114,13 @@ public class NcwmsDataset {
     private int updateInterval = -1;
 
     @XmlAttribute(name = "metadataUrl")
-    private String metadataUrl = null;
+    private String metadataUrl = "";
 
     @XmlAttribute(name = "metadataDesc")
-    private String metadataDesc = null;
+    private String metadataDesc = "";
 
     @XmlAttribute(name = "metadataMimetype")
-    private String metadataMimetype = null;
+    private String metadataMimetype = "";
 
     /*
      * The NcwmsVariables are part of the XML definition, but the annotations
