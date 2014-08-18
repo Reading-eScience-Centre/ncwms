@@ -28,7 +28,7 @@
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-godiva</artifactId>
             <version>${project.parent.version}</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
