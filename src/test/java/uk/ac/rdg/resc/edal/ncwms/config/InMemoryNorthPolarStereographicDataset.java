@@ -34,8 +34,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.joda.time.Chronology;
-
 import uk.ac.rdg.resc.edal.dataset.AbstractGridDataset;
 import uk.ac.rdg.resc.edal.dataset.DataReadingStrategy;
 import uk.ac.rdg.resc.edal.dataset.GridDataSource;
@@ -50,7 +48,6 @@ import uk.ac.rdg.resc.edal.grid.RegularGridImpl;
 import uk.ac.rdg.resc.edal.metadata.GridVariableMetadata;
 import uk.ac.rdg.resc.edal.metadata.Parameter;
 import uk.ac.rdg.resc.edal.ncwms.NcwmsCatalogue;
-import uk.ac.rdg.resc.edal.position.VerticalCrs;
 import uk.ac.rdg.resc.edal.util.Array4D;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.GISUtils;
@@ -203,15 +200,5 @@ public class InMemoryNorthPolarStereographicDataset extends AbstractGridDataset 
     @Override
     protected DataReadingStrategy getDataReadingStrategy() {
         return DataReadingStrategy.BOUNDING_BOX;
-    }
-
-    @Override
-    public Chronology getDatasetChronology() {
-        return null;
-    }
-
-    @Override
-    public VerticalCrs getDatasetVerticalCrs() {
-        return null;
     }
 }
