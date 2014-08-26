@@ -70,7 +70,7 @@ import uk.ac.rdg.resc.edal.util.TimeUtils;
  * @author Guy Griffiths
  * @author Nathan Potter
  */
-public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
+public class NcwmsAdminServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger log = LoggerFactory.getLogger(NcwmsAdminServlet.class);
 
@@ -90,11 +90,11 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
         Object config = servletConfig.getServletContext().getAttribute("NcwmsCatalogue");
         if (config instanceof NcwmsCatalogue) {
             catalogue = (NcwmsCatalogue) config;
-            setPassword(catalogue.getConfig().getServerInfo().getAdminPassword());
         } else {
             throw new ServletException(
                     "ncWMS configuration object is incorrect type.  The \"NcwmsCatalogue\" attribute of the ServletContext has been incorrectly set.");
         }
+        
         /*
          * Retrieve the pre-loaded velocity engine
          */
@@ -110,13 +110,6 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        /*
-         * Authenticate all requests to this admin servlet
-         */
-        if (!authenticate(request, response)) {
-            return;
-        }
-
         /*
          * Don't cache admin requests - they are all dynamically generated
          */
@@ -211,13 +204,6 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        /*
-         * Authenticate all requests to this admin servlet
-         */
-        if (!authenticate(request, response)) {
-            return;
-        }
-
         /*
          * Don't cache admin requests - they are all dynamically generated
          */
@@ -400,8 +386,7 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
                         + ".datasetIdMatch");
                 ds.setDatasetIdMatch(matchRegex);
 
-                ds.setMoreInfo(request.getParameter("dynamicService." + ds.getAlias()
-                        + ".moreinfo"));
+                ds.setMoreInfo(request.getParameter("dynamicService." + ds.getAlias() + ".moreinfo"));
                 ds.setCopyrightStatement(request.getParameter("dynamicService." + ds.getAlias()
                         + ".copyright"));
 
@@ -461,7 +446,8 @@ public class NcwmsAdminServlet extends NcwmsDigestAuthServlet {
         /* Set the properties of the cache */
         cache.setEnabled(request.getParameter("cache.enable") != null);
         cache.setInMemorySizeMB(Integer.parseInt(request.getParameter("cache.inMemorySizeMB")));
-        cache.setElementLifetimeMinutes(Float.parseFloat(request.getParameter("cache.elementLifetimeMinutes")));
+        cache.setElementLifetimeMinutes(Float.parseFloat(request
+                .getParameter("cache.elementLifetimeMinutes")));
         /*
          * Update the cache settings. This will clear any cached items from
          * memory if the cache has changed.

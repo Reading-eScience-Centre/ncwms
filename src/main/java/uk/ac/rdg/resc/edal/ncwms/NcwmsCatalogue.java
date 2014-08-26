@@ -32,7 +32,10 @@ import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -155,6 +158,24 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
         datasets.put(dataset.getId(), dataset);
 
         /*
+         * Re-sort the datasets map according to the titles of the datasets, so
+         * that they appear in the menu in this order.
+         */
+        List<Map.Entry<String, Dataset>> entryList = new ArrayList<Map.Entry<String, Dataset>>(
+                datasets.entrySet());
+        Collections.sort(entryList, new Comparator<Map.Entry<String, Dataset>>() {
+            public int compare(Map.Entry<String, Dataset> d1, Map.Entry<String, Dataset> d2) {
+                return config.getDatasetInfo(d1.getKey()).getTitle()
+                        .compareTo(config.getDatasetInfo(d2.getKey()).getTitle());
+            }
+        });
+
+        datasets = new LinkedHashMap<String, Dataset>();
+        for (Map.Entry<String, Dataset> entry : entryList) {
+            datasets.put(entry.getKey(), entry.getValue());
+        }
+
+        /*
          * Now add the layer metadata to a map for future reference
          */
         for (NcwmsVariable ncwmsVariable : variables) {
@@ -228,7 +249,8 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
             return datasets.get(datasetId);
         } else {
             /*
-             * We may have a dynamic dataset.  First check the dynamic dataset cache.
+             * We may have a dynamic dataset. First check the dynamic dataset
+             * cache.
              */
             Cache dynamicDatasetCache = cacheManager.getCache(DYNAMIC_DATASET_CACHE_NAME);
             Element element = dynamicDatasetCache.get(datasetId);
