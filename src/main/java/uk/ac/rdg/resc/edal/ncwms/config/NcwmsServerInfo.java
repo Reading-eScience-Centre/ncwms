@@ -59,8 +59,6 @@ public class NcwmsServerInfo implements ServerInfo {
     private List<String> keywords = null;
     @XmlElement(name = "url")
     private String url = "";
-    @XmlElement(name = "adminpassword", required=true)
-    private String adminPassword= "ncWMS";
     @XmlElement(name = "allowglobalcapabilities")
     private boolean globalCapabilities = true;
 
@@ -69,7 +67,7 @@ public class NcwmsServerInfo implements ServerInfo {
 
     public NcwmsServerInfo(String title, boolean allowFeatureInfo, int maxImageWidth,
             int maxImageHeight, String description, List<String> keywords, String url,
-            String adminPassword, boolean globalCapabilities) {
+            boolean globalCapabilities) {
         super();
         this.title = title;
         this.allowFeatureInfo = allowFeatureInfo;
@@ -78,7 +76,6 @@ public class NcwmsServerInfo implements ServerInfo {
         this.description = description;
         this.keywords = keywords;
         this.url = url;
-        this.adminPassword = adminPassword;
         this.globalCapabilities = globalCapabilities;
     }
 
@@ -120,10 +117,6 @@ public class NcwmsServerInfo implements ServerInfo {
         return url;
     }
 
-    public String getAdminPassword() {
-        return adminPassword;
-    }
-
     public boolean allowsGlobalCapabilities() {
         return globalCapabilities;
     }
@@ -157,10 +150,6 @@ public class NcwmsServerInfo implements ServerInfo {
         this.url = url;
     }
 
-    public void setAdminPassword(String adminPassword) {
-        this.adminPassword = adminPassword;
-    }
-
     public void setAllowGlobalCapabilities(boolean globalCapabilities) {
         this.globalCapabilities = globalCapabilities;
     }
@@ -182,8 +171,6 @@ public class NcwmsServerInfo implements ServerInfo {
         sb.append(keywords);
         sb.append("\nUrl: ");
         sb.append(url);
-        sb.append("\nAdmin P/W: ");
-        sb.append(adminPassword);
         sb.append("\nGlobal Capabilities: ");
         sb.append(globalCapabilities);
         return sb.toString();
