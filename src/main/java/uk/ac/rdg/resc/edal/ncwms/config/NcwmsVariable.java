@@ -150,6 +150,9 @@ public class NcwmsVariable implements WmsLayerMetadata {
 
     @Override
     public String getPalette() {
+        if(!ColourPalette.getPredefinedPalettes().contains(paletteName)) {
+            this.paletteName = ColourPalette.DEFAULT_PALETTE_NAME;
+        }
         return paletteName;
     }
     
