@@ -76,5 +76,6 @@
     </security-constraint>
     <login-config>
         <auth-method>DIGEST</auth-method>
+        <realm-name>Login to administer ncWMS</realm-name>
     </login-config>
 </web-app>
