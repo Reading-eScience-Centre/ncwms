@@ -56,23 +56,23 @@ response.setDateHeader ("Expires", 0); //prevents caching at the proxy server
 
     <json:array name="supportedStyles" items="${styles}"/>
 
-    <c:choose>
-	    <c:when test="${multiFeature}">
-	        <json:property name="startZ" value="${startZ}"/>
-	        <json:property name="endZ" value="${endZ}"/>
-	        <json:property name="zUnits" value="${verticalCrs.units.unitString}"/>
-	        <json:property name="zPositive" value="${verticalCrs.positiveDirection.positive}"/>
-	    </c:when>
-	    <c:otherwise>
-		    <c:if test="${not empty vaxis}">
-		        <json:object name="zaxis">
-		            <json:property name="units" value="${vaxis.verticalCrs.units.unitString}"/>
-		            <json:property name="positive" value="${vaxis.verticalCrs.positiveDirection.positive}"/>
-		            <json:array name="values" items="${vaxis.coordinateValues}"/>
-		        </json:object>
-		    </c:if>
-	    </c:otherwise>
-    </c:choose>
+    <json:object name="zaxis">
+	    <c:choose>
+		    <c:when test="${multiFeature}">
+		        <json:property name="startZ" value="${startZ}"/>
+		        <json:property name="endZ" value="${endZ}"/>
+		        <json:property name="units" value="${verticalCrs.units.unitString}"/>
+		        <json:property name="positive" value="${verticalCrs.positiveDirection.positive}"/>
+		    </c:when>
+		    <c:otherwise>
+			    <c:if test="${not empty vaxis}">
+			            <json:property name="units" value="${vaxis.verticalCrs.units.unitString}"/>
+			            <json:property name="positive" value="${vaxis.verticalCrs.positiveDirection.positive}"/>
+			            <json:array name="values" items="${vaxis.coordinateValues}"/>
+			    </c:if>
+		    </c:otherwise>
+	    </c:choose>
+    </json:object>
 
     <json:property name="multiFeature" value="${multiFeature}"/>
     <c:choose>
