@@ -54,10 +54,10 @@ import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
 import uk.ac.rdg.resc.edal.domain.Extent;
 import uk.ac.rdg.resc.edal.exceptions.EdalException;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
+import uk.ac.rdg.resc.edal.graphics.style.util.GraphicsUtils;
 import uk.ac.rdg.resc.edal.metadata.VariableMetadata;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig.DatasetStorage;
 import uk.ac.rdg.resc.edal.wms.WmsLayerMetadata;
-import uk.ac.rdg.resc.edal.wms.util.WmsUtils;
 
 /**
  * A class representing a dataset in the ncWMS system. This contains all of the
@@ -265,7 +265,7 @@ public class NcwmsDataset {
                 /*
                  * Create a new variable object with default values.
                  */
-                Extent<Float> colorScaleRange = WmsUtils.estimateValueRange(dataset, varId);
+                Extent<Float> colorScaleRange = GraphicsUtils.estimateValueRange(dataset, varId);
                 VariableMetadata variableMetadata = dataset.getVariableMetadata(varId);
                 NcwmsVariable variable = new NcwmsVariable(varId, varId, variableMetadata
                         .getParameter().getDescription(), colorScaleRange,
