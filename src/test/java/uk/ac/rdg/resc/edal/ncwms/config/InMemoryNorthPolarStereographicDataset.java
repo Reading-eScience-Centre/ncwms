@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import uk.ac.rdg.resc.edal.dataset.AbstractGridDataset;
+import uk.ac.rdg.resc.edal.dataset.GriddedDataset;
 import uk.ac.rdg.resc.edal.dataset.DataReadingStrategy;
 import uk.ac.rdg.resc.edal.dataset.GridDataSource;
 import uk.ac.rdg.resc.edal.dataset.plugins.VectorPlugin;
@@ -62,7 +62,7 @@ import uk.ac.rdg.resc.edal.util.GISUtils;
  * 
  * @author Guy Griffiths
  */
-public class InMemoryNorthPolarStereographicDataset extends AbstractGridDataset {
+public class InMemoryNorthPolarStereographicDataset extends GriddedDataset {
     public InMemoryNorthPolarStereographicDataset() throws EdalException {
         super("northPole", getGridVariables());
         addVariablePlugin(new VectorPlugin("allx_u", "allx_v", "All X", false));
