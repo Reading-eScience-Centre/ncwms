@@ -265,7 +265,10 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
             if (dynamicService == null || dynamicService.isDisabled()) {
                 return null;
             }
-            String datasetPath = datasetId.substring(dynamicService.getAlias().length());
+            /*
+             * We do the +1 so that the datasetPath doesn't start with a /
+             */
+            String datasetPath = datasetId.substring(dynamicService.getAlias().length()+1);
 
             /*
              * Check if we allow this path or if it is disallowed by the dynamic
