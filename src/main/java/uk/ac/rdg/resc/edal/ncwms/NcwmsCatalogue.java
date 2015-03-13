@@ -53,6 +53,7 @@ import org.joda.time.DateTime;
 
 import uk.ac.rdg.resc.edal.dataset.Dataset;
 import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
+import uk.ac.rdg.resc.edal.domain.Extent;
 import uk.ac.rdg.resc.edal.exceptions.EdalException;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
@@ -287,7 +288,7 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
             try {
                 DatasetFactory datasetFactory = DatasetFactory.forName(dynamicService
                         .getDataReaderClass());
-                Dataset dynamicDataset = datasetFactory.createDataset("dynamic", datasetUrl);
+                Dataset dynamicDataset = datasetFactory.createDataset(datasetId, datasetUrl);
                 /*
                  * Store in the cache
                  */
@@ -344,16 +345,80 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
              * We don't have any stored metadata, but there may be a dynamic
              * dataset.
              */
-            NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(layerName);
+            final NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(layerName);
             if (dynamicService == null) {
                 throw new EdalLayerNotFoundException("The layer: " + layerName + " doesn't exist");
             }
             /*
              * We have a dynamic dataset. Return sensible defaults
              */
-            NcwmsVariable metadata = new NcwmsVariable(layerName.substring(layerName
-                    .lastIndexOf("/")), null, ColourPalette.DEFAULT_PALETTE_NAME, null, null,
-                    new Color(0, true), "linear", 250);
+            WmsLayerMetadata metadata = new WmsLayerMetadata() {
+                @Override
+                public boolean isQueryable() {
+                    return dynamicService.isQueryable();
+                }
+                
+                @Override
+                public Boolean isLogScaling() {
+                    return false;
+                }
+                
+                @Override
+                public boolean isDisabled() {
+                    return dynamicService.isDisabled();
+                }
+                
+                @Override
+                public String getTitle() {
+                    return layerName.substring(layerName
+                            .lastIndexOf("/"));
+                }
+                
+                @Override
+                public String getPalette() {
+                    return ColourPalette.DEFAULT_PALETTE_NAME;
+                }
+                
+                @Override
+                public Integer getNumColorBands() {
+                    return 250;
+                }
+                
+                @Override
+                public Color getNoDataColour() {
+                    return null;
+                }
+                
+                @Override
+                public String getMoreInfo() {
+                    return null;
+                }
+                
+                @Override
+                public String getDescription() {
+                    return null;
+                }
+                
+                @Override
+                public String getCopyright() {
+                    return null;
+                }
+                
+                @Override
+                public Extent<Float> getColorScaleRange() {
+                    return null;
+                }
+                
+                @Override
+                public Color getBelowMinColour() {
+                    return null;
+                }
+                
+                @Override
+                public Color getAboveMaxColour() {
+                    return null;
+                }
+            };
             return metadata;
         }
     }
