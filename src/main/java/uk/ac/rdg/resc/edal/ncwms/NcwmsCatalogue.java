@@ -278,7 +278,7 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
                 return null;
             }
 
-            String datasetUrl = dynamicService.getServicePath() + datasetPath;
+            String datasetUrl = dynamicService.getServicePath() + "/" + datasetPath;
 
             String title = datasetId;
             while (title.startsWith("/") && title.length() > 0)
