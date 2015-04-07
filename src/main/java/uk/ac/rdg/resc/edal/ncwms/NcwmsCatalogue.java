@@ -228,7 +228,7 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
         List<Dataset> allDatasets = new ArrayList<Dataset>();
         for (Dataset dataset : datasets.values()) {
             NcwmsDataset datasetInfo = config.getDatasetInfo(dataset.getId());
-            if (!datasetInfo.isDisabled() && datasetInfo.isReady()) {
+            if (datasetInfo != null && !datasetInfo.isDisabled() && datasetInfo.isReady()) {
                 allDatasets.add(dataset);
             }
         }
@@ -269,7 +269,7 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
             /*
              * We do the +1 so that the datasetPath doesn't start with a /
              */
-            String datasetPath = datasetId.substring(dynamicService.getAlias().length()+1);
+            String datasetPath = datasetId.substring(dynamicService.getAlias().length() + 1);
 
             /*
              * Check if we allow this path or if it is disallowed by the dynamic
@@ -357,63 +357,62 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
                 public boolean isQueryable() {
                     return dynamicService.isQueryable();
                 }
-                
+
                 @Override
                 public Boolean isLogScaling() {
                     return false;
                 }
-                
+
                 @Override
                 public boolean isDisabled() {
                     return dynamicService.isDisabled();
                 }
-                
+
                 @Override
                 public String getTitle() {
-                    return layerName.substring(layerName
-                            .lastIndexOf("/"));
+                    return layerName.substring(layerName.lastIndexOf("/"));
                 }
-                
+
                 @Override
                 public String getPalette() {
                     return ColourPalette.DEFAULT_PALETTE_NAME;
                 }
-                
+
                 @Override
                 public Integer getNumColorBands() {
                     return 250;
                 }
-                
+
                 @Override
                 public Color getNoDataColour() {
                     return null;
                 }
-                
+
                 @Override
                 public String getMoreInfo() {
                     return null;
                 }
-                
+
                 @Override
                 public String getDescription() {
                     return null;
                 }
-                
+
                 @Override
                 public String getCopyright() {
                     return null;
                 }
-                
+
                 @Override
                 public Extent<Float> getColorScaleRange() {
                     return null;
                 }
-                
+
                 @Override
                 public Color getBelowMinColour() {
                     return null;
                 }
-                
+
                 @Override
                 public Color getAboveMaxColour() {
                     return null;
