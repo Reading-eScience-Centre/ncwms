@@ -93,6 +93,13 @@ public class NcwmsDataset {
     private boolean queryable = true;
 
     /*
+     * True if we want to allow CSV downloads of timeseries/profiles enabled for
+     * this dataset
+     */
+    @XmlAttribute(name = "downloadable")
+    private boolean downloadable = false;
+
+    /*
      * We'll use a default data reader unless this is overridden in the config
      * file
      */
@@ -350,9 +357,13 @@ public class NcwmsDataset {
     public String getLocation() {
         return location;
     }
-
+    
     public boolean isQueryable() {
         return queryable;
+    }
+    
+    public boolean isDownloadable() {
+        return downloadable;
     }
 
     public String getDataReaderClass() {
@@ -464,6 +475,10 @@ public class NcwmsDataset {
 
     public void setQueryable(boolean queryable) {
         this.queryable = queryable;
+    }
+    
+    public void setDownloadable(boolean downloadable) {
+        this.downloadable = downloadable;
     }
 
     public void setDataReaderClass(String dataReaderClass) {

@@ -60,8 +60,12 @@ public class NcwmsDynamicService {
     @XmlAttribute(name = "queryable", required = false)
     private boolean queryable;
 
+    @XmlAttribute(name = "downloadable", required = false)
+    private boolean downloadable;
+    
     @XmlTransient
     private Pattern idMatchPattern;
+
 
 
     public String getAlias() {
@@ -127,6 +131,10 @@ public class NcwmsDynamicService {
 
     public void setDisabled(boolean disabled) {
         this.disabled = disabled;
+    }
+    
+    public boolean isDownloadable() {
+        return downloadable;
     }
 
     public boolean isQueryable() {

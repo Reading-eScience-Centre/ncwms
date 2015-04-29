@@ -93,6 +93,9 @@
                         <br />
                         Queryable:
                         <input type="checkbox" name="dataset.${dataset.id}.queryable"#if(${dataset.queryable}) checked="checked"#end/>
+                        <br />
+                        Downloadable:
+                        <input type="checkbox" name="dataset.${dataset.id}.downloadable"#if(${dataset.downloadable}) checked="checked"#end/>
                     </td>
                     <td><input type="text" name="dataset.${dataset.id}.reader" value="${dataset.dataReaderClass}" size="10"/></td>
                     <td><input type="checkbox" name="dataset.${dataset.id}.remove"/></td>
@@ -138,6 +141,9 @@
                         <br />
                         Queryable:
                         <input type="checkbox" name="dataset.new${i}.queryable" checked="checked"/>
+                        <br />
+                        Downloadable:
+                        <input type="checkbox" name="dataset.new${i}.downloadable"/>
                     </td>
                     <td><input type="text" name="dataset.new${i}.reader" value="" size="10"/></td>
                     <td>N/A</td>
@@ -195,6 +201,9 @@
                     <br />
                     Queryable:
                     <input type="checkbox" name="dynamicService.${dynamicService.alias}.queryable"#if(${dynamicService.queryable}) checked="checked"#end/>
+                    <br />
+                    Downloadable:
+                    <input type="checkbox" name="dynamicService.${dynamicService.alias}.downloadable"#if(${dynamicService.downloadable}) checked="checked"#end/>
                 </td>
                 <td><input type="text" name="dynamicService.${dynamicService.alias}.reader" value="${dynamicService.dataReaderClass}" size="22"/></td>
                 <td><input type="checkbox" name="dynamicService.${dynamicService.alias}.remove"/></td>
@@ -225,6 +234,9 @@
                     <br />
                     Queryable:
                     <input type="checkbox" name="dynamicService.new${i}.queryable"}) checked="checked"/>
+                    <br />
+                    Downloadable:
+                    <input type="checkbox" name="dynamicService.new${i}.downloadable"})/>
                 </td>
                 <td><input type="text" name="dynamicService.new${i}.reader" value="" size="22"/></td>
                 <td>N/A</td>
