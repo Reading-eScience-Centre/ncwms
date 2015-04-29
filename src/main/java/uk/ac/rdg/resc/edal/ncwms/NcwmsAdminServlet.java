@@ -289,6 +289,7 @@ public class NcwmsAdminServlet extends HttpServlet {
                 }
                 ds.setDisabled(disabled);
                 ds.setQueryable(request.getParameter("dataset." + ds.getId() + ".queryable") != null);
+                ds.setDownloadable(request.getParameter("dataset." + ds.getId() + ".downloadable") != null);
                 ds.setUpdateInterval(Integer.parseInt(request.getParameter("dataset." + ds.getId()
                         + ".updateinterval")));
                 ds.setMoreInfo(request.getParameter("dataset." + ds.getId() + ".moreinfo"));

@@ -354,6 +354,11 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
              */
             WmsLayerMetadata metadata = new WmsLayerMetadata() {
                 @Override
+                public boolean isDownloadable() {
+                    return dynamicService.isDownloadable();
+                }
+                
+                @Override
                 public boolean isQueryable() {
                     return dynamicService.isQueryable();
                 }

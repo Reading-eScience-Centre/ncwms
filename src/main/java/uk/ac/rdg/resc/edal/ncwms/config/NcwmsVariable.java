@@ -215,6 +215,11 @@ public class NcwmsVariable implements WmsLayerMetadata {
     public boolean isQueryable() {
         return dataset.isQueryable();
     }
+    
+    @Override
+    public boolean isDownloadable() {
+        return dataset.isDownloadable();
+    }
 
     @Override
     public boolean isDisabled() {
