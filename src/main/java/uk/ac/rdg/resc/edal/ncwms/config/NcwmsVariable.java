@@ -150,22 +150,22 @@ public class NcwmsVariable implements WmsLayerMetadata {
 
     @Override
     public String getPalette() {
-        if(!ColourPalette.getPredefinedPalettes().contains(paletteName)) {
+        if (!ColourPalette.getPredefinedPalettes().contains(paletteName)) {
             this.paletteName = ColourPalette.DEFAULT_PALETTE_NAME;
         }
         return paletteName;
     }
-    
+
     @Override
     public Color getBelowMinColour() {
         return belowMinColour;
     }
-    
+
     @Override
     public Color getAboveMaxColour() {
         return aboveMaxColour;
     }
-    
+
     @Override
     public Color getNoDataColour() {
         return noDataColour;
@@ -215,7 +215,7 @@ public class NcwmsVariable implements WmsLayerMetadata {
     public boolean isQueryable() {
         return dataset.isQueryable();
     }
-    
+
     @Override
     public boolean isDownloadable() {
         return dataset.isDownloadable();
@@ -251,15 +251,21 @@ public class NcwmsVariable implements WmsLayerMetadata {
     }
 
     public void setMetadataUrl(String metadataUrl) {
-        this.metadataUrl = metadataUrl;
+        if (!"".equals(metadataUrl)) {
+            this.metadataUrl = metadataUrl;
+        }
     }
 
     public void setMetadataDesc(String metadataDesc) {
-        this.metadataDesc = metadataDesc;
+        if (!"".equals(metadataDesc)) {
+            this.metadataDesc = metadataDesc;
+        }
     }
 
     public void setMetadataMimetype(String metadataMimetype) {
-        this.metadataMimetype = metadataMimetype;
+        if (!"".equals(metadataMimetype)) {
+            this.metadataMimetype = metadataMimetype;
+        }
     }
 
     public void setDisabled(boolean disabled) {

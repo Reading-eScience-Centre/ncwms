@@ -44,10 +44,10 @@
                     </td>
                     <td align="right" width="220px">
                         More Info URL:
-                        <input type="text" name="dataset.${dataset.id}.moreinfo" value="${dataset.moreInfo}" size="10"/>
+                        <input type="text" name="dataset.${dataset.id}.moreinfo" value="#if(${dataset.moreInfo})${dataset.moreInfo}#end" size="10"/>
 	                    <br />
                         Copyright:
-                        <input type="text" name="dataset.${dataset.id}.copyright" value="${dataset.copyrightStatement}" size="10"/>
+                        <input type="text" name="dataset.${dataset.id}.copyright" value="#if(${dataset.copyrightStatement})${dataset.copyrightStatement}#end" size="10"/>
                     </td>
                     <td width="200px">
                         State:

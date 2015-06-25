@@ -121,13 +121,13 @@ public class NcwmsDataset {
     private int updateInterval = -1;
 
     @XmlAttribute(name = "metadataUrl")
-    private String metadataUrl = "";
+    private String metadataUrl = null;
 
     @XmlAttribute(name = "metadataDesc")
-    private String metadataDesc = "";
+    private String metadataDesc = null;
 
     @XmlAttribute(name = "metadataMimetype")
-    private String metadataMimetype = "";
+    private String metadataMimetype = null;
 
     /*
      * The NcwmsVariables are part of the XML definition, but the annotations
@@ -357,11 +357,11 @@ public class NcwmsDataset {
     public String getLocation() {
         return location;
     }
-    
+
     public boolean isQueryable() {
         return queryable;
     }
-    
+
     public boolean isDownloadable() {
         return downloadable;
     }
@@ -476,7 +476,7 @@ public class NcwmsDataset {
     public void setQueryable(boolean queryable) {
         this.queryable = queryable;
     }
-    
+
     public void setDownloadable(boolean downloadable) {
         this.downloadable = downloadable;
     }
@@ -486,11 +486,15 @@ public class NcwmsDataset {
     }
 
     public void setCopyrightStatement(String copyrightStatement) {
-        this.copyrightStatement = copyrightStatement;
+        if (!"".equals(copyrightStatement)) {
+            this.copyrightStatement = copyrightStatement;
+        }
     }
 
     public void setMoreInfo(String moreInfo) {
-        this.moreInfo = moreInfo;
+        if (!"".equals(moreInfo)) {
+            this.moreInfo = moreInfo;
+        }
     }
 
     public void setDisabled(boolean disabled) {

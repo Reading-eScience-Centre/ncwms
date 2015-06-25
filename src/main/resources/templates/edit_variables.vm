@@ -39,9 +39,9 @@
                                 <option value="logarithmic"#if(${variable.logScaling}) selected="selected"#end>logarithmic</option>
                             </select>
                         </td>
-                        <td><input type="text" name="${variable.id}.metadataUrl" value="${variable.metadataUrl}" size="15"/></td>
-                        <td><input type="text" name="${variable.id}.metadataDesc" value="${variable.metadataDesc}" size="15"/></td>
-                        <td><input type="text" name="${variable.id}.metadataMimetype" value="${variable.metadataMimetype}" size="10"/></td>
+                        <td><input type="text" name="${variable.id}.metadataUrl" value="#if(${variable.metadataUrl})${variable.metadataUrl}#end" size="15"/></td>
+                        <td><input type="text" name="${variable.id}.metadataDesc" value="#if(${variable.metadataDesc})${variable.metadataDesc}#end" size="15"/></td>
+                        <td><input type="text" name="${variable.id}.metadataMimetype" value="#if(${variable.metadataMimetype})${variable.metadataMimetype}#end" size="10"/></td>
                         <td><input type="checkbox" name="${variable.id}.disabled" #if(${variable.disabled})checked="checked"#end/></td>
                     </tr>
 #end                    
