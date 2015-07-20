@@ -42,7 +42,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.bind.JAXBException;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.velocity.Template;
@@ -53,13 +52,13 @@ import org.apache.velocity.app.event.implement.EscapeHtmlReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.ac.rdg.resc.edal.catalogue.jaxb.CacheInfo;
+import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
+import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsCacheInfo;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsContact;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDataset;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsServerInfo;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsVariable;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
 
@@ -162,7 +161,7 @@ public class NcwmsAdminServlet extends HttpServlet {
             throw new IllegalArgumentException(
                     "Must supply the \"dataset\" parameter to view status");
         }
-        NcwmsDataset dataset = catalogue.getConfig().getDatasetInfo(datasetId);
+        DatasetConfig dataset = catalogue.getConfig().getDatasetInfo(datasetId);
 
         Template template = velocityEngine.getTemplate("templates/dataset_status.vm");
         VelocityContext context = new VelocityContext();
@@ -184,7 +183,7 @@ public class NcwmsAdminServlet extends HttpServlet {
             throw new IllegalArgumentException(
                     "Must supply the \"dataset\" parameter to edit variables");
         }
-        NcwmsDataset dataset = catalogue.getConfig().getDatasetInfo(datasetId);
+        DatasetConfig dataset = catalogue.getConfig().getDatasetInfo(datasetId);
 
         Template template = velocityEngine.getTemplate("templates/edit_variables.vm");
         VelocityContext context = new VelocityContext();
@@ -241,7 +240,7 @@ public class NcwmsAdminServlet extends HttpServlet {
     private void updateConfig(HttpServletRequest request, HttpServletResponse response) {
         NcwmsContact contact = catalogue.getConfig().getContactInfo();
         NcwmsServerInfo server = catalogue.getConfig().getServerInfo();
-        NcwmsCacheInfo cache = catalogue.getConfig().getCacheSettings();
+        CacheInfo cache = catalogue.getConfig().getCacheSettings();
 
         contact.setName(request.getParameter("contact.name"));
         contact.setOrganisation(request.getParameter("contact.org"));
@@ -262,10 +261,10 @@ public class NcwmsAdminServlet extends HttpServlet {
          * Save the dataset information, checking for removals First look
          * through the existing datasets for edits.
          */
-        List<NcwmsDataset> datasetsToRemove = new ArrayList<NcwmsDataset>();
+        List<DatasetConfig> datasetsToRemove = new ArrayList<>();
         /* Keeps track of dataset IDs that have been changed */
-        Map<NcwmsDataset, String> changedIds = new HashMap<NcwmsDataset, String>();
-        for (NcwmsDataset ds : catalogue.getConfig().getDatasets()) {
+        Map<DatasetConfig, String> changedIds = new HashMap<>();
+        for (DatasetConfig ds : catalogue.getConfig().getDatasets()) {
             boolean refreshDataset = false;
             if (request.getParameter("dataset." + ds.getId() + ".remove") != null) {
                 datasetsToRemove.add(ds);
@@ -317,11 +316,11 @@ public class NcwmsAdminServlet extends HttpServlet {
             }
         }
         /* Now we can remove the datasets */
-        for (NcwmsDataset ds : datasetsToRemove) {
+        for (DatasetConfig ds : datasetsToRemove) {
             catalogue.removeDataset(ds.getId());
         }
         /* Now we change the ids of the relevant datasets */
-        for (NcwmsDataset ds : changedIds.keySet()) {
+        for (DatasetConfig ds : changedIds.keySet()) {
             catalogue.changeDatasetId(ds.getId(), changedIds.get(ds));
             /*
              * Force a refresh of the dataset. We do this in case the new ID
@@ -339,7 +338,7 @@ public class NcwmsAdminServlet extends HttpServlet {
         while (request.getParameter("dataset.new" + i + ".id") != null) {
             /* Look for non-blank ID fields */
             if (!request.getParameter("dataset.new" + i + ".id").trim().equals("")) {
-                NcwmsDataset ds = new NcwmsDataset();
+                DatasetConfig ds = new DatasetConfig();
                 ds.setId(request.getParameter("dataset.new" + i + ".id"));
                 ds.setTitle(request.getParameter("dataset.new" + i + ".title"));
                 ds.setLocation(request.getParameter("dataset.new" + i + ".location"));
@@ -458,8 +457,6 @@ public class NcwmsAdminServlet extends HttpServlet {
         /* Save the updated config information to disk */
         try {
             catalogue.getConfig().save();
-        } catch (JAXBException e) {
-            log.error("Problem serialising config", e);
         } catch (IOException e) {
             log.error("Problem writing config", e);
         }
@@ -482,7 +479,7 @@ public class NcwmsAdminServlet extends HttpServlet {
     private void updateVariables(HttpServletRequest request, HttpServletResponse response) {
         /* We only take action if the user pressed "save" */
         if (request.getParameter("save") != null) {
-            NcwmsDataset dataset = catalogue.getConfig().getDatasetInfo(
+            DatasetConfig dataset = catalogue.getConfig().getDatasetInfo(
                     request.getParameter("dataset.id"));
             Set<String> variableIds = new HashSet<String>();
             Enumeration<String> parameterNames = request.getParameterNames();
@@ -507,7 +504,7 @@ public class NcwmsAdminServlet extends HttpServlet {
                 /*
                  * Get the NcwmsVariable for this layer, and save the changes
                  */
-                NcwmsVariable var = dataset.getVariablesById(variableId);
+                VariableConfig var = dataset.getVariableById(variableId);
                 var.setTitle(newTitle);
                 var.setColorScaleRange(Extents.newExtent(min, max));
                 var.setPaletteName(request.getParameter(variableId + ".palette"));
@@ -519,8 +516,6 @@ public class NcwmsAdminServlet extends HttpServlet {
             /* Saves the new configuration information to disk */
             try {
                 catalogue.getConfig().save();
-            } catch (JAXBException e) {
-                log.error("Problem serialising config", e);
             } catch (IOException e) {
                 log.error("Problem writing config", e);
             }
