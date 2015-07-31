@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.wms.RequestParams;
+import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
 import uk.ac.rdg.resc.edal.wms.WmsServlet;
 
 /**
@@ -78,8 +79,8 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
 
     @Override
     protected void dispatchWmsRequest(String request, RequestParams params,
-            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
-            throws Exception {
+            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
+            WmsCatalogue catalogue) throws Exception {
         /*
          * For dynamic datasets, users can either specify the DATASET URL
          * parameter, or they can prepend the layer names with the path:
@@ -102,35 +103,36 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
          * requests)
          */
 
-        String dataset = params.getString("DATASET"); 
-        if(dataset != null) {
+        String dataset = params.getString("DATASET");
+        if (dataset != null) {
             Map<String, String> newParams = new HashMap<>();
             String layersStr = params.getString("LAYERS");
-            if(layersStr != null) {
+            if (layersStr != null) {
                 String[] layers = layersStr.split(",");
                 StringBuilder newLayers = new StringBuilder();
-                for(String layer : layers) {
-                    newLayers.append(dataset+"/"+layer+",");
+                for (String layer : layers) {
+                    newLayers.append(dataset + "/" + layer + ",");
                 }
-                newLayers.deleteCharAt(newLayers.length()-1);
+                newLayers.deleteCharAt(newLayers.length() - 1);
                 newParams.put("LAYERS", newLayers.toString());
             }
             String queryLayersStr = params.getString("QUERY_LAYERS");
-            if(queryLayersStr != null) {
+            if (queryLayersStr != null) {
                 String[] queryLayers = queryLayersStr.split(",");
                 StringBuilder newQueryLayers = new StringBuilder();
-                for(String queryLayer : queryLayers) {
-                    newQueryLayers.append(dataset+"/"+queryLayer+",");
+                for (String queryLayer : queryLayers) {
+                    newQueryLayers.append(dataset + "/" + queryLayer + ",");
                 }
-                newQueryLayers.deleteCharAt(newQueryLayers.length()-1);
+                newQueryLayers.deleteCharAt(newQueryLayers.length() - 1);
                 newParams.put("QUERY_LAYERS", newQueryLayers.toString());
             }
             String layerNameStr = params.getString("LAYERNAME");
-            if(layerNameStr != null) {
-                newParams.put("LAYERNAME", dataset+"/"+layerNameStr);
+            if (layerNameStr != null) {
+                newParams.put("LAYERNAME", dataset + "/" + layerNameStr);
             }
             params = params.mergeParameters(newParams);
         }
-        super.dispatchWmsRequest(request, params, httpServletRequest, httpServletResponse);
+        super.dispatchWmsRequest(request, params, httpServletRequest, httpServletResponse,
+                catalogue);
     }
 }
