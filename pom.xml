@@ -61,6 +61,11 @@
             <artifactId>winstone</artifactId>
             <version>0.9.10</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.gwt</groupId>
+            <artifactId>gwt-codeserver</artifactId>
+            <version>${gwtversion}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
