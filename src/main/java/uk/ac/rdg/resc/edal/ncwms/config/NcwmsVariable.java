@@ -247,7 +247,13 @@ public class NcwmsVariable implements WmsLayerMetadata {
     }
 
     public void setNumColorBands(int numColorBands) {
-        this.numColorBands = numColorBands;
+        if(numColorBands > ColourPalette.MAX_NUM_COLOURS) {
+            this.numColorBands = ColourPalette.MAX_NUM_COLOURS;
+        } else if(numColorBands < 2){
+            this.numColorBands = 2;
+        } else {
+            this.numColorBands = numColorBands;
+        }
     }
 
     public void setMetadataUrl(String metadataUrl) {
