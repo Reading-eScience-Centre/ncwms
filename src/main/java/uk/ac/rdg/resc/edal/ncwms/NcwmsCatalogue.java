@@ -30,16 +30,6 @@ package uk.ac.rdg.resc.edal.ncwms;
 
 import java.awt.Color;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.xml.bind.JAXBException;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
@@ -48,46 +38,39 @@ import net.sf.ehcache.config.CacheConfiguration.TransactionalMode;
 import net.sf.ehcache.config.PersistenceConfiguration;
 import net.sf.ehcache.config.PersistenceConfiguration.Strategy;
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
-
-import org.joda.time.DateTime;
-
+import uk.ac.rdg.resc.edal.catalogue.DataCatalogue;
+import uk.ac.rdg.resc.edal.catalogue.SimpleLayerNameMapper;
+import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
 import uk.ac.rdg.resc.edal.dataset.Dataset;
 import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
 import uk.ac.rdg.resc.edal.domain.Extent;
 import uk.ac.rdg.resc.edal.exceptions.EdalException;
+import uk.ac.rdg.resc.edal.graphics.exceptions.EdalLayerNotFoundException;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
+import uk.ac.rdg.resc.edal.graphics.style.util.EnhancedVariableMetadata;
+import uk.ac.rdg.resc.edal.graphics.style.util.LayerNameMapper;
+import uk.ac.rdg.resc.edal.graphics.style.util.SldTemplateStyleCatalogue;
+import uk.ac.rdg.resc.edal.graphics.style.util.StyleCatalogue;
+import uk.ac.rdg.resc.edal.metadata.VariableMetadata;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig.DatasetStorage;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDataset;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsVariable;
 import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
-import uk.ac.rdg.resc.edal.wms.WmsLayerMetadata;
-import uk.ac.rdg.resc.edal.wms.exceptions.EdalLayerNotFoundException;
 import uk.ac.rdg.resc.edal.wms.util.ContactInfo;
 import uk.ac.rdg.resc.edal.wms.util.ServerInfo;
 
-public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
+/**
+ * An extension of {@link DataCatalogue} to add WMS-specific capabilities for
+ * ncWMS.
+ *
+ * @author Guy Griffiths
+ */
+public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     private static final String DYNAMIC_DATASET_CACHE_NAME = "dynamicDatasetCache";
-
-    protected NcwmsConfig config;
-    protected Map<String, Dataset> datasets;
-    protected Map<String, WmsLayerMetadata> layerMetadata;
-
-    private DateTime lastUpdateTime = new DateTime();
+    private StyleCatalogue styleCatalogue;
 
     public NcwmsCatalogue(NcwmsConfig config) throws IOException {
-        /*
-         * Initialise the storage for datasets and layer metadata.
-         */
-        datasets = new HashMap<String, Dataset>();
-        layerMetadata = new HashMap<String, WmsLayerMetadata>();
-
-        this.config = config;
-        this.config.setDatasetLoadedHandler(this);
-        this.config.loadDatasets();
-
-        setCache(config.getCacheSettings());
+        super(config, new SimpleLayerNameMapper());
+        this.styleCatalogue = new SldTemplateStyleCatalogue();
 
         /*
          * Configure cache for dynamic datasets. Keep up to 10 dynamic datasets
@@ -119,140 +102,24 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
      *         since this should not be accessed by external users
      */
     public NcwmsConfig getConfig() {
-        return config;
-    }
-
-    /**
-     * Removes a dataset from the catalogue. This will also delete any config
-     * information about the dataset from the config file.
-     * 
-     * @param id
-     *            The ID of the dataset to remove
-     */
-    public void removeDataset(String id) {
-        datasets.remove(id);
-        config.removeDataset(config.getDatasetInfo(id));
-    }
-
-    /**
-     * Changes a dataset's ID. This will also change the name in the saved
-     * config file.
-     * 
-     * @param oldId
-     *            The old ID
-     * @param newId
-     *            The new ID
-     */
-    public void changeDatasetId(String oldId, String newId) {
-        Dataset dataset = datasets.get(oldId);
-        datasets.remove(oldId);
-        datasets.put(newId, dataset);
-        config.changeDatasetId(config.getDatasetInfo(oldId), newId);
-    }
-
-    @Override
-    public synchronized void datasetLoaded(Dataset dataset, Collection<NcwmsVariable> variables) {
-        /*
-         * If we already have a dataset with this ID, it will be replaced. This
-         * is exactly what we want.
-         */
-        datasets.put(dataset.getId(), dataset);
-
-        /*
-         * Re-sort the datasets map according to the titles of the datasets, so
-         * that they appear in the menu in this order.
-         */
-        List<Map.Entry<String, Dataset>> entryList = new ArrayList<Map.Entry<String, Dataset>>(
-                datasets.entrySet());
-        Collections.sort(entryList, new Comparator<Map.Entry<String, Dataset>>() {
-            public int compare(Map.Entry<String, Dataset> d1, Map.Entry<String, Dataset> d2) {
-                return config.getDatasetInfo(d1.getKey()).getTitle()
-                        .compareTo(config.getDatasetInfo(d2.getKey()).getTitle());
-            }
-        });
-
-        datasets = new LinkedHashMap<String, Dataset>();
-        for (Map.Entry<String, Dataset> entry : entryList) {
-            datasets.put(entry.getKey(), entry.getValue());
-        }
-
-        /*
-         * Now add the layer metadata to a map for future reference
-         */
-        for (NcwmsVariable ncwmsVariable : variables) {
-            String layerName = getLayerName(ncwmsVariable.getNcwmsDataset().getId(),
-                    ncwmsVariable.getId());
-            layerMetadata.put(layerName, ncwmsVariable);
-        }
-        lastUpdateTime = new DateTime();
-
-        /*
-         * The config has changed, so we save it.
-         */
-        try {
-            config.save();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (JAXBException e) {
-            e.printStackTrace();
-        }
+        return (NcwmsConfig) super.getConfig();
     }
 
     @Override
     public ServerInfo getServerInfo() {
-        return config.getServerInfo();
+        return ((NcwmsConfig) config).getServerInfo();
     }
 
     @Override
     public ContactInfo getContactInfo() {
-        return config.getContactInfo();
-    }
-
-    @Override
-    public boolean allowsGlobalCapabilities() {
-        return config.getServerInfo().allowsGlobalCapabilities();
-    }
-    
-    @Override
-    public boolean allowsGetFeatureInfo() {
-        return config.getServerInfo().isAllowFeatureInfo();
-    }
-
-    @Override
-    public DateTime getServerLastUpdate() {
-        return lastUpdateTime;
-    }
-
-    @Override
-    public Collection<Dataset> getAllDatasets() {
-        /*
-         * This catalogue stores all possible datasets, but this method must
-         * only return those which are available (i.e. not disabled and ready to
-         * go)
-         */
-        List<Dataset> allDatasets = new ArrayList<Dataset>();
-        for (Dataset dataset : datasets.values()) {
-            NcwmsDataset datasetInfo = config.getDatasetInfo(dataset.getId());
-            if (datasetInfo != null && !datasetInfo.isDisabled() && datasetInfo.isReady()) {
-                allDatasets.add(dataset);
-            }
-        }
-        return allDatasets;
-    }
-
-    @Override
-    public String getDatasetTitle(String datasetId) {
-        NcwmsDataset datasetInfo = config.getDatasetInfo(datasetId);
-        if (datasetInfo == null) {
-            return "";
-        }
-        return datasetInfo.getTitle();
+        return ((NcwmsConfig) config).getContactInfo();
     }
 
     @Override
     public Dataset getDatasetFromId(String datasetId) {
-        if (datasets.containsKey(datasetId)) {
-            return datasets.get(datasetId);
+        Dataset dataset = super.getDatasetFromId(datasetId);
+        if (dataset != null) {
+            return dataset;
         } else {
             /*
              * We may have a dynamic dataset. First check the dynamic dataset
@@ -310,46 +177,18 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
     }
 
     @Override
-    public Dataset getDatasetFromLayerName(String layerName) throws EdalLayerNotFoundException {
-        int finalSlashIndex = layerName.lastIndexOf("/");
-        if (finalSlashIndex < 0) {
-            throw new EdalLayerNotFoundException(
-                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
-        }
-        String datasetId = layerName.substring(0, finalSlashIndex);
-        Dataset dataset = getDatasetFromId(datasetId);
-        if (dataset == null) {
-            throw new EdalLayerNotFoundException("The dataset given in the layer name " + layerName
-                    + " does not exist");
-        }
-        return dataset;
-    }
-
-    @Override
-    public String getVariableFromId(String layerName) throws EdalLayerNotFoundException {
-        int finalSlashIndex = layerName.lastIndexOf("/");
-        if (finalSlashIndex < 0) {
-            throw new EdalLayerNotFoundException(
-                    "The WMS layer name is malformed.  It should be of the form \"dataset/variable\"");
-        }
-        return layerName.substring(finalSlashIndex + 1);
-    }
-
-    @Override
-    public String getLayerName(String datasetId, String variableId) {
-        return datasetId + "/" + variableId;
-    }
-
-    @Override
-    public WmsLayerMetadata getLayerMetadata(final String layerName)
+    public EnhancedVariableMetadata getLayerMetadata(final VariableMetadata variableMetadata)
             throws EdalLayerNotFoundException {
-        if (layerMetadata.containsKey(layerName)) {
-            return layerMetadata.get(layerName);
-        } else {
+        try {
+            return super.getLayerMetadata(variableMetadata);
+        } catch (EdalLayerNotFoundException e) {
             /*
-             * We don't have any stored metadata, but there may be a dynamic
-             * dataset.
+             * The layer is not defined in the XmlDataCatalogue. However, we may
+             * still have a dynamic dataset
              */
+            final String layerName = getLayerNameMapper().getLayerName(
+                    variableMetadata.getDataset().getId(), variableMetadata.getId());
+
             final NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(layerName);
             if (dynamicService == null) {
                 throw new EdalLayerNotFoundException("The layer: " + layerName + " doesn't exist");
@@ -357,30 +196,20 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
             /*
              * We have a dynamic dataset. Return sensible defaults
              */
-            WmsLayerMetadata metadata = new WmsLayerMetadata() {
-                @Override
-                public boolean isDownloadable() {
-                    return dynamicService.isDownloadable();
-                }
-                
-                @Override
-                public boolean isQueryable() {
-                    return dynamicService.isQueryable();
-                }
-
+            EnhancedVariableMetadata metadata = new EnhancedVariableMetadata() {
                 @Override
                 public Boolean isLogScaling() {
                     return false;
                 }
 
                 @Override
-                public boolean isDisabled() {
-                    return dynamicService.isDisabled();
+                public String getId() {
+                    return variableMetadata.getId();
                 }
 
                 @Override
                 public String getTitle() {
-                    return layerName.substring(layerName.lastIndexOf("/"));
+                    return variableMetadata.getId();
                 }
 
                 @Override
@@ -434,11 +263,46 @@ public class NcwmsCatalogue extends WmsCatalogue implements DatasetStorage {
 
     private NcwmsDynamicService getDynamicServiceFromLayerName(String layerName) {
         NcwmsDynamicService dynamicService = null;
-        for (NcwmsDynamicService testDynamicService : config.getDynamicServices()) {
+        for (NcwmsDynamicService testDynamicService : ((NcwmsConfig) config).getDynamicServices()) {
             if (layerName.startsWith(testDynamicService.getAlias())) {
                 dynamicService = testDynamicService;
             }
         }
         return dynamicService;
+    }
+
+    @Override
+    public LayerNameMapper getLayerNameMapper() {
+        return layerNameMapper;
+    }
+
+    @Override
+    public StyleCatalogue getStyleCatalogue() {
+        return styleCatalogue;
+    }
+
+    @Override
+    public String getDatasetTitle(String datasetId) {
+        return config.getDatasetInfo(datasetId).getTitle();
+    }
+
+    @Override
+    public boolean isDownloadable(String layerName) {
+        return getXmlVariable(layerName).isDownloadable();
+    }
+
+    @Override
+    public boolean isQueryable(String layerName) {
+        return getXmlVariable(layerName).isQueryable();
+    }
+
+    @Override
+    public boolean isDisabled(String layerName) {
+        return getXmlVariable(layerName).isDisabled();
+    }
+
+    private VariableConfig getXmlVariable(String layerName) {
+        return config.getDatasetInfo(getLayerNameMapper().getDatasetIdFromLayerName(layerName))
+                .getVariableById(getLayerNameMapper().getVariableIdFromLayerName(layerName));
     }
 }

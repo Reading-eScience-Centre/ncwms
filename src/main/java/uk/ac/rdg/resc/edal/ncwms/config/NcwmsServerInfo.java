@@ -109,7 +109,7 @@ public class NcwmsServerInfo implements ServerInfo {
         return keywords;
     }
     
-    public boolean isAllowFeatureInfo() {
+    public boolean allowsFeatureInfo() {
         return allowFeatureInfo;
     }
 
