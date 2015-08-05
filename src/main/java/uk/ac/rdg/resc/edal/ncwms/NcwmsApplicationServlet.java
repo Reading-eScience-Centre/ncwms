@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
 import uk.ac.rdg.resc.edal.dataset.cdm.CdmGridDatasetFactory;
 import uk.ac.rdg.resc.edal.graphics.formats.ImageFormat;
+import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.util.GISUtils;
 
@@ -90,22 +91,31 @@ public class NcwmsApplicationServlet extends HttpServlet {
          * Load the XML config for ncWMS, or create it if it doesn't yet exist.
          */
         Properties appProperties = new Properties();
+        try {
+            appProperties.load(getClass().getResourceAsStream("/config.properties"));
+        } catch (IOException e) {
+            log.warn("Could not read config.properties");
+        }
 
         String configDir = null;
         String homeDir = System.getProperty("user.home").replace("\\", "\\\\");
-        try {
+        
+        if (appProperties != null) {
             /*
              * See if we have a properties file which defines a configDir,
              * replacing $HOME with the actual home directory
              */
-            appProperties.load(getClass().getResourceAsStream("/config.properties"));
             configDir = appProperties.getProperty("configDir");
-            if(configDir != null) {
+            if (configDir != null) {
                 configDir = configDir.replaceAll("\\$HOME", homeDir);
             }
-        } catch (Exception e) {
-            configDir = null;
-            e.printStackTrace();
+            
+            String paletteDir = appProperties.getProperty("paletteDir");
+            if(paletteDir != null) {
+                paletteDir = paletteDir.replaceAll("\\$HOME", homeDir);
+                File paletteDirFile = new File(paletteDir);
+                ColourPalette.addPaletteDirectory(paletteDirFile);
+            }
         }
 
         /*
@@ -120,20 +130,20 @@ public class NcwmsApplicationServlet extends HttpServlet {
          * If the config location doesn't exist, create it.
          */
         File configDirFile = new File(configDir);
-        if(!configDirFile.exists()) {
+        if (!configDirFile.exists()) {
             configDirFile.mkdirs();
         }
-        
+
         DatasetFactory.setWorkingDirectory(configDirFile);
-        
+
         /*
          * If necessary, create a directory for logs.
          */
-        File logDirFile = new File(configDir+File.separator+"logs");
-        if(!logDirFile.exists()) {
+        File logDirFile = new File(configDir + File.separator + "logs");
+        if (!logDirFile.exists()) {
             logDirFile.mkdir();
         }
-        
+
         /*
          * Get the file appending logger and set the log location
          */
@@ -142,15 +152,17 @@ public class NcwmsApplicationServlet extends HttpServlet {
         InputStream log4jInputStream = getClass().getResourceAsStream("/log4j.properties");
         try {
             logProps.load(log4jInputStream);
-            logProps.put("log4j.appender.file.File", logDirFile.getPath()+File.separator+"ncwms.log");
+            logProps.put("log4j.appender.file.File", logDirFile.getPath() + File.separator
+                    + "ncwms.log");
             PropertyConfigurator.configure(logProps);
         } catch (IOException e) {
             log.error("Problem setting logging properties", e);
             /*
-             * This is a problem, but not a fatal one.  Logging will go to its default location. 
+             * This is a problem, but not a fatal one. Logging will go to its
+             * default location.
              */
         }
-        
+
         /*
          * Now either create or read the ncWMS config.xml
          */
@@ -167,7 +179,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
             try {
                 config = new NcwmsConfig(configFile);
             } catch (Exception e1) {
-                throw new ServletException("Old config is invalid, and a new one cannot be created", e1);
+                throw new ServletException(
+                        "Old config is invalid, and a new one cannot be created", e1);
             }
         } catch (FileNotFoundException e) {
             /*
@@ -181,7 +194,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
             try {
                 config = new NcwmsConfig(configFile);
             } catch (Exception e1) {
-                throw new ServletException("Old config is missing, and a new one cannot be created", e1);
+                throw new ServletException(
+                        "Old config is missing, and a new one cannot be created", e1);
             }
         } catch (IOException e) {
             log.error("Problem writing new config file", e);
@@ -198,7 +212,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
          * can access it. All other servlets are loaded after this one.
          */
         servletConfig.getServletContext().setAttribute("NcwmsCatalogue", catalogue);
-        
+
         /*
          * Now create a VelocityEngine to load velocity templates, and make it
          * available to other servlets in the same way
