@@ -28,6 +28,7 @@
 
 package uk.ac.rdg.resc.edal.ncwms.config;
 
+import static org.junit.Assert.*;
 import java.io.FileNotFoundException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -36,6 +37,7 @@ import java.util.Arrays;
 import javax.xml.bind.JAXBException;
 
 import org.junit.Before;
+import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import uk.ac.rdg.resc.edal.catalogue.jaxb.CacheInfo;
@@ -75,6 +77,28 @@ public class NcwmsConfigTest {
         config = new NcwmsConfig(datasets, new NcwmsDynamicService[0], contact, serverInfo, cacheInfo);
     }
 
+    @Test
+    public void testInvalidLogSettings() {
+        VariableConfig variableConfig = config.getDatasets()[0].getVariables()[0];
+        variableConfig.setScaling("log");
+        assertEquals(variableConfig.getDefaultPlottingParameters().isLogScaling(), false);
+        variableConfig.setScaling("logarithmic");
+        assertEquals(variableConfig.getDefaultPlottingParameters().isLogScaling(), false);
+        
+        variableConfig.setColorScaleRange(Extents.newExtent(10f, 100f));
+        variableConfig.setScaling("log");
+        assertEquals(variableConfig.getDefaultPlottingParameters().isLogScaling(), true);
+        variableConfig.setScaling("logarithmic");
+        assertEquals(variableConfig.getDefaultPlottingParameters().isLogScaling(), true);
+        
+        variableConfig.setColorScaleRange(Extents.newExtent(-10f, 10f));
+        assertEquals(variableConfig.getDefaultPlottingParameters().getColorScaleRange(), Extents.newExtent(10f, 100f));
+        variableConfig.setScaling("linear");
+        assertEquals(variableConfig.getDefaultPlottingParameters().isLogScaling(), false);
+        variableConfig.setColorScaleRange(Extents.newExtent(-10f, 10f));
+        assertEquals(variableConfig.getDefaultPlottingParameters().getColorScaleRange(), Extents.newExtent(-10f, 10f));
+    }
+    
 //    @Test
     public void testSerialise() throws JAXBException {
         StringWriter serialiseWriter = new StringWriter();
