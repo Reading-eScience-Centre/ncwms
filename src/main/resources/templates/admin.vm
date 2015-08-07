@@ -288,7 +288,7 @@
             <tr><th>URL</th><td><input type="text" name="server.url" value="${config.serverInfo.url}"/></td><td>Web site of the service provider</td></tr>
             <tr><th>Max image width</th><td><input type="text" name="server.maximagewidth" value="${config.serverInfo.maxImageWidth}"/></td><td>Maximum width of image that can be requested</td></tr>
             <tr><th>Max image height</th><td><input type="text" name="server.maximageheight" value="${config.serverInfo.maxImageHeight}"/></td><td>Maximum width of image that can be requested</td></tr>
-            <tr><th>Allow GetFeatureInfo</th><td><input type="checkbox" name="server.allowfeatureinfo"#if(${config.serverInfo.allowFeatureInfo}) checked="checked"#end/></td><td>Check this box to enable the GetFeatureInfo operation</td></tr>
+            <tr><th>Allow GetFeatureInfo</th><td><input type="checkbox" name="server.allowfeatureinfo"#if(${config.serverInfo.allowsFeatureInfo()}) checked="checked"#end/></td><td>Check this box to enable the GetFeatureInfo operation</td></tr>
             <tr><th>Allow global Capabilities</th><td><input type="checkbox" name="server.allowglobalcapabilities"#if(${config.serverInfo.allowsGlobalCapabilities()}) checked="checked"#end/></td><td>Check this box to allow clients to request a
             WMS Capabilities document including all datasets on this server (not recommended if this server hosts a large number of datasets)</td></tr>
         </table>
