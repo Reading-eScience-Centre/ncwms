@@ -208,8 +208,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
 
                 @Override
                 public PlottingStyleParameters getDefaultPlottingParameters() {
-                    return new PlottingStyleParameters(null, ColourPalette.DEFAULT_PALETTE_NAME, null,
-                            null, null, false, ColourPalette.MAX_NUM_COLOURS);
+                    return new PlottingStyleParameters(null, ColourPalette.DEFAULT_PALETTE_NAME,
+                            null, null, null, false, ColourPalette.MAX_NUM_COLOURS, 1f);
                 }
 
                 @Override
