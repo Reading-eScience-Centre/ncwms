@@ -50,7 +50,7 @@ public class NcwmsConfigTest {
     @Before
     public void setUp() throws Exception {
         VariableConfig[] variables = new VariableConfig[] { new VariableConfig("varId", "A Variable", "A data-related quantity",
-                Extents.newExtent(-10f, 10f), "redblue", null, null, null, "linear", 250, null, null, null) };
+                Extents.newExtent(-10f, 10f), "redblue", null, null, null, "linear", 250) };
         
         DatasetConfig dataset = new DatasetConfig(variables);
         dataset.setId("datasetId");
