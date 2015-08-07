@@ -55,6 +55,7 @@ import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
 import uk.ac.rdg.resc.edal.dataset.cdm.CdmGridDatasetFactory;
 import uk.ac.rdg.resc.edal.graphics.formats.ImageFormat;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
+import uk.ac.rdg.resc.edal.graphics.style.util.SldTemplateStyleCatalogue;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.util.GISUtils;
 
@@ -99,7 +100,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
 
         String configDir = null;
         String homeDir = System.getProperty("user.home").replace("\\", "\\\\");
-        
+
         if (appProperties != null) {
             /*
              * See if we have a properties file which defines a configDir,
@@ -109,12 +110,48 @@ public class NcwmsApplicationServlet extends HttpServlet {
             if (configDir != null) {
                 configDir = configDir.replaceAll("\\$HOME", homeDir);
             }
-            
-            String paletteDir = appProperties.getProperty("paletteDir");
-            if(paletteDir != null) {
-                paletteDir = paletteDir.replaceAll("\\$HOME", homeDir);
-                File paletteDirFile = new File(paletteDir);
-                ColourPalette.addPaletteDirectory(paletteDirFile);
+
+            /*
+             * Add any additional directories containing palettes
+             */
+            String paletteDirsStr = appProperties.getProperty("paletteDirs");
+            if (paletteDirsStr != null) {
+                paletteDirsStr = paletteDirsStr.replaceAll("\\$HOME", homeDir);
+                String[] paletteDirs = paletteDirsStr.split(",");
+                for (String paletteDir : paletteDirs) {
+                    File paletteDirFile = new File(paletteDir);
+                    try {
+                        ColourPalette.addPaletteDirectory(paletteDirFile);
+                    } catch (FileNotFoundException e) {
+                        /*
+                         * This means the property was not a directory. Ignore
+                         * and log
+                         */
+                        log.warn(paletteDirFile.getAbsolutePath() + " is not a directory");
+                    }
+                }
+            }
+
+            /*
+             * Add any additional directories containing styles
+             */
+            String styleDirsStr = appProperties.getProperty("styleDirs");
+            if (styleDirsStr != null) {
+                styleDirsStr = styleDirsStr.replaceAll("\\$HOME", homeDir);
+                String[] styleDirs = styleDirsStr.split(",");
+                for (String styleDir : styleDirs) {
+                    File styleDirFile = new File(styleDir);
+                    try {
+                        SldTemplateStyleCatalogue.getStyleCatalogue().addStylesInDirectory(
+                                styleDirFile);
+                    } catch (FileNotFoundException e) {
+                        /*
+                         * This means the property was not a directory. Ignore
+                         * and log
+                         */
+                        log.warn(styleDirFile.getAbsolutePath() + " is not a directory");
+                    }
+                }
             }
         }
 

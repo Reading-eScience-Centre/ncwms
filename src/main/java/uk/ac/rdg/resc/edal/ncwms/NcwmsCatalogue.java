@@ -28,7 +28,6 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
-import java.awt.Color;
 import java.io.IOException;
 
 import net.sf.ehcache.Cache;
@@ -43,12 +42,12 @@ import uk.ac.rdg.resc.edal.catalogue.SimpleLayerNameMapper;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
 import uk.ac.rdg.resc.edal.dataset.Dataset;
 import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
-import uk.ac.rdg.resc.edal.domain.Extent;
 import uk.ac.rdg.resc.edal.exceptions.EdalException;
 import uk.ac.rdg.resc.edal.graphics.exceptions.EdalLayerNotFoundException;
 import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
 import uk.ac.rdg.resc.edal.graphics.style.util.EnhancedVariableMetadata;
 import uk.ac.rdg.resc.edal.graphics.style.util.LayerNameMapper;
+import uk.ac.rdg.resc.edal.graphics.style.util.PlottingStyleParameters;
 import uk.ac.rdg.resc.edal.graphics.style.util.SldTemplateStyleCatalogue;
 import uk.ac.rdg.resc.edal.graphics.style.util.StyleCatalogue;
 import uk.ac.rdg.resc.edal.metadata.VariableMetadata;
@@ -70,7 +69,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
 
     public NcwmsCatalogue(NcwmsConfig config) throws IOException {
         super(config, new SimpleLayerNameMapper());
-        this.styleCatalogue = new SldTemplateStyleCatalogue();
+        this.styleCatalogue = SldTemplateStyleCatalogue.getStyleCatalogue();
 
         /*
          * Configure cache for dynamic datasets. Keep up to 10 dynamic datasets
@@ -198,11 +197,6 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
              */
             EnhancedVariableMetadata metadata = new EnhancedVariableMetadata() {
                 @Override
-                public Boolean isLogScaling() {
-                    return false;
-                }
-
-                @Override
                 public String getId() {
                     return variableMetadata.getId();
                 }
@@ -213,18 +207,9 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 }
 
                 @Override
-                public String getPalette() {
-                    return ColourPalette.DEFAULT_PALETTE_NAME;
-                }
-
-                @Override
-                public Integer getNumColorBands() {
-                    return 250;
-                }
-
-                @Override
-                public Color getNoDataColour() {
-                    return null;
+                public PlottingStyleParameters getDefaultPlottingParameters() {
+                    return new PlottingStyleParameters(null, ColourPalette.DEFAULT_PALETTE_NAME, null,
+                            null, null, false, ColourPalette.MAX_NUM_COLOURS);
                 }
 
                 @Override
@@ -239,21 +224,6 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
 
                 @Override
                 public String getCopyright() {
-                    return null;
-                }
-
-                @Override
-                public Extent<Float> getColorScaleRange() {
-                    return null;
-                }
-
-                @Override
-                public Color getBelowMinColour() {
-                    return null;
-                }
-
-                @Override
-                public Color getAboveMaxColour() {
                     return null;
                 }
             };
