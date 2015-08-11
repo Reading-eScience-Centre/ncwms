@@ -46,7 +46,7 @@
         <td>
         <!-- Direct links to the Godiva2 site -->
 #foreach($variable in $dataset.getVariables())
-#set($layerName = $catalogue.getLayerName($dataset.id, $variable.id))
+#set($layerName = $catalogue.layerNameMapper.getLayerName($dataset.id, $variable.id))
 #set($bbox = $GISUtils.constrainBoundingBox($catalogue.getDatasetFromId($dataset.id).getVariableMetadata($variable.id).getHorizontalDomain().getBoundingBox()))
         <a href="Godiva.html?layer=$layerName&amp;bbox=$bbox.minX,$bbox.minY,$bbox.maxX,$bbox.maxY&amp;permalinking=true">$variable.title</a><br />
 #end
@@ -58,7 +58,7 @@
 #end
         <td>
 #foreach($variable in $dataset.variables)            
-#set($layerName = $catalogue.getLayerName($dataset.id, $variable.id))
+#set($layerName = $catalogue.layerNameMapper.getLayerName($dataset.id, $variable.id))
 #set($bbox = $GISUtils.constrainBoundingBox($catalogue.getDatasetFromId($dataset.id).getVariableMetadata($variable.id).getHorizontalDomain().getBoundingBox()))
             <a href="wms?REQUEST=GetMap&amp;VERSION=1.3.0&amp;STYLES=&amp;CRS=CRS:84&amp;WIDTH=256&amp;HEIGHT=256&amp;FORMAT=$mimeType&amp;TRANSPARENT=$transparent&amp;LAYERS=$layerName&amp;BBOX=$bbox.minX,$bbox.minY,$bbox.maxX,$bbox.maxY">$variable.title</a><br />
 #end
@@ -67,7 +67,7 @@
         <td>
 #foreach($variable in $dataset.variables)
 #if($variable.queryable)
-#set($layerName = $catalogue.getLayerName($dataset.id, $variable.id))
+#set($layerName = $catalogue.layerNameMapper.getLayerName($dataset.id, $variable.id))
 #set($bbox = $GISUtils.constrainBoundingBox($catalogue.getDatasetFromId($dataset.id).getVariableMetadata($variable.id).getHorizontalDomain().getBoundingBox()))
             <a href="wms?REQUEST=GetFeatureInfo&amp;VERSION=1.3.0&amp;STYLES=&amp;CRS=CRS:84&amp;WIDTH=256&amp;HEIGHT=256&amp;I=128&amp;J=128&amp;INFO_FORMAT=text/xml&amp;QUERY_LAYERS=$layerName&amp;LAYERS=$layerName&amp;BBOX=$bbox.minX,$bbox.minY,$bbox.maxX,$bbox.maxY">$variable.title</a><br />
 #end                
