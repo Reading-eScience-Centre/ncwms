@@ -39,6 +39,7 @@ import net.sf.ehcache.config.PersistenceConfiguration.Strategy;
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 import uk.ac.rdg.resc.edal.catalogue.DataCatalogue;
 import uk.ac.rdg.resc.edal.catalogue.SimpleLayerNameMapper;
+import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
 import uk.ac.rdg.resc.edal.dataset.Dataset;
 import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
@@ -238,6 +239,9 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 dynamicService = testDynamicService;
             }
         }
+        if (!dynamicService.getIdMatchPattern().matcher(layerName).matches()) {
+            return null;
+        }
         return dynamicService;
     }
 
@@ -258,21 +262,63 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
 
     @Override
     public boolean isDownloadable(String layerName) {
-        return getXmlVariable(layerName).isDownloadable();
+        VariableConfig xmlVariable = getXmlVariable(layerName);
+        if (xmlVariable != null) {
+            xmlVariable.isDownloadable();
+        } else {
+            /*
+             * We may be dealing with a dynamic dataset
+             */
+            NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(layerName);
+            if (dynamicService != null) {
+                return dynamicService.isDownloadable();
+            }
+        }
+        return false;
     }
 
     @Override
     public boolean isQueryable(String layerName) {
-        return getXmlVariable(layerName).isQueryable();
+        VariableConfig xmlVariable = getXmlVariable(layerName);
+        if (xmlVariable != null) {
+            xmlVariable.isQueryable();
+        } else {
+            /*
+             * We may be dealing with a dynamic dataset
+             */
+            NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(layerName);
+            if (dynamicService != null) {
+                return dynamicService.isQueryable();
+            }
+        }
+        return false;
     }
 
     @Override
     public boolean isDisabled(String layerName) {
-        return getXmlVariable(layerName).isDisabled();
+        VariableConfig xmlVariable = getXmlVariable(layerName);
+        if (xmlVariable != null) {
+            xmlVariable.isDisabled();
+        } else {
+            /*
+             * We may be dealing with a dynamic dataset
+             */
+            NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(layerName);
+            if (dynamicService != null) {
+                return dynamicService.isDisabled();
+            }
+        }
+        return true;
     }
 
     private VariableConfig getXmlVariable(String layerName) {
-        return config.getDatasetInfo(getLayerNameMapper().getDatasetIdFromLayerName(layerName))
-                .getVariableById(getLayerNameMapper().getVariableIdFromLayerName(layerName));
+        DatasetConfig datasetInfo = config.getDatasetInfo(getLayerNameMapper()
+                .getDatasetIdFromLayerName(layerName));
+        if (datasetInfo != null) {
+            return datasetInfo.getVariableById(getLayerNameMapper().getVariableIdFromLayerName(
+                    layerName));
+        } else {
+            return null;
+        }
     }
 }

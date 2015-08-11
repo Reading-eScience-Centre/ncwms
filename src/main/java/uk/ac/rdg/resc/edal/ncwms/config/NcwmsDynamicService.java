@@ -66,8 +66,6 @@ public class NcwmsDynamicService {
     @XmlTransient
     private Pattern idMatchPattern;
 
-
-
     public String getAlias() {
         return alias;
     }
