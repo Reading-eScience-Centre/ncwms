@@ -8,8 +8,9 @@
     <body>
 
     <h1>ncWMS Admin page</h1>
+    <h3>Running ncWMS v$version</h3>
 
-    <p><a href="../Godiva.html">Godiva3 interface</a></p>
+    <p><a href="../Godiva3.html">Godiva3 interface</a></p>
 #if($config.serverInfo.allowsGlobalCapabilities())    
     <p><a href="../wms?SERVICE=WMS&amp;REQUEST=GetCapabilities&amp;VERSION=1.3.0">WMS 1.3.0 Capabilities</a></p>
     <p><a href="../wms?SERVICE=WMS&amp;REQUEST=GetCapabilities&amp;VERSION=1.1.1">WMS 1.1.1 Capabilities</a></p>

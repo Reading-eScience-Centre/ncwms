@@ -111,7 +111,7 @@ public class NcwmsConfigTest {
     public void testDeserialise() throws JAXBException, SAXException, FileNotFoundException {
         NcwmsConfig deserialise = NcwmsConfig.deserialise(new StringReader(XML));
 //        NcwmsConfig deserialise = NcwmsConfig.deserialise(new FileReader(new File(
-//                "/home/guy/.ncWMS-edal/config.xml")));
+//                "/home/guy/.ncWMS2/config.xml")));
         System.out.println(deserialise);
     }
     

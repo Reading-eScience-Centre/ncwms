@@ -160,7 +160,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
          * default
          */
         if (configDir == null) {
-            configDir = homeDir + File.separator + ".ncWMS-edal";
+            configDir = homeDir + File.separator + ".ncWMS2";
         }
 
         /*
@@ -290,10 +290,26 @@ public class NcwmsApplicationServlet extends HttpServlet {
         ec.addEventHandler(new EscapeHtmlReference());
         ec.attachToContext(context);
 
+        context.put("version", getVersion());
         context.put("catalogue", catalogue);
         context.put("config", catalogue.getConfig());
         context.put("GISUtils", GISUtils.class);
         context.put("supportedImageFormats", ImageFormat.getSupportedMimeTypes());
         template.merge(context, response.getWriter());
+    }
+
+    static String getVersion() {
+        String path = "/version.properties";
+        InputStream stream = NcwmsApplicationServlet.class.getResourceAsStream(path);
+        if (stream == null)
+            return "UNKNOWN";
+        Properties props = new Properties();
+        try {
+            props.load(stream);
+            stream.close();
+            return (String) props.get("ncwms-version");
+        } catch (IOException e) {
+            return "UNKNOWN";
+        }
     }
 }

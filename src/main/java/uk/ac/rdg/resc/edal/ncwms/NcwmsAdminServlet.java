@@ -145,6 +145,7 @@ public class NcwmsAdminServlet extends HttpServlet {
         ec.addEventHandler(new EscapeHtmlReference());
         ec.attachToContext(context);
 
+        context.put("version", NcwmsApplicationServlet.getVersion());
         context.put("catalogue", catalogue);
         context.put("config", catalogue.getConfig());
         context.put("TimeUtils", TimeUtils.class);

@@ -298,7 +298,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     public boolean isDisabled(String layerName) {
         VariableConfig xmlVariable = getXmlVariable(layerName);
         if (xmlVariable != null) {
-            xmlVariable.isDisabled();
+            return xmlVariable.isDisabled();
         } else {
             /*
              * We may be dealing with a dynamic dataset
@@ -306,9 +306,10 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(layerName);
             if (dynamicService != null) {
                 return dynamicService.isDisabled();
+            } else {
+                return true;
             }
         }
-        return true;
     }
 
     private VariableConfig getXmlVariable(String layerName) {

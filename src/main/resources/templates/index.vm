@@ -8,8 +8,9 @@
     <body>
 
     <h1>$config.serverInfo.name</h1>
+    <h3>Running ncWMS v$version</h3>
 
-    <p><a href="Godiva.html">Godiva3 interface</a></p>
+    <p><a href="Godiva3.html">Godiva3 interface</a></p>
 #if($config.serverInfo.allowsGlobalCapabilities())
         <p><a href="wms?SERVICE=WMS&amp;REQUEST=GetCapabilities&amp;VERSION=1.3.0">WMS 1.3.0 Capabilities</a></p>
         <p><a href="wms?SERVICE=WMS&amp;REQUEST=GetCapabilities&amp;VERSION=1.1.1">WMS 1.1.1 Capabilities</a></p>
@@ -24,7 +25,7 @@
     <table border="1">
         <tr>
             <th>Dataset</th>
-            <th>Godiva2 links</th>
+            <th>Godiva3 links</th>
 #foreach($mimeType in $supportedImageFormats)
                 <th>Test GetMap: $mimeType</th>
 #end
@@ -48,7 +49,7 @@
 #foreach($variable in $dataset.getVariables())
 #set($layerName = $catalogue.layerNameMapper.getLayerName($dataset.id, $variable.id))
 #set($bbox = $GISUtils.constrainBoundingBox($catalogue.getDatasetFromId($dataset.id).getVariableMetadata($variable.id).getHorizontalDomain().getBoundingBox()))
-        <a href="Godiva.html?layer=$layerName&amp;bbox=$bbox.minX,$bbox.minY,$bbox.maxX,$bbox.maxY&amp;permalinking=true">$variable.title</a><br />
+        <a href="Godiva3.html?layer=$layerName&amp;bbox=$bbox.minX,$bbox.minY,$bbox.maxX,$bbox.maxY&amp;permalinking=true">$variable.title</a><br />
 #end
         </td>
 #foreach($mimeType in $supportedImageFormats)
