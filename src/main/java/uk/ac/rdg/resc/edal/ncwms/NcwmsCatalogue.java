@@ -281,7 +281,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     public boolean isQueryable(String layerName) {
         VariableConfig xmlVariable = getXmlVariable(layerName);
         if (xmlVariable != null) {
-            xmlVariable.isQueryable();
+            return xmlVariable.isQueryable();
         } else {
             /*
              * We may be dealing with a dynamic dataset
