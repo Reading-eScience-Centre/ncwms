@@ -30,7 +30,7 @@
 #end           
 #else            
             <b>Stack trace:</b><br />
-            ${err.class.name}: ${err.message}<br />
+            ${err.class.name} #if(${err.message}):${err.message}#end<br />
 #foreach($stacktraceelement in ${err.stackTrace})                
             ${stacktraceelement}<br />
 #end                
