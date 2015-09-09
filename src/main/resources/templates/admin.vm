@@ -59,17 +59,17 @@
 #end                            
                         <br />
                         Last update date:
-#if(!$catalogue.serverLastUpdate)
+#if(!$dataset.lastUpdateTime)
                         never
 #else                        
-                        $TimeUtils.formatUtcDateOnly($dataset.serverLastUpdate)
+                        $TimeUtils.formatUtcDateOnly($dataset.lastUpdateTime)
 #end                            
                         <br />
                         Last update time:
-#if(!$catalogue.serverLastUpdate)
+#if(!$dataset.lastUpdateTime)
                         never
 #else                        
-                        $TimeUtils.formatUtcTimeOnly($dataset.serverLastUpdate)
+                        $TimeUtils.formatUtcTimeOnly($dataset.lastUpdateTime)
 #end                            
                     </td>
                     <td align="right" width="190px">
