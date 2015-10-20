@@ -257,7 +257,15 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
 
     @Override
     public String getDatasetTitle(String datasetId) {
-        return config.getDatasetInfo(datasetId).getTitle();
+        DatasetConfig datasetInfo = config.getDatasetInfo(datasetId);
+        if (datasetInfo != null) {
+            return datasetInfo.getTitle();
+        } else if (getDynamicServiceFromLayerName(datasetId) != null) {
+            return "Dynamic service from " + datasetId;
+        } else {
+            throw new EdalLayerNotFoundException(datasetId
+                    + " does not refer to an existing dataset");
+        }
     }
 
     @Override
