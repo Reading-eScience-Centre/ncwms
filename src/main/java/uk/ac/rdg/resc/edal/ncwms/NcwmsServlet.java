@@ -44,6 +44,9 @@ import uk.ac.rdg.resc.edal.wms.WmsServlet;
 
 /**
  * Servlet implementation class NcWmsServlet
+ * 
+ * @author Guy Griffiths
+ * @author Nathan Potter
  */
 public class NcwmsServlet extends WmsServlet implements Servlet {
     private static final long serialVersionUID = 1L;
@@ -81,7 +84,7 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
     protected void dispatchWmsRequest(String request, RequestParams params,
             HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
             WmsCatalogue catalogue) throws Exception {
-        /*
+        /*-
          * For dynamic datasets, users can either specify the DATASET URL
          * parameter, or they can prepend the layer names with the path:
          * 
@@ -101,17 +104,48 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
          * the DATASET parameter and if it exists we prepend it to LAYERS,
          * QUERY_LAYERS (for GetFeatureInfo) and LAYERNAME (for many GetMetadata
          * requests)
+         * 
+         * To make matters (slightly) more complex, the dataset ID can be
+         * encoded within the URL, such that for a normal endpoint of:
+         * http://localhost:8080/ncWMS2/wms
+         * 
+         * the URL:
+         * http://localhost:8080/ncWMS2/wms/local/models/global/may1981.nc?...&LAYER=sst...
+         * 
+         * is exactly equivalent to the two examples above.
          */
 
         String dataset = params.getString("DATASET");
+
+        /*
+         * Code below thanks to NDP:
+         */
+        // Check the path for dynamic dataset content
+        String pathDataset = httpServletRequest.getPathInfo();
+        if (pathDataset != null) {
+            // Found a dynamic dataset name, woot!
+
+            // Dump leading / chars.
+            while (pathDataset.startsWith("/") && pathDataset.length() > 0)
+                pathDataset = pathDataset.substring(1);
+
+            // If there's still something left, make it the dataset name.
+            if (pathDataset.length() > 0)
+                dataset = pathDataset;
+        }
+        /*
+         * End of code from NDP
+         */
+
         if (dataset != null) {
             Map<String, String> newParams = new HashMap<>();
+            newParams.put("DATASET", dataset);
             String layersStr = params.getString("LAYERS");
             if (layersStr != null) {
                 String[] layers = layersStr.split(",");
                 StringBuilder newLayers = new StringBuilder();
                 for (String layer : layers) {
-                    newLayers.append(dataset + "/" + layer + ",");
+                    newLayers.append(combineDatasetAndLayer(dataset, layer) + ",");
                 }
                 newLayers.deleteCharAt(newLayers.length() - 1);
                 newParams.put("LAYERS", newLayers.toString());
@@ -121,18 +155,46 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
                 String[] queryLayers = queryLayersStr.split(",");
                 StringBuilder newQueryLayers = new StringBuilder();
                 for (String queryLayer : queryLayers) {
-                    newQueryLayers.append(dataset + "/" + queryLayer + ",");
+                    newQueryLayers.append(combineDatasetAndLayer(dataset, queryLayer) + ",");
                 }
                 newQueryLayers.deleteCharAt(newQueryLayers.length() - 1);
                 newParams.put("QUERY_LAYERS", newQueryLayers.toString());
             }
             String layerNameStr = params.getString("LAYERNAME");
             if (layerNameStr != null) {
-                newParams.put("LAYERNAME", dataset + "/" + layerNameStr);
+                newParams.put("LAYERNAME", combineDatasetAndLayer(dataset, layerNameStr));
             }
             params = params.mergeParameters(newParams);
         }
         super.dispatchWmsRequest(request, params, httpServletRequest, httpServletResponse,
                 catalogue);
+    }
+
+    /**
+     * For dynamic datasets specified on the URL, for some operations (e.g.
+     * GetMetadata&item=menu) we end up exposing a full (i.e. dataset included)
+     * layer name which then would get the dataset ID prepended to it again.
+     * 
+     * To avoid that, we check if the layername is already of the form
+     * "dataset/layername"
+     * 
+     * @param dataset
+     *            The dataset ID
+     * @param layer
+     *            The layer ID
+     * @return The combined ID
+     */
+    private String combineDatasetAndLayer(String dataset, String layer) {
+        if (layer.startsWith(dataset+"/")) {
+            /*
+             * Dataset ID is already included in layer name.
+             */
+            return layer;
+        } else {
+            /*
+             * Dataset ID is not already included in layer name.
+             */
+            return dataset + "/" + layer;
+        }
     }
 }

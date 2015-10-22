@@ -138,6 +138,13 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             if (dynamicService == null || dynamicService.isDisabled()) {
                 return null;
             }
+            
+            if(datasetId.equals(dynamicService.getAlias())) {
+                /*
+                 * Just the alias has been requested.  This isn't a dataset!
+                 */
+                return null;
+            }
             /*
              * We do the +1 so that the datasetPath doesn't start with a /
              */
@@ -239,7 +246,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 dynamicService = testDynamicService;
             }
         }
-        if (!dynamicService.getIdMatchPattern().matcher(layerName).matches()) {
+        if (dynamicService == null
+                || !dynamicService.getIdMatchPattern().matcher(layerName).matches()) {
             return null;
         }
         return dynamicService;

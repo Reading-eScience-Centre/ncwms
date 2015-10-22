@@ -44,6 +44,10 @@
         <url-pattern>/wms</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
+        <servlet-name>NcwmsServlet</servlet-name>
+        <url-pattern>/wms/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
         <servlet-name>ScreenshotServlet</servlet-name>
         <url-pattern>/screenshots/createScreenshot</url-pattern>
     </servlet-mapping>
