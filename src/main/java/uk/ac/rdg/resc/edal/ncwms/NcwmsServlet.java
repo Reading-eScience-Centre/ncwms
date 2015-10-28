@@ -75,8 +75,15 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
             NcwmsCatalogue ncwmsCatalogue = (NcwmsCatalogue) config;
             setCatalogue(ncwmsCatalogue);
         } else {
-            throw new ServletException(
-                    "ncWMS configuration object is incorrect type.  The \"NcwmsConfig\" attribute of the ServletContext has been incorrectly set.");
+            String message;
+            if (config == null) {
+                message = "ncWMS configuration object is null";
+            } else {
+                message = "ncWMS configuration object is incorrect type:"
+                        + config.getClass()
+                        + "\nThe \"NcwmsConfig\" attribute of the ServletContext has been incorrectly set.";
+            }
+            throw new ServletException(message);
         }
     }
 
@@ -185,7 +192,7 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
      * @return The combined ID
      */
     private String combineDatasetAndLayer(String dataset, String layer) {
-        if (layer.startsWith(dataset+"/")) {
+        if (layer.startsWith(dataset + "/")) {
             /*
              * Dataset ID is already included in layer name.
              */
