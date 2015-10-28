@@ -13,6 +13,9 @@
     <version>2.0.4-SNAPSHOT</version>
     <packaging>war</packaging>
     <name>ncWMS implementation using the EDAL libraries</name>
+    <properties>
+        <winstone.version>0.9.10</winstone.version>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
@@ -59,7 +62,7 @@
         <dependency>
             <groupId>net.sourceforge.winstone</groupId>
             <artifactId>winstone</artifactId>
-            <version>0.9.10</version>
+            <version>${winstone.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.gwt</groupId>
@@ -91,6 +94,7 @@
                 <version>2.2</version>
                 <configuration>
                     <attachClasses>true</attachClasses>
+                    <packagingExcludes>WEB-INF/lib/winstone-${winstone.version}.jar</packagingExcludes>
                 </configuration>
             </plugin>
             <plugin>
