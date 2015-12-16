@@ -58,6 +58,7 @@ import uk.ac.rdg.resc.edal.graphics.style.util.ColourPalette;
 import uk.ac.rdg.resc.edal.graphics.style.util.SldTemplateStyleCatalogue;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.util.GISUtils;
+import uk.ac.rdg.resc.edal.util.GISUtils.EpsgDatabasePath;
 
 /**
  * The main entry point of ncWMS. This deals with loading the configuration
@@ -156,10 +157,14 @@ public class NcwmsApplicationServlet extends HttpServlet {
         }
 
         /*
-         * If we didn't define a config directory, use the user's home as a
-         * default
+         * If we didn't define a config directory...
          */
         if (configDir == null) {
+            /*
+             * If we can write into the user's home directory, do that,
+             * otherwise create the config dir in the system's temporary
+             * directory.
+             */
             configDir = homeDir + File.separator + ".ncWMS2";
         }
 
@@ -168,9 +173,26 @@ public class NcwmsApplicationServlet extends HttpServlet {
          */
         File configDirFile = new File(configDir);
         if (!configDirFile.exists()) {
-            configDirFile.mkdirs();
+            boolean success = configDirFile.mkdirs();
+            if (!success) {
+                configDir = System.getProperty("java.io.tmpdir") + File.separator + ".ncWMS2";
+                configDirFile = new File(configDir);
+                if (!configDirFile.mkdirs()) {
+                    log.error("Cannot create config dir in home directory or at "
+                            + configDir
+                            + ".  Please specify the config directory in the config.properties file and restart the webapp.");
+                } else {
+                    log.warn("Config directory created at "
+                            + configDir
+                            + ".  This is only a temporary file!  To ensure persistence of settings, please specify the config directory in the config.properties file and restart the webapp.");
+                }
+            }
         }
 
+        /*
+         * Set some working directories to the config directory
+         */
+        EpsgDatabasePath.DB_PATH = configDirFile.getAbsolutePath();
         DatasetFactory.setWorkingDirectory(configDirFile);
 
         /*
