@@ -280,7 +280,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     public boolean isDownloadable(String layerName) {
         VariableConfig xmlVariable = getXmlVariable(layerName);
         if (xmlVariable != null) {
-            xmlVariable.isDownloadable();
+            return xmlVariable.isDownloadable();
         } else {
             /*
              * We may be dealing with a dynamic dataset
