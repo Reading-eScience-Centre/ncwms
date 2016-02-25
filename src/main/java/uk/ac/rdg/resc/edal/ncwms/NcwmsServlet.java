@@ -29,6 +29,7 @@
 package uk.ac.rdg.resc.edal.ncwms;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.Servlet;
@@ -36,6 +37,9 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.wms.RequestParams;
@@ -50,6 +54,7 @@ import uk.ac.rdg.resc.edal.wms.WmsServlet;
  */
 public class NcwmsServlet extends WmsServlet implements Servlet {
     private static final long serialVersionUID = 1L;
+    private static final Logger log = LoggerFactory.getLogger(NcwmsServlet.class);
 
     /**
      * @see WmsServlet#WmsServlet()
@@ -84,6 +89,21 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
                         + "\nThe \"NcwmsConfig\" attribute of the ServletContext has been incorrectly set.";
             }
             throw new ServletException(message);
+        }
+
+        Object advertisedPalettesObj = servletConfig.getServletContext().getAttribute(
+                "AdvertisedPalettes");
+        if (advertisedPalettesObj instanceof List<?>) {
+            try {
+                @SuppressWarnings("unchecked")
+                List<String> palettes = (List<String>) advertisedPalettesObj;
+                setCapabilitiesAdvertisedPalettes(palettes);
+            } catch (Exception e) {
+                /*
+                 * If we cannot set the advertised palettes, log it
+                 */
+                log.error("Problem setting advertised palettes", e);
+            }
         }
     }
 

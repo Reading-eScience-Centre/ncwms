@@ -32,6 +32,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import javax.servlet.ServletConfig;
@@ -153,6 +155,35 @@ public class NcwmsApplicationServlet extends HttpServlet {
                         log.warn(styleDirFile.getAbsolutePath() + " is not a directory");
                     }
                 }
+            }
+
+            /*
+             * Set the default palette, if defined
+             */
+            String defaultPaletteStr = appProperties.getProperty("defaultPalette");
+            if (defaultPaletteStr != null) {
+                if (!ColourPalette.setDefaultPalette(defaultPaletteStr)) {
+                    log.warn("Unable to set the default palette to "
+                            + defaultPaletteStr
+                            + ".  It is not a predefined palette name or a valid palette definition");
+                }
+            }
+            
+            /*
+             * Set the palettes to advertise in GetCapabilities
+             */
+            String advertisedPalettesStr = appProperties.getProperty("advertisedPalettes");
+            if (advertisedPalettesStr != null) {
+                String[] palettes = advertisedPalettesStr.split(",");
+                List<String> palettesToAdd = new ArrayList<>();
+                for (String palette : palettes) {
+                    palettesToAdd.add(palette);
+                }
+                /*
+                 * Store in the ServletContext, so that the other servlets
+                 * can access it.
+                 */
+                servletConfig.getServletContext().setAttribute("AdvertisedPalettes", palettesToAdd);
             }
         }
 
