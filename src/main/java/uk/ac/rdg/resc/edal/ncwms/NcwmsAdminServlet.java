@@ -93,7 +93,7 @@ public class NcwmsAdminServlet extends HttpServlet {
             throw new ServletException(
                     "ncWMS configuration object is incorrect type.  The \"NcwmsCatalogue\" attribute of the ServletContext has been incorrectly set.");
         }
-        
+
         /*
          * Retrieve the pre-loaded velocity engine
          */
@@ -123,6 +123,15 @@ public class NcwmsAdminServlet extends HttpServlet {
          * Parse the request
          */
         String path = request.getPathInfo();
+
+        /*
+         * Redirect URLs of the form http://hostname/ncWMS2/admin to
+         * http://hostname/ncWMS2/admin/
+         */
+        if (path == null) {
+            response.sendRedirect(request.getRequestURI() + "/");
+            return;
+        }
 
         if ("/".equals(path)) {
             /*
