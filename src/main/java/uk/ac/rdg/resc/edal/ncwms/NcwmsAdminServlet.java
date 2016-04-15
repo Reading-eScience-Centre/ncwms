@@ -347,10 +347,15 @@ public class NcwmsAdminServlet extends HttpServlet {
         int i = 0;
         while (request.getParameter("dataset.new" + i + ".id") != null) {
             /* Look for non-blank ID fields */
-            if (!request.getParameter("dataset.new" + i + ".id").trim().equals("")) {
+            String id = request.getParameter("dataset.new" + i + ".id");
+            if (id != null && !id.trim().equals("")) {
                 DatasetConfig ds = new DatasetConfig();
-                ds.setId(request.getParameter("dataset.new" + i + ".id"));
-                ds.setTitle(request.getParameter("dataset.new" + i + ".title"));
+                ds.setId(id);
+                String title = request.getParameter("dataset.new" + i + ".title");
+                if (title == null || title.trim().equals("")) {
+                    title = id;
+                }
+                ds.setTitle(title);
                 ds.setLocation(request.getParameter("dataset.new" + i + ".location"));
                 ds.setDataReaderClass(request.getParameter("dataset.new" + i + ".reader"));
                 ds.setDisabled(request.getParameter("dataset.new" + i + ".disabled") != null);
