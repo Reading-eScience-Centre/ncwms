@@ -482,7 +482,7 @@ public class NcwmsAdminServlet extends HttpServlet {
          * information.
          */
         try {
-            response.sendRedirect("");
+            response.sendRedirect("./");
         } catch (IOException e) {
             /*
              * This error isn't really important
@@ -542,7 +542,7 @@ public class NcwmsAdminServlet extends HttpServlet {
          * information.
          */
         try {
-            response.sendRedirect("");
+            response.sendRedirect("./");
         } catch (IOException e) {
             /*
              * This error isn't really important
