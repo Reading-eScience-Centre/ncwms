@@ -32,11 +32,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -91,104 +90,20 @@ public class NcwmsApplicationServlet extends HttpServlet {
          */
         DatasetFactory.setDefaultDatasetFactoryClass(CdmGridDatasetFactory.class);
 
-        /*
-         * Load the XML config for ncWMS, or create it if it doesn't yet exist.
-         */
-        Properties appProperties = new Properties();
-        try {
-            appProperties.load(getClass().getResourceAsStream("/config.properties"));
-        } catch (IOException e) {
-            log.warn("Could not read config.properties");
-        }
-
-        String configDir = null;
         String homeDir = System.getProperty("user.home").replace("\\", "\\\\");
 
-        if (appProperties != null) {
-            /*
-             * See if we have a properties file which defines a configDir,
-             * replacing $HOME with the actual home directory
-             */
-            configDir = appProperties.getProperty("configDir");
-            if (configDir != null) {
-                configDir = configDir.replaceAll("\\$HOME", homeDir);
-            }
-
-            /*
-             * Add any additional directories containing palettes
-             */
-            String paletteDirsStr = appProperties.getProperty("paletteDirs");
-            if (paletteDirsStr != null) {
-                paletteDirsStr = paletteDirsStr.replaceAll("\\$HOME", homeDir);
-                String[] paletteDirs = paletteDirsStr.split(",");
-                for (String paletteDir : paletteDirs) {
-                    File paletteDirFile = new File(paletteDir);
-                    try {
-                        ColourPalette.addPaletteDirectory(paletteDirFile);
-                    } catch (FileNotFoundException e) {
-                        /*
-                         * This means the property was not a directory. Ignore
-                         * and log
-                         */
-                        log.warn(paletteDirFile.getAbsolutePath() + " is not a directory");
-                    }
-                }
-            }
-
-            /*
-             * Add any additional directories containing styles
-             */
-            String styleDirsStr = appProperties.getProperty("styleDirs");
-            if (styleDirsStr != null) {
-                styleDirsStr = styleDirsStr.replaceAll("\\$HOME", homeDir);
-                String[] styleDirs = styleDirsStr.split(",");
-                for (String styleDir : styleDirs) {
-                    File styleDirFile = new File(styleDir);
-                    try {
-                        SldTemplateStyleCatalogue.getStyleCatalogue().addStylesInDirectory(
-                                styleDirFile);
-                    } catch (FileNotFoundException e) {
-                        /*
-                         * This means the property was not a directory. Ignore
-                         * and log
-                         */
-                        log.warn(styleDirFile.getAbsolutePath() + " is not a directory");
-                    }
-                }
-            }
-
-            /*
-             * Set the default palette, if defined
-             */
-            String defaultPaletteStr = appProperties.getProperty("defaultPalette");
-            if (defaultPaletteStr != null) {
-                if (!ColourPalette.setDefaultPalette(defaultPaletteStr)) {
-                    log.warn("Unable to set the default palette to "
-                            + defaultPaletteStr
-                            + ".  It is not a predefined palette name or a valid palette definition");
-                }
-            }
-            
-            /*
-             * Set the palettes to advertise in GetCapabilities
-             */
-            String advertisedPalettesStr = appProperties.getProperty("advertisedPalettes");
-            if (advertisedPalettesStr != null) {
-                String[] palettes = advertisedPalettesStr.split(",");
-                List<String> palettesToAdd = new ArrayList<>();
-                for (String palette : palettes) {
-                    palettesToAdd.add(palette);
-                }
-                /*
-                 * Store in the ServletContext, so that the other servlets
-                 * can access it.
-                 */
-                servletConfig.getServletContext().setAttribute("AdvertisedPalettes", palettesToAdd);
-            }
+        ServletContext context = servletConfig.getServletContext();
+        String configDir = context.getInitParameter("configDir");
+        /*
+         * By default this is set to $HOME\.ncWMS2
+         */
+        if (configDir != null) {
+            configDir = configDir.replaceAll("\\$HOME", homeDir);
         }
 
         /*
-         * If we didn't define a config directory...
+         * If we didn't define a config directory (e.g. user deleted it from
+         * web.xml)
          */
         if (configDir == null) {
             /*
@@ -211,15 +126,15 @@ public class NcwmsApplicationServlet extends HttpServlet {
                 if (!configDirFile.mkdirs()) {
                     log.error("Cannot create config dir in home directory or at "
                             + configDir
-                            + ".  Please specify the config directory in the config.properties file and restart the webapp.");
+                            + ".  Please specify the config directory in web.xml or a custom context and restart the webapp.");
                 } else {
                     log.warn("Config directory created at "
                             + configDir
-                            + ".  This is only a temporary file!  To ensure persistence of settings, please specify the config directory in the config.properties file and restart the webapp.");
+                            + ".  This is only a temporary file!  To ensure persistence of settings, please specify the config directory in web.xml or a custom context and restart the webapp.");
                 }
             }
         }
-
+        
         /*
          * Set some working directories to the config directory
          */
@@ -232,6 +147,75 @@ public class NcwmsApplicationServlet extends HttpServlet {
         File logDirFile = new File(configDir + File.separator + "logs");
         if (!logDirFile.exists()) {
             logDirFile.mkdir();
+        }
+        
+
+        /*
+         * Add any additional directories containing palettes
+         */
+        String paletteDirsStr = context.getInitParameter("paletteDirs");
+        if (paletteDirsStr != null) {
+            paletteDirsStr = paletteDirsStr.replaceAll("\\$HOME", homeDir);
+            String[] paletteDirs = paletteDirsStr.split(",");
+            for (String paletteDir : paletteDirs) {
+                File paletteDirFile = new File(paletteDir);
+                if (!paletteDirFile.exists()) {
+                    boolean mkdir = paletteDirFile.mkdirs();
+                    if (!mkdir) {
+                        log.warn("Palette directory: " + paletteDir
+                                + " did not exist and could not be created.");
+                    }
+                }
+                try {
+                    ColourPalette.addPaletteDirectory(paletteDirFile);
+                } catch (FileNotFoundException e) {
+                    /*
+                     * This means the property was not a directory. Ignore and
+                     * log
+                     */
+                    log.warn(paletteDirFile.getAbsolutePath() + " is not a directory");
+                }
+            }
+        }
+
+        /*
+         * Add any additional directories containing styles
+         */
+        String styleDirsStr = context.getInitParameter("styleDirs");
+        if (styleDirsStr != null) {
+            styleDirsStr = styleDirsStr.replaceAll("\\$HOME", homeDir);
+            String[] styleDirs = styleDirsStr.split(",");
+            for (String styleDir : styleDirs) {
+                File styleDirFile = new File(styleDir);
+                if (!styleDirFile.exists()) {
+                    boolean mkdir = styleDirFile.mkdirs();
+                    if (!mkdir) {
+                        log.warn("Style directory: " + styleDir
+                                + " did not exist and could not be created.");
+                    }
+                }
+                try {
+                    SldTemplateStyleCatalogue.getStyleCatalogue()
+                            .addStylesInDirectory(styleDirFile);
+                } catch (FileNotFoundException e) {
+                    /*
+                     * This means the property was not a directory. Ignore and
+                     * log
+                     */
+                    log.warn(styleDirFile.getAbsolutePath() + " is not a directory");
+                }
+            }
+        }
+
+        /*
+         * Set the default palette, if defined
+         */
+        String defaultPaletteStr = context.getInitParameter("defaultPalette");
+        if (defaultPaletteStr != null) {
+            if (!ColourPalette.setDefaultPalette(defaultPaletteStr)) {
+                log.warn("Unable to set the default palette to " + defaultPaletteStr
+                        + ".  It is not a predefined palette name or a valid palette definition");
+            }
         }
 
         /*
@@ -301,7 +285,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
          * Store the config in the ServletContext, so that the other servlets
          * can access it. All other servlets are loaded after this one.
          */
-        servletConfig.getServletContext().setAttribute("NcwmsCatalogue", catalogue);
+        context.setAttribute("NcwmsCatalogue", catalogue);
 
         /*
          * Now create a VelocityEngine to load velocity templates, and make it
@@ -316,7 +300,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
                 "org.apache.velocity.runtime.log.Log4JLogChute");
         velocityEngine.setProperty("runtime.log.logsystem.log4j.logger", "velocity");
         velocityEngine.init(props);
-        servletConfig.getServletContext().setAttribute("VelocityEngine", velocityEngine);
+        context.setAttribute("VelocityEngine", velocityEngine);
     }
 
     /**

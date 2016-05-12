@@ -28,6 +28,7 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,19 +92,25 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
             throw new ServletException(message);
         }
 
-        Object advertisedPalettesObj = servletConfig.getServletContext().getAttribute(
-                "AdvertisedPalettes");
-        if (advertisedPalettesObj instanceof List<?>) {
-            try {
-                @SuppressWarnings("unchecked")
-                List<String> palettes = (List<String>) advertisedPalettesObj;
-                setCapabilitiesAdvertisedPalettes(palettes);
-            } catch (Exception e) {
-                /*
-                 * If we cannot set the advertised palettes, log it
-                 */
-                log.error("Problem setting advertised palettes", e);
+        try {
+            /*
+             * Set the palettes to advertise in GetCapabilities
+             */
+            List<String> palettesToAdd = new ArrayList<>();
+            String advertisedPalettesStr = servletConfig.getServletContext().getInitParameter(
+                    "advertisedPalettes");
+            if (advertisedPalettesStr != null) {
+                String[] palettes = advertisedPalettesStr.split(",");
+                for (String palette : palettes) {
+                    palettesToAdd.add(palette);
+                }
             }
+            setCapabilitiesAdvertisedPalettes(palettesToAdd);
+        } catch (Exception e) {
+            /*
+             * If we cannot set the advertised palettes, log it
+             */
+            log.error("Problem setting advertised palettes", e);
         }
     }
 
