@@ -25,7 +25,7 @@ public class SLDParserTester {
 			final int WIDTH = 1024;
 			final int HEIGHT = 512;
 	        BoundingBox bbox = new BoundingBoxImpl(-180, -90, 180, 90, DefaultGeographicCRS.WGS84);
-			PlottingDomainParams params = new PlottingDomainParams(WIDTH, HEIGHT, bbox, null, null, null, null, null);
+			PlottingDomainParams params = PlottingDomainParams.paramsForGriddedDataset(WIDTH, HEIGHT, bbox, null, null);
 
 			// load the datasets from a config file
 			DatasetFactory.setDefaultDatasetFactoryClass(CdmGridDatasetFactory.class);
