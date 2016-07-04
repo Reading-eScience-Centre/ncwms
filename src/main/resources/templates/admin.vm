@@ -35,20 +35,20 @@
                     </td>
                     <td align="right" width="270px">
 	                    ID:
-	                    <input type="text" name="dataset.${dataset.id}.id" value="${dataset.id}" size="22"/>
+	                    <input type="text" name="dataset.${dataset.id}.id" value="${dataset.id}" size="22" title="An alphanumeric identifier for the dataset.  Must be unique"/>
 	                    <br />
 	                    Title:
-	                    <input type="text" name="dataset.${dataset.id}.title" value="${dataset.title}" size="22"/>
+	                    <input type="text" name="dataset.${dataset.id}.title" value="${dataset.title}" size="22" title="The title of the dataset to be displayed in menus/GetCapabilities"/>
 	                    <br />
 	                    Location:
-	                    <input type="text" name="dataset.${dataset.id}.location" value="${dataset.location}"size="22"/>
+	                    <input type="text" name="dataset.${dataset.id}.location" value="${dataset.location}"size="22" title="The location on disk (or via OPeNDAP) of the dataset"/>
                     </td>
                     <td align="right" width="220px">
                         More Info URL:
-                        <input type="text" name="dataset.${dataset.id}.moreinfo" value="#if(${dataset.moreInfo})${dataset.moreInfo}#end" size="10"/>
+                        <input type="text" name="dataset.${dataset.id}.moreinfo" value="#if(${dataset.moreInfo})${dataset.moreInfo}#end" size="10" title="A URL where more information about the dataset can be found"/>
 	                    <br />
                         Copyright:
-                        <input type="text" name="dataset.${dataset.id}.copyright" value="#if(${dataset.copyrightStatement})${dataset.copyrightStatement}#end" size="10"/>
+                        <input type="text" name="dataset.${dataset.id}.copyright" value="#if(${dataset.copyrightStatement})${dataset.copyrightStatement}#end" size="10" title="Any copyright information to be associated with this dataset.  Appears on graphs and when clicking the info button in Godiva3"/>
                     </td>
                     <td width="200px">
                         State:
@@ -74,7 +74,7 @@
                     </td>
                     <td align="right" width="190px">
                         Auto-refresh rate:
-                        <select name="dataset.${dataset.id}.updateinterval">
+                        <select name="dataset.${dataset.id}.updateinterval" title="How often this dataset should be re-read from source">
                             <option value="-1"#if($dataset.updateInterval < 0) selected="selected"#end>Never</option>
                             <option value="1"#if($dataset.updateInterval == 1) selected="selected"#end>1 min</option>
                             <option value="10"#if($dataset.updateInterval == 10) selected="selected"#end>10 min</option>
@@ -86,20 +86,20 @@
                         </select>
                         <br />
                         Force refresh:
-                        <input type="checkbox" name="dataset.${dataset.id}.refresh"/>
+                        <input type="checkbox" name="dataset.${dataset.id}.refresh" title="Check to force a refresh of this dataset"/>
                     </td>
                     <td align="right" width="100px">
                         Disabled:
-                        <input type="checkbox" name="dataset.${dataset.id}.disabled"#if(${dataset.disabled}) checked="checked"#end/>
+                        <input type="checkbox" name="dataset.${dataset.id}.disabled"#if(${dataset.disabled}) checked="checked"#end title="If this is checked, the dataset will not be available through any services, but will remain configured for future use"/>
                         <br />
                         Queryable:
-                        <input type="checkbox" name="dataset.${dataset.id}.queryable"#if(${dataset.queryable}) checked="checked"#end/>
+                        <input type="checkbox" name="dataset.${dataset.id}.queryable"#if(${dataset.queryable}) checked="checked"#end title="If this is checked, values from the dataset can be queried through the GetFeatureInfo request"/>
                         <br />
                         Downloadable:
-                        <input type="checkbox" name="dataset.${dataset.id}.downloadable"#if(${dataset.downloadable}) checked="checked"#end/>
+                        <input type="checkbox" name="dataset.${dataset.id}.downloadable"#if(${dataset.downloadable}) checked="checked"#end title="If this is checked, access to the raw data will be available.  This is accessed through GetMap requests with the format application/prs.coverage+json, or through GetTimeseries/GetVerticalProfile requests with the format text/csv"/>
                     </td>
-                    <td><input type="text" name="dataset.${dataset.id}.reader" value="${dataset.dataReaderClass}" size="10"/></td>
-                    <td><input type="checkbox" name="dataset.${dataset.id}.remove"/></td>
+                    <td><input type="text" name="dataset.${dataset.id}.reader" value="${dataset.dataReaderClass}" size="10" title="The class to use for reading data.  If blank, this will use the default data reader which works for all NetCDF CF-compliant gridded datasets"/></td>
+                    <td><input type="checkbox" name="dataset.${dataset.id}.remove" title="Check to remove this dataset from the configuration"/></td>
                 </tr>
 #end
 #foreach($i in [0..2])        
