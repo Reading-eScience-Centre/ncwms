@@ -92,11 +92,11 @@ public class NcwmsConfigTest {
         assertEquals(variableConfig.getDefaultPlottingParameters().isLogScaling(), true);
         
         variableConfig.setColorScaleRange(Extents.newExtent(-10f, 10f));
-        assertEquals(variableConfig.getDefaultPlottingParameters().getColorScaleRange(), Extents.newExtent(10f, 100f));
+        assertEquals(variableConfig.getDefaultPlottingParameters().getColorScaleRanges().get(0), Extents.newExtent(10f, 100f));
         variableConfig.setScaling("linear");
         assertEquals(variableConfig.getDefaultPlottingParameters().isLogScaling(), false);
         variableConfig.setColorScaleRange(Extents.newExtent(-10f, 10f));
-        assertEquals(variableConfig.getDefaultPlottingParameters().getColorScaleRange(), Extents.newExtent(-10f, 10f));
+        assertEquals(variableConfig.getDefaultPlottingParameters().getColorScaleRanges().get(0), Extents.newExtent(-10f, 10f));
     }
     
 //    @Test
