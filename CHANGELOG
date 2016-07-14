@@ -1,0 +1,99 @@
+1.2.1
+=====
+Bugfixes:
+    Fixed issue with NcML + SNAPSHOT NetCDF libs
+    Handle single-item collection in CoverageJSON as a coverage, not a collection
+    Fixed trailing slash issue on URI in CoverageJSON
+
+1.2.0
+=====
+Moved configuration to web.xml where it can be overridden so that it persists across deployments
+Moved User Guide into source tree, and setup gitbooks.com to automatically generate it on push.
+Added examples module for example code using EDAL
+Moved PlottingDomainParameters to the graphics module
+Implemented CoverageJSON as output format for WMS GetMap (disabled by default)
+Bugfixes:
+    WMS deals with out-of-range TIME/ELEVATION values properly (i.e. with an XML ServiceException)
+    Moved to (specific) SNAPSHOT version of NetCDF Java libs - the old ones were only in the repo by mistake
+
+1.1.2
+=====
+Updated licence conditions to require use of ReSC logo in Godiva3
+Bugfixes:
+    Remove data from cache when (if) it refreshes periodically - this was causing no data update
+    Correct handling of NaN in EN3/4 datasets
+    Fixed NullPointerException when dataset title is missing from admin interface
+    Godiva3 works properly on HTTPS
+    Made http://server/ncWMS2/admin redirect to http://server/ncWMS2/admin/
+    Fixed redirect issue on config update with Tomcat 8+
+    Fixed TRANSPARENT/BGCOLOR clash - TRANSPARENT always implies BGCOLOR=transparent
+
+1.1.1
+=====
+Changed default palette back to blues
+Added face-based grids for UGRID conventions
+Added workaround for 2D depth axes in UGRID
+Optimised UGRID data reading - was previously not fast enough to work with OPeNDAP reliably
+Bugfixes:
+    Fixed KDTree range search (didn't account for longitude wrapping)
+    Removed duplicate copyright messages from CSV download
+    
+
+1.1.0
+=====
+Support for unstructured grids which follow the UGRID conventions - includes refactor of dataset hierarchy
+Support for categorical datasets, including plotting, legend, and GetFeatureInfo
+Added more perceptually linear colour palettes
+Optimisation of Polygon.contains()
+Uses new background map server
+Re-added datetime label on animations
+Support for explicitly-specified axis bounds (i.e. "bounds" attribute in NetCDF)
+Bugfixes:
+    Animations respect log scale
+    Metadata filters on ImageLayers now only get applied to the relevant layers (not all layers)
+    Border around extraction area now only applies to glyph layers
+    Handles environments where the user's home directory is non-writable
+    Handles curvilinear cells which cross the dateline
+    Changed title for EN3/4 extracted features
+    Widened clickable box for GFI on continuous domain.  Rounding errors meant that the current one was a little too small
+    Arrow plots now use BGCOLOR parameter
+    Arrow plots have a default style
+    Changed default vector legend graphic to not include arrows
+
+1.0.4
+=====
+Modified AbstractPointDataset to make it simpler to extend
+Preliminary support for WaterML
+Made it possible to specify dataset as part of the URL
+Access to specific datasets in Godiva3 (incl. dynamic datasets)
+Better error handling in Godiva3
+Support for named colours
+Fixed bug where a parsing error on a style can cause ncWMS not to start
+Preliminary support for MODIS land cover
+
+1.0.3
+=====
+Added CHANGELOG
+Use latest version of JFreeChart
+Bugfixes:
+    Geographic bounding boxes were not always working in GetCapabilities
+    Time values were not read correctly in aggregations when they were stored as floats
+    Title generation for dynamic datasets
+    Return numerical data in same type as underlying storage
+
+1.0.2
+=====
+Update docs
+Bugfixes:
+    Layer names were not appearing in capabilities document
+    Last update times were not appearing in ncWMS admin interface
+    Only show messages from exceptions if present
+
+1.0.1
+=====
+Updated docs
+Fixed bug where pcolor library was not being included in edal-graphics
+
+1.0
+===
+First release of EDAL 1.0 / ncWMS 2.0

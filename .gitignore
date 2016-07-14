@@ -1,0 +1,14 @@
+# General
+target/
+.classpath
+.project
+.settings/
+.metadata/
+*.log
+.h2/
+gwt-unitCache/
+
+src/main/webapp/godiva3/
+src/main/webapp/WEB-INF/deploy/
+/pom-backup.xml
+/pom.xml.bak
