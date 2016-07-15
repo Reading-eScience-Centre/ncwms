@@ -5,7 +5,7 @@
     <groupId>uk.ac.rdg.resc</groupId>
     <artifactId>ncWMS</artifactId>
     <version>2.2.2-SNAPSHOT</version>
-    
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <gwt.version>2.7.0</gwt.version>
@@ -13,7 +13,7 @@
         <edal.version>1.2.2-SNAPSHOT</edal.version>
         <resc.url>http://www.met.reading.ac.uk/resc/home/</resc.url>
     </properties>
-    
+
     <packaging>war</packaging>
     <name>ncWMS2</name>
     <url>http://Reading-eScience-Centre.github.io/ncwms/</url>
@@ -112,7 +112,7 @@
     </dependencies>
 
     <build>
-            <finalName>ncWMS2</finalName>
+        <finalName>ncWMS2</finalName>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -160,7 +160,7 @@
                     </cmdLineOptions>
                 </configuration>
             </plugin>
-             <plugin>
+            <plugin>
                 <!-- Sets the source version to 1.7 -->
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -200,6 +200,36 @@
                         This makes documentation deployment very simple -->
                     <reportOutputDirectory>${project.basedir}</reportOutputDirectory>
                 </configuration>
+            </plugin>
+            <plugin>
+                <!-- On package, generate an image containing all of the 
+                    palettes for the documentation -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.5.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-palettes</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includePluginDependencies>true</includePluginDependencies>
+                    <mainClass>uk.ac.rdg.resc.edal.examples.DrawPalettes</mainClass>
+                    <arguments>
+                        <argument>${basedir}/docs/images/palettes.png</argument>
+                    </arguments>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.ac.rdg.resc</groupId>
+                        <artifactId>edal-examples</artifactId>
+                        <version>${edal.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
         <resources>
