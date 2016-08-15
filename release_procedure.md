@@ -43,15 +43,10 @@ Once all code is ready to be released, all tests pass, **and all documentation i
 git checkout -b release-VERSION
 ```
 
-### Set the release versions in the pom files:
-Maven should automatically pick the correct version to relase to - it will be the current development version without the "-SNAPSHOT" suffix
-
-```
-mvn versions:set
-cd ncwms
-mvn versions:set
-cd ..
-```
+### Set the release versions in the pom file:
+Edit the pom.xml file and change:
+* The version of the pom to the correct version (normally this is just removing the -SNAPSHOT suffix)
+* The version of EDAL to use in the properties.  This should match the version of ncWMS but be one major version lower - e.g. ncWMS 2.1 uses EDAL 1.1
 
 ### Build the software:
 ```
@@ -109,14 +104,7 @@ git merge master
 ```
 
 ### Set the snapshot versions:
-You should update the versions to the next snapshot version.  Usually this will be an update to the minor number.  For example if the last release was 1.2, the next version would be 1.3-SNAPSHOT
-
-```
-mvn versions:set
-cd ncwms
-mvn versions:set
-cd ..
-```
+You should update the versions to the next snapshot version.  Usually this will be an update to the minor number.  For example if the last release was 2.2, the next version would be 2.3-SNAPSHOT.  You should also modify the version of EDAL to be used
 
 ### Remove the backup files created by setting versions:
 ```
