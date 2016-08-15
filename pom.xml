@@ -4,13 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>uk.ac.rdg.resc</groupId>
     <artifactId>ncWMS</artifactId>
-    <version>2.2.2-SNAPSHOT</version>
+    <version>2.2.2</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <gwt.version>2.7.0</gwt.version>
         <winstone.version>0.9.10</winstone.version>
-        <edal.version>1.2.2-SNAPSHOT</edal.version>
+        <edal.version>1.2.2</edal.version>
         <resc.url>http://www.met.reading.ac.uk/resc/home/</resc.url>
     </properties>
 
@@ -133,6 +133,7 @@
                 <artifactId>maven-war-plugin</artifactId>
                 <version>2.2</version>
                 <configuration>
+                    <primaryArtifact>false</primaryArtifact>
                     <attachClasses>true</attachClasses>
                     <packagingExcludes>WEB-INF/lib/winstone-${winstone.version}.jar</packagingExcludes>
                 </configuration>
@@ -175,7 +176,7 @@
                 <version>1.6.2</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <serverId>ncwms-java-release</serverId>
+                    <serverId>ncwms-release</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>false</autoReleaseAfterClose>
                 </configuration>
