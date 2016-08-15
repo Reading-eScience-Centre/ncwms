@@ -17,7 +17,7 @@ Note that you can use the variables `$CONFIGDIR` and `$HOME` which represent the
 
 ## Defining new style templates {#styles}
 
-To create a new style for plotting, you will need to create an SLD template. The specification for EDAL-specific SLD documents can be found in [the appendix](../appendices/sld_spec/introduction.md). Within this template, you may use the following placeholders:
+To create a new style for plotting, you will need to create an SLD template. The specification for EDAL-specific SLD documents can be found in [the appendix of the EDAL User Guide](https://reading-escience-centre.gitbooks.io/edal-user-guide/content/appendices/sld_spec/introduction.html). Within this template, you may use the following placeholders:
 
 * $layerName
 * $paletteName
