@@ -1,52 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- POM for core module -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <artifactId>edal</artifactId>
-        <groupId>uk.ac.rdg.resc</groupId>
-        <version>1.2.1</version>
-        <relativePath>..</relativePath>
-    </parent>
+    <groupId>uk.ac.rdg.resc</groupId>
     <artifactId>ncWMS</artifactId>
-    <version>2.2.1</version>
-    <packaging>war</packaging>
-    <name>ncWMS implementation using the EDAL libraries</name>
+    <version>2.2.2</version>
+
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <gwt.version>2.7.0</gwt.version>
         <winstone.version>0.9.10</winstone.version>
+        <edal.version>1.2.2</edal.version>
+        <resc.url>http://www.met.reading.ac.uk/resc/home/</resc.url>
     </properties>
+
+    <packaging>war</packaging>
+    <name>ncWMS2</name>
+    <url>http://Reading-eScience-Centre.github.io/ncwms/</url>
+    <inceptionYear>2010</inceptionYear>
+    <description>ncWMS is a Web Map Service for displaying environmental data</description>
+    <organization>
+        <name>Reading e-Science Centre, University of Reading, UK</name>
+        <url>${resc.url}</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <url>https://raw.githubusercontent.com/Reading-eScience-Centre/ncwms/master/licence.txt</url>
+            <name>Modified BSD licence</name>
+            <comments>Permits redistribution and use in source and binary form
+            provided that the copyright notice is retained (see licence for
+            full details).</comments>
+        </license>
+    </licenses>
+    <!-- groupId, developers and build sections are all inherited by child 
+        modules -->
+    <developers>
+        <developer>
+            <name>Guy Griffiths</name>
+            <organization>Reading e-Science Centre, University of Reading, UK</organization>
+            <organizationUrl>${resc.url}</organizationUrl>
+            <email>guy.griffiths@reading.ac.uk</email>
+        </developer>
+        <developer>
+            <name>Jon Blower</name>
+            <organization>Reading e-Science Centre, University of Reading, UK</organization>
+            <organizationUrl>${resc.url}</organizationUrl>
+            <email>j.d.blower@reading.ac.uk</email>
+        </developer>
+    </developers>
     <dependencies>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-common</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${edal.version}</version>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-graphics</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${edal.version}</version>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-godiva</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${edal.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-cdm</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${edal.version}</version>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-xml-catalogue</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${edal.version}</version>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-wms</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${edal.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
@@ -67,17 +100,24 @@
         <dependency>
             <groupId>com.google.gwt</groupId>
             <artifactId>gwt-codeserver</artifactId>
-            <version>${gwtversion}</version>
+            <version>${gwt.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.5</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
     <build>
         <finalName>ncWMS2</finalName>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>gwt-maven-plugin</artifactId>
-                <version>${gwtversion}</version>
+                <version>${gwt.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -93,6 +133,7 @@
                 <artifactId>maven-war-plugin</artifactId>
                 <version>2.2</version>
                 <configuration>
+                    <primaryArtifact>false</primaryArtifact>
                     <attachClasses>true</attachClasses>
                     <packagingExcludes>WEB-INF/lib/winstone-${winstone.version}.jar</packagingExcludes>
                 </configuration>
@@ -120,6 +161,77 @@
                     </cmdLineOptions>
                 </configuration>
             </plugin>
+            <plugin>
+                <!-- Sets the source version to 1.7 -->
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+                <version>2.5.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.2</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ncwms-release</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-eclipse-plugin</artifactId>
+                <configuration>
+                    <downloadSources>true</downloadSources>
+                    <downloadJavadocs>true</downloadJavadocs>
+                </configuration>
+                <version>2.9</version>
+            </plugin>
+            <plugin>
+                <!-- Create aggregated javadoc for all modules -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.3</version>
+                <configuration>
+                    <!-- Output the apidocs to the base directory. These 
+                        are ignored in .gitignore for most branches, but NOT in the gh-pages branch. 
+                        This makes documentation deployment very simple -->
+                    <reportOutputDirectory>${project.basedir}</reportOutputDirectory>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!-- On package, generate an image containing all of the 
+                    palettes for the documentation -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.5.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-palettes</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includePluginDependencies>true</includePluginDependencies>
+                    <mainClass>uk.ac.rdg.resc.edal.examples.DrawPalettes</mainClass>
+                    <arguments>
+                        <argument>${basedir}/docs/images/palettes.png</argument>
+                    </arguments>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.ac.rdg.resc</groupId>
+                        <artifactId>edal-examples</artifactId>
+                        <version>${edal.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
         <resources>
             <resource>
@@ -137,5 +249,157 @@
                 </excludes>
             </resource>
         </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.apache.maven.plugins</groupId>
+                                        <artifactId>maven-enforcer-plugin</artifactId>
+                                        <versionRange>[1.0.0,)</versionRange>
+                                        <goals>
+                                            <goal>enforce</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore />
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.10.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <docfilessubdirs>true</docfilessubdirs>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <version>2.2.1</version>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.5</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>doclint-java8-disable</id>
+            <activation>
+                <jdk>[1.8,</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <additionalparam>-Xdoclint:none</additionalparam>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/Reading-eScience-Centre/ncwms/issues</url>
+    </issueManagement>
+    <reporting>
+        <plugins>
+            <plugin>
+                <!-- Create aggregated javadoc for all modules -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.3</version>
+                <configuration>
+                    <goal>javadoc:aggregate</goal>
+                    <!-- These links really belong in the child POMs but 
+                        if we put them there, they don't seem to get picked up when building the 
+                        javadoc for the aggregated project. Therefore if the versions of any of the 
+                        dependencies change these links will also have to be updated. -->
+                    <links>
+                        <link>http://java.sun.com/j2se/1.6.0/docs/api/</link>
+                        <link>http://joda-time.sourceforge.net/api-2.0/</link>
+                        <link>http://www.geoapi.org/3.0/javadoc/</link>
+                    </links>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!-- This means that we only generate javadocs for the site -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>2.6</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>index</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
+    </reporting>
+    <scm>
+        <connection>scm:git:ssh://github.com/Reading-eScience-Centre/ncwms</connection>
+        <developerConnection>scm:git:ssh://github.com/Reading-eScience-Centre/ncwms</developerConnection>
+        <url>https://github.com/Reading-eScience-Centre/ncwms</url>
+    </scm>
+    <distributionManagement>
+        <!-- use the following if you're not using a snapshot version. -->
+        <repository>
+            <id>ncwms-release</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+        <snapshotRepository>
+            <id>ncwms-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

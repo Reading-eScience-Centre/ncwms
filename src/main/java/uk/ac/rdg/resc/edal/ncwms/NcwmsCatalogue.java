@@ -234,6 +234,21 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 public String getCopyright() {
                     return null;
                 }
+
+                @Override
+                public boolean isQueryable() {
+                    return dynamicService.isQueryable();
+                }
+
+                @Override
+                public boolean isDownloadable() {
+                    return dynamicService.isDownloadable();
+                }
+
+                @Override
+                public boolean isDisabled() {
+                    return dynamicService.isDisabled();
+                }
             };
             return metadata;
         }
