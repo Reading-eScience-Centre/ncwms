@@ -1,3 +1,9 @@
+2.2.2
+=====
+Updated to EDAL 1.2.2
+
+The following entries contain changes to both ncWMS and the EDAL libraries - prior to release 2.2.2, ncWMS and EDAL were part of the same project.
+
 1.2.1
 =====
 Bugfixes:
