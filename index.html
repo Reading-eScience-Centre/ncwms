@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="ncWMS : A Web Map Service for displaying environmental data over the web">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>ncWMS</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/Reading-eScience-Centre/ncwms">View on GitHub</a>
+
+          <h1 id="project_title">ncWMS</h1>
+          <h2 id="project_tagline">A Web Map Service for displaying environmental data over the web</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/Reading-eScience-Centre/ncwms/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/Reading-eScience-Centre/ncwms/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h2>
+<a id="what-is-ncwms" class="anchor" href="#what-is-ncwms" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What is ncWMS?</h2>
+
+<p><a href="https://reading-escience-centre.gitbooks.io/ncwms-user-guide/content/">ncWMS</a> is a <a href="http://en.wikipedia.org/wiki/Web_Map_Service">Web Map Service</a> for displaying environmental data.</p>
+
+<h2>
+<a id="getting-ncwms" class="anchor" href="#getting-ncwms" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting ncWMS</h2>
+
+<p><a href="https://reading-escience-centre.gitbooks.io/ncwms-user-guide/content/">ncWMS</a> is designed to run in a servlet container such as <a href="http://tomcat.apache.org/">Tomcat</a> or <a href="https://glassfish.java.net/">Glassfish</a>. However, we do provide a standalone version which uses an embedded <a href="http://winstone.sourceforge.net/">Winstone</a> servlet container to allow users to quickly try it out.</p>
+
+<h3>
+<a id="servlet-container-version" class="anchor" href="#servlet-container-version" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Servlet container version</h3>
+
+<p>This is the standard version of ncWMS which most people will want to use. It can be obtained by downloading <code>ncWMS2.war</code> from <a href="https://github.com/Reading-eScience-Centre/ncwms/releases/latest">here</a></p>
+
+<p>Note that you will need to configure a security role within your servlet container to be able to use this.</p>
+
+<h3>
+<a id="standalone-version" class="anchor" href="#standalone-version" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Standalone version</h3>
+
+<p>The standalone version of ncWMS can be obtained by downloading <code>ncWMS2-standalone.jar</code> from <a href="https://github.com/Reading-eScience-Centre/ncwms/releases/latest">here</a></p>
+
+<p>Note that this version is designed to be run locally and has no security for any of the administrative functions. To run a publicly-available version of ncWMS, please use the servlet container version.</p>
+
+<h2>
+<a id="seeing-ncwms-in-action" class="anchor" href="#seeing-ncwms-in-action" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Seeing ncWMS in Action</h2>
+
+<p>We have a demo site for ncWMS available <a href="http://godiva.rdg.ac.uk/ncWMS2/Godiva3.html">here</a>.</p>
+
+<p>The <a href="http://viewer.coaps.fsu.edu/GlobalHycom/mapviewer">Global HYCOM viewer</a> uses ncWMS in its backend.</p>
+
+<p>The <a href="http://www.unidata.ucar.edu/software/thredds/current/tds/TDS.html">THREDDS Data Server</a> is packaged with a version of ncWMS for viewing THREDDS-catalogued products in a browser.</p>
+
+<p><a href="http://docs.opendap.org/index.php/Hyrax">Hyrax</a> also uses ncWMS2 for visualisation.</p>
+
+<p>If you are using ncWMS on a publicly-available website and would like to have it listed here, please <a href="mailto:resc@reading.ac.uk">contact us</a></p>
+
+<h2>
+<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Authors and Contributors</h2>
+
+<p><a href="https://github.com/guygriffiths" class="user-mention">@guygriffiths</a>, <a href="https://github.com/jonblower" class="user-mention">@jonblower</a>, <a href="https://github.com/ndp-opendap" class="user-mention">@ndp-opendap</a>, <a href="https://github.com/N-Lin" class="user-mention">@N-Lin</a>, <a href="https://github.com/purplecat" class="user-mention">@purplecat</a></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">ncWMS maintained by <a href="https://github.com/Reading-eScience-Centre">Reading-eScience-Centre</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
