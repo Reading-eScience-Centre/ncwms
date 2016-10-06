@@ -86,23 +86,27 @@ public class NcwmsAdminServlet extends HttpServlet {
         /*
          * Retrieve the pre-loaded catalogue and set the admin password
          */
-        Object config = servletConfig.getServletContext().getAttribute("NcwmsCatalogue");
+        Object config = servletConfig.getServletContext().getAttribute(
+                NcwmsApplicationServlet.CONTEXT_NCWMS_CATALOGUE);
         if (config instanceof NcwmsCatalogue) {
             catalogue = (NcwmsCatalogue) config;
         } else {
-            throw new ServletException(
-                    "ncWMS configuration object is incorrect type.  The \"NcwmsCatalogue\" attribute of the ServletContext has been incorrectly set.");
+            throw new ServletException("ncWMS configuration object is incorrect type.  The \""
+                    + NcwmsApplicationServlet.CONTEXT_NCWMS_CATALOGUE
+                    + "\" attribute of the ServletContext has been incorrectly set.");
         }
 
         /*
          * Retrieve the pre-loaded velocity engine
          */
-        Object engine = servletConfig.getServletContext().getAttribute("VelocityEngine");
+        Object engine = servletConfig.getServletContext().getAttribute(
+                NcwmsApplicationServlet.CONTEXT_VELOCITY_ENGINE);
         if (engine instanceof VelocityEngine) {
             velocityEngine = (VelocityEngine) engine;
         } else {
-            throw new ServletException(
-                    "VelocityEngine object is incorrect type.  The \"VelocityEngine\" attribute of the ServletContext has been incorrectly set.");
+            throw new ServletException("VelocityEngine object is incorrect type.  The \""
+                    + NcwmsApplicationServlet.CONTEXT_VELOCITY_ENGINE
+                    + "\" attribute of the ServletContext has been incorrectly set.");
         }
     }
 

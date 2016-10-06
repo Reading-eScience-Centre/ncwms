@@ -73,6 +73,13 @@ import uk.ac.rdg.resc.edal.util.GISUtils.EpsgDatabasePath;
  * @author Guy Griffiths
  */
 public class NcwmsApplicationServlet extends HttpServlet {
+    public static final String CONTEXT_CONFIG_DIR = "configDir";
+    public static final String CONTEXT_PALETTE_DIRS = "paletteDirs";
+    public static final String CONTEXT_DEFAULT_PALETTE = "defaultPalette";
+    public static final String CONTEXT_STYLE_DIRS = "styleDirs";
+    public static final String CONTEXT_NCWMS_CATALOGUE = "NcwmsCatalogue";
+    public static final String CONTEXT_VELOCITY_ENGINE = "VelocityEngine";
+
     private static final long serialVersionUID = 1L;
     private static final Logger log = LoggerFactory.getLogger(NcwmsApplicationServlet.class);
 
@@ -93,7 +100,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
         String homeDir = System.getProperty("user.home").replace("\\", "\\\\");
 
         ServletContext context = servletConfig.getServletContext();
-        String configDir = context.getInitParameter("configDir");
+        String configDir = context.getInitParameter(CONTEXT_CONFIG_DIR);
         /*
          * By default this is set to $HOME\.ncWMS2
          */
@@ -134,7 +141,13 @@ public class NcwmsApplicationServlet extends HttpServlet {
                 }
             }
         }
-        
+
+        /*
+         * We now have the config directory properly set up, now make it
+         * available the ServletContext, so that other webapps can use it.
+         */
+        context.setAttribute(CONTEXT_CONFIG_DIR, configDir);
+
         /*
          * Set some working directories to the config directory
          */
@@ -148,12 +161,11 @@ public class NcwmsApplicationServlet extends HttpServlet {
         if (!logDirFile.exists()) {
             logDirFile.mkdir();
         }
-        
 
         /*
          * Add any additional directories containing palettes
          */
-        String paletteDirsStr = context.getInitParameter("paletteDirs");
+        String paletteDirsStr = context.getInitParameter(CONTEXT_PALETTE_DIRS);
         if (paletteDirsStr != null) {
             paletteDirsStr = paletteDirsStr.replaceAll("\\$HOME", homeDir);
             String[] paletteDirs = paletteDirsStr.split(",");
@@ -181,7 +193,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
         /*
          * Add any additional directories containing styles
          */
-        String styleDirsStr = context.getInitParameter("styleDirs");
+        String styleDirsStr = context.getInitParameter(CONTEXT_STYLE_DIRS);
         if (styleDirsStr != null) {
             styleDirsStr = styleDirsStr.replaceAll("\\$HOME", homeDir);
             String[] styleDirs = styleDirsStr.split(",");
@@ -210,7 +222,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
         /*
          * Set the default palette, if defined
          */
-        String defaultPaletteStr = context.getInitParameter("defaultPalette");
+        String defaultPaletteStr = context.getInitParameter(CONTEXT_DEFAULT_PALETTE);
         if (defaultPaletteStr != null) {
             if (!ColourPalette.setDefaultPalette(defaultPaletteStr)) {
                 log.warn("Unable to set the default palette to " + defaultPaletteStr
@@ -285,7 +297,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
          * Store the config in the ServletContext, so that the other servlets
          * can access it. All other servlets are loaded after this one.
          */
-        context.setAttribute("NcwmsCatalogue", catalogue);
+        context.setAttribute(CONTEXT_NCWMS_CATALOGUE, catalogue);
 
         /*
          * Now create a VelocityEngine to load velocity templates, and make it
@@ -300,7 +312,7 @@ public class NcwmsApplicationServlet extends HttpServlet {
                 "org.apache.velocity.runtime.log.Log4JLogChute");
         velocityEngine.setProperty("runtime.log.logsystem.log4j.logger", "velocity");
         velocityEngine.init(props);
-        context.setAttribute("VelocityEngine", velocityEngine);
+        context.setAttribute(CONTEXT_VELOCITY_ENGINE, velocityEngine);
     }
 
     /**

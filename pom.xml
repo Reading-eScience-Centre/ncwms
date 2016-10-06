@@ -64,7 +64,6 @@
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-godiva</artifactId>
             <version>${edal.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
