@@ -56,14 +56,14 @@ mvn clean install
 ### Commit and tag the release:
 ```
 git commit -a -m "Update pom files for release VERSION"
-git tag edal-VERSION
+git tag ncwms-VERSION
 ```
 
 ### Deploy to sonatype:
 ```
 mvn deploy -P release
 ```
-Upon successful completion of this stage, log into [sonatype](http://oss.sonatype.org) with the username "resc", click the "Staging Repositories" link on the left, and scroll down to find the uk.ac.rdg.resc entry.  Select it and then click the "Release" button and enter a short comment.  This will allow the releases to be synchronised to Maven central, and an automated email will be sent once the process is complete.
+Upon successful completion of this stage, log into [sonatype](http://oss.sonatype.org) with the username "resc", click the "Staging Repositories" link on the left, and scroll down to find the uk.ac.rdg.resc entry.  Select it and then click the "Release" button and enter a short comment.  This will allow the releases to be synchronised to Maven central.
 
 ### Merge the release branch into master:
 ```
@@ -74,7 +74,7 @@ git push --tags
 ```
 
 ### Create a release on github:
-Go to [the project page on github](https://github.com/Reading-eScience-Centre/edal-java) and click the "Releases" link.  Go to the edal-VERSION release and click the "Edit tag" button.  You should now fill in the appropriate boxes and upload ncWMS.war, ncWMS-standalone.jar, and licence.txt as binary attachments.
+Go to [the project page on github](https://github.com/Reading-eScience-Centre/ncwms) and click the "Releases" link.  Go to the ncwms-VERSION release and click the "Edit tag" button.  You should now fill in the appropriate boxes and upload ncWMS.war, ncWMS-standalone.jar, and licence.txt as binary attachments.
 
 ### Upload the site documents
 Pushing the release to master will trigger a build of the ncWMS User Guide onto gitbooks.com.
@@ -105,11 +105,6 @@ git merge master
 
 ### Set the snapshot versions:
 You should update the versions to the next snapshot version.  Usually this will be an update to the minor number.  For example if the last release was 2.2, the next version would be 2.3-SNAPSHOT.  You should also modify the version of EDAL to be used
-
-### Remove the backup files created by setting versions:
-```
-find ./ -iname "*.versionsBackup" | xargs rm
-```
 
 ### Commit:
 ```
