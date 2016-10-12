@@ -4,13 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>uk.ac.rdg.resc</groupId>
     <artifactId>ncWMS</artifactId>
-    <version>2.2.2</version>
+    <version>2.2.3</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <gwt.version>2.7.0</gwt.version>
         <winstone.version>0.9.10</winstone.version>
-        <edal.version>1.2.2</edal.version>
+        <edal.version>1.2.3</edal.version>
         <resc.url>http://www.met.reading.ac.uk/resc/home/</resc.url>
     </properties>
 
@@ -64,7 +64,6 @@
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-godiva</artifactId>
             <version>${edal.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>

@@ -31,6 +31,13 @@
         <servlet-class>uk.ac.rdg.resc.edal.wms.ScreenshotServlet</servlet-class>
         <load-on-startup>4</load-on-startup>
     </servlet>
+    <servlet>
+        <description>The servlet which serves config info to Godiva3</description>
+        <display-name>GodivaConfigServlet</display-name>
+        <servlet-name>GodivaConfigServlet</servlet-name>
+        <servlet-class>uk.ac.rdg.resc.godiva.server.ConfigServlet</servlet-class>
+        <load-on-startup>5</load-on-startup>
+    </servlet>
     <filter>
         <filter-name>CORS</filter-name>
         <filter-class>com.thetransactioncompany.cors.CORSFilter</filter-class>
@@ -50,6 +57,10 @@
     <servlet-mapping>
         <servlet-name>ScreenshotServlet</servlet-name>
         <url-pattern>/screenshots/createScreenshot</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>GodivaConfigServlet</servlet-name>
+        <url-pattern>/getconfig</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>NcwmsApplicationServlet</servlet-name>

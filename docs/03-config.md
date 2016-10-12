@@ -78,3 +78,13 @@ To increase speed, ncWMS uses a cache of recently-extracted data. Enabling/disab
 ### Contact information
 
 This configures the contact information which will appear in the capabilities document
+
+## Configuring Godiva3
+
+Whilst Godiva3 does not generally need configuring, there are a a few options which can be configured.  This configuration is done though a simple [.properties](https://en.wikipedia.org/wiki/.properties) file, named `godiva3.properties` which is stored in the ncWMS2 configuration directory.  For convenience, this file is created with default settings the first time ncWMS is run, but can of course be created prior to running ncWMS for the first time.
+
+The `godiva3.properties` file can contain the following entries:
+
+* `mapHeight` - This must be an integer and is the height, in pixels, of the main map in Godiva3
+* `mapWidth` - This must be an integer and is the width, in pixels, of the main map in Godiva3
+* `proxy` - This is a string containing a proxy URL through which all requests will be made.  Request URLs are appended to the end of this proxy URL prior to being made, so any required parameters must be included in it. 

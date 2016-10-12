@@ -76,7 +76,8 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
         /*
          * Retrieve the pre-loaded catalogue and wire it up
          */
-        Object config = servletConfig.getServletContext().getAttribute("NcwmsCatalogue");
+        Object config = servletConfig.getServletContext().getAttribute(
+                NcwmsApplicationServlet.CONTEXT_NCWMS_CATALOGUE);
         if (config instanceof NcwmsCatalogue) {
             NcwmsCatalogue ncwmsCatalogue = (NcwmsCatalogue) config;
             setCatalogue(ncwmsCatalogue);
@@ -85,9 +86,9 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
             if (config == null) {
                 message = "ncWMS configuration object is null";
             } else {
-                message = "ncWMS configuration object is incorrect type:"
-                        + config.getClass()
-                        + "\nThe \"NcwmsConfig\" attribute of the ServletContext has been incorrectly set.";
+                message = "ncWMS configuration object is incorrect type:" + config.getClass()
+                        + "\nThe \"" + NcwmsApplicationServlet.CONTEXT_NCWMS_CATALOGUE
+                        + "\" attribute of the ServletContext has been incorrectly set.";
             }
             throw new ServletException(message);
         }

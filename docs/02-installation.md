@@ -4,7 +4,7 @@
 
 ncWMS can be downloaded as either a Java webapp (to be run in a servlet container such as Tomcat), or as a standalone Java application. Generally speaking, the webapp version is recommended for most uses. However, the standalone version is recommended for users who wish to only use ncWMS on their own machine for exploring data, or for testing ncWMS to explore its functionality prior to installing the webapp version.
 
-The latest release of ncWMS can be downloaded [here](https://github.com/Reading-eScience-Centre/edal-java/releases/latest).
+The latest release of ncWMS can be downloaded [here](https://github.com/Reading-eScience-Centre/ncwms/releases/latest).
 
 ## Standalone version {#standalone}
 
