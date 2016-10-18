@@ -62,12 +62,12 @@
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-godiva</artifactId>
             <version>${edal.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>gwt-user</artifactId>
-                    <groupId>com.google.gwt</groupId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.google.gwt</groupId>
+            <artifactId>gwt-user</artifactId>
+            <version>2.7.0</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>uk.ac.rdg.resc</groupId>
