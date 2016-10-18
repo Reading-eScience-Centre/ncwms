@@ -148,6 +148,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
          */
         context.setAttribute(CONTEXT_CONFIG_DIR, configDir);
 
+        log.debug("Config directory: "+configDir);
+        
         /*
          * Set some working directories to the config directory
          */
