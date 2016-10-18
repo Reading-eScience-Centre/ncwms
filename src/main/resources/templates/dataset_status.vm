@@ -28,13 +28,24 @@
 #else
             This dataset does not contain any errors
 #end           
-#else            
+#else
             <b>Stack trace:</b><br />
-            ${err.class.name} #if(${err.message}):${err.message}#end<br />
-#foreach($stacktraceelement in ${err.stackTrace})                
-            ${stacktraceelement}<br />
-#end                
-#end       
-        </p>         
+#error($err)      
+#end      
+        </p>
     </body>
 </html>
+
+#macro(error $err)
+            ${err.class.name}#if(${err.message}): <b>${err.message}</b>#end<br />
+#foreach($stacktraceelement in ${err.stackTrace})                
+            ${stacktraceelement}<br />
+#end
+#if(${err.cause})
+<br/>
+Caused by:
+<br/>
+#error(${err.cause})
+#end
+
+#end
