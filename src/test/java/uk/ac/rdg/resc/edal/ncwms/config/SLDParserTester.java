@@ -5,8 +5,6 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 
-import org.geotoolkit.referencing.crs.DefaultGeographicCRS;
-
 import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
 import uk.ac.rdg.resc.edal.dataset.cdm.CdmGridDatasetFactory;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
@@ -16,6 +14,7 @@ import uk.ac.rdg.resc.edal.graphics.style.sld.StyleSLDParser;
 import uk.ac.rdg.resc.edal.graphics.utils.FeatureCatalogue;
 import uk.ac.rdg.resc.edal.graphics.utils.PlottingDomainParams;
 import uk.ac.rdg.resc.edal.ncwms.NcwmsCatalogue;
+import uk.ac.rdg.resc.edal.util.GISUtils;
 
 public class SLDParserTester {
 
@@ -24,7 +23,7 @@ public class SLDParserTester {
 			// create the plotting domain
 			final int WIDTH = 1024;
 			final int HEIGHT = 512;
-	        BoundingBox bbox = new BoundingBoxImpl(-180, -90, 180, 90, DefaultGeographicCRS.WGS84);
+	        BoundingBox bbox = new BoundingBoxImpl(-180, -90, 180, 90, GISUtils.defaultGeographicCRS());
 			PlottingDomainParams params = PlottingDomainParams.paramsForGriddedDataset(WIDTH, HEIGHT, bbox, null, null);
 
 			// load the datasets from a config file
