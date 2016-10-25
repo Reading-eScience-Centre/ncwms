@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-    xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-    version="2.5">
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
     <servlet>
         <description>The servlet which deals with application setup and front-page requests</description>
         <display-name>NcwmsApplicationServlet</display-name>
@@ -94,14 +91,9 @@
         <realm-name>Login to administer ncWMS</realm-name>
     </login-config>
 
-    <!-- The following settings can be overridden by either changing this 
-        file in place (not recommended) or by defining a custom context in
-        $CATALINA_BASE/conf/[enginename]/[hostname]/[webappname].xml 
-        Within this file, override the parameter with entries in a Context tag such as: -->
+    <!-- The following settings can be overridden by either changing this file in place (not recommended) or by defining a custom context in $CATALINA_BASE/conf/[enginename]/[hostname]/[webappname].xml Within this file, override the parameter with entries in a Context tag such as: -->
     <!-- <Parameter name="configDir" value="$HOME/.ncWMS2-testserver" override="false"/> -->
-    <!-- Note that the override="false" is referring to the ability of THIS 
-        web.xml file to override the setting, so it NEEDS to be set to false to have 
-        any effect. -->
+    <!-- Note that the override="false" is referring to the ability of THIS web.xml file to override the setting, so it NEEDS to be set to false to have any effect. -->
 
     <!-- In these settings: -->
     <!-- $HOME represents the home directory of the user running the webapp -->
@@ -112,30 +104,29 @@
         <param-value>$HOME/.ncWMS2</param-value>
     </context-param>
     <context-param>
-        <!-- This specifies the locations where additional palettes can be 
-            found. It should be a comma-separated list. -->
+        <!-- This specifies the locations where additional palettes can be found. It should be a comma-separated list. -->
         <param-name>paletteDirs</param-name>
         <param-value>$HOME/.ncWMS2/.palettes</param-value>
     </context-param>
     <context-param>
-        <!-- This specifies the locations where additional style templates 
-            can be found. It should be a comma-separated list. -->
+        <!-- This specifies the locations where additional style templates can be found. It should be a comma-separated list. -->
         <param-name>styleDirs</param-name>
         <param-value>$HOME/.ncWMS2/.styles</param-value>
     </context-param>
     <context-param>
-        <!-- This specifies the default palette to use (i.e. the palette 
-            returned by the string "default"). It can be a predefined palette or a string 
-            of the form: 0x[AA]RRGGBB,0x[AA]RRGGBB,0x[AA]RRGGBB,... -->
+        <!-- This specifies the default palette to use (i.e. the palette returned by the string "default"). It can be a predefined palette or a string of the form: 0x[AA]RRGGBB,0x[AA]RRGGBB,0x[AA]RRGGBB,... -->
         <param-name>defaultPalette</param-name>
         <param-value>seq-BuYl</param-value>
     </context-param>
     <context-param>
-        <!-- This specifies a list of palettes to advertise in the Capabilities 
-            document in addition to the default one. Other palettes are available, but 
-            advertising the full set in the Capabilities document makes for an excessively 
-            large XML document. All palettes must be predefined named palettes. -->
+        <!-- This specifies a list of palettes to advertise in the Capabilities document in addition to the default one. Other palettes are available, but advertising the full set in the Capabilities document makes for an excessively large XML document. All palettes must be predefined named palettes. -->
         <param-name>advertisedPalettes</param-name>
         <param-value>div-RdBu,div-RdBu-inv,seq-cubeYF</param-value>
     </context-param>
+    <resource-ref>
+        <description>Connection to the database needed by Apache SIS.</description>
+        <res-ref-name>jdbc/SpatialMetadata</res-ref-name>
+        <res-ref-type>javax.sql.DataSource</res-ref-type>
+        <res-auth>Container</res-auth>
+    </resource-ref>
 </web-app>
