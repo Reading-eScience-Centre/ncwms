@@ -121,7 +121,11 @@
     <context-param>
         <!-- This specifies a list of palettes to advertise in the Capabilities document in addition to the default one. Other palettes are available, but advertising the full set in the Capabilities document makes for an excessively large XML document. All palettes must be predefined named palettes. -->
         <param-name>advertisedPalettes</param-name>
+        <param-value></param-value>
+        <!-- Only advertise the default.  The following is an example of advertising 3 palettes in addition to the default: -->
+        <!-- 
         <param-value>div-RdBu,div-RdBu-inv,seq-cubeYF</param-value>
+         -->
     </context-param>
     <resource-ref>
         <description>Connection to the database needed by Apache SIS.</description>
