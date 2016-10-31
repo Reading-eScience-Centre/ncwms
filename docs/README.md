@@ -12,6 +12,10 @@ This guide provides instructions on installing, setting up, and using ncWMS v2.
 
 ![Global sea-surface temperature created by EDAL libraries](images/sst.png)
 
+## Citing ncWMS
+
+If you have used ncWMS as part of a project which has produced scientific papers, please cite [this paper](http://dx.doi.org/10.1016/j.envsoft.2013.04.002)
+
 ## Licence
 
 [include](../licence.txt)
