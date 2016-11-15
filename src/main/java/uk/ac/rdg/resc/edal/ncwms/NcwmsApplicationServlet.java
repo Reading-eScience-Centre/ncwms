@@ -98,8 +98,10 @@ public class NcwmsApplicationServlet extends HttpServlet {
         DatasetFactory.setDefaultDatasetFactoryClass(CdmGridDatasetFactory.class);
 
         String homeDir = System.getProperty("user.home").replace("\\", "\\\\");
+        log.debug("User home directory is: "+homeDir);
 
         ServletContext context = servletConfig.getServletContext();
+        
         String configDir = context.getInitParameter(CONTEXT_CONFIG_DIR);
         /*
          * By default this is set to $HOME\.ncWMS2
@@ -121,6 +123,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
             configDir = homeDir + File.separator + ".ncWMS2";
         }
 
+        log.debug("Config directory is: "+configDir);
+        
         /*
          * If the config location doesn't exist, create it.
          */
