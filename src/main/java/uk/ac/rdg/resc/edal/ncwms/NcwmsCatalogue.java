@@ -32,11 +32,7 @@ import java.io.IOException;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
-import net.sf.ehcache.config.CacheConfiguration;
-import net.sf.ehcache.config.CacheConfiguration.TransactionalMode;
-import net.sf.ehcache.config.PersistenceConfiguration;
-import net.sf.ehcache.config.PersistenceConfiguration.Strategy;
-import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
+
 import uk.ac.rdg.resc.edal.catalogue.DataCatalogue;
 import uk.ac.rdg.resc.edal.catalogue.SimpleLayerNameMapper;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
@@ -71,30 +67,6 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     public NcwmsCatalogue(NcwmsConfig config) throws IOException {
         super(config, new SimpleLayerNameMapper());
         this.styleCatalogue = SldTemplateStyleCatalogue.getStyleCatalogue();
-
-        /*
-         * Configure cache for dynamic datasets. Keep up to 10 dynamic datasets
-         * in memory, and expire them after 10 minutes of inactivity.
-         * 
-         * This cache is primarily for dynamic EN3 datasets or other datasets
-         * which are expensive to create. For the normal gridded case datasets
-         * are cheap to create (but expensive to read) so this cache will have
-         * little effect on performance. For datasets where a spatial index
-         * needs to be built, this will save a lot of time. However it is
-         * probably only rarely (if ever) that this will be used in practice.
-         */
-        CacheConfiguration cacheConfig = new CacheConfiguration(DYNAMIC_DATASET_CACHE_NAME, 0)
-                .eternal(false).maxEntriesLocalHeap(10).timeToLiveSeconds(10 * 60)
-                .memoryStoreEvictionPolicy(MemoryStoreEvictionPolicy.LRU)
-                .persistence(new PersistenceConfiguration().strategy(Strategy.NONE))
-                .transactionalMode(TransactionalMode.OFF);
-
-        /*
-         * If we already have a cache, we can assume that the configuration has
-         * changed, so we remove and re-add it.
-         */
-        Cache dynamicDatasetCache = new Cache(cacheConfig);
-        cacheManager.addCache(dynamicDatasetCache);
     }
 
     /**

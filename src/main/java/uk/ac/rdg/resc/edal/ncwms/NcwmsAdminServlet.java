@@ -468,8 +468,7 @@ public class NcwmsAdminServlet extends HttpServlet {
         cache.setElementLifetimeMinutes(Float.parseFloat(request
                 .getParameter("cache.elementLifetimeMinutes")));
         /*
-         * Update the cache settings. This will clear any cached items from
-         * memory if the cache has changed.
+         * Update the cache settings.
          */
         catalogue.setCache(cache);
 

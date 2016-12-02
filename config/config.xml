@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<config>
+    <datasets>
+        <dataset id="FVCOM" title="FVCOM" location="/usr/local/ncWMS/data/fvcom_example.nc" queryable="true" downloadable="false" dataReaderClass="" copyrightStatement="" moreInfo="" disabled="false" updateInterval="-1">
+            <variables/>
+        </dataset>
+    </datasets>
+    <cache enabled="false">
+        <inMemorySizeMB>256</inMemorySizeMB>
+        <elementLifetimeMinutes>0.0</elementLifetimeMinutes>
+    </cache>
+    <dynamicServices/>
+    <contact>
+        <name></name>
+        <organization></organization>
+        <telephone></telephone>
+        <email></email>
+    </contact>
+    <server>
+        <title>ncWMS Server</title>
+        <allowFeatureInfo>true</allowFeatureInfo>
+        <maxImageWidth>1024</maxImageWidth>
+        <maxImageHeight>1024</maxImageHeight>
+        <abstract></abstract>
+        <keywords></keywords>
+        <url></url>
+        <allowglobalcapabilities>true</allowglobalcapabilities>
+    </server>
+</config>
