@@ -1,8 +1,0 @@
-<Context crossContext="true" backgroundProcessorDelay="10">
-    <WatchedResource>WEB-INF/web.xml</WatchedResource>
-    <Resource name="jdbc/SpatialMetadata"
-              type="javax.sql.DataSource" 
-              auth="Container" 
-              singleton="false" 
-              factory="uk.ac.rdg.resc.edal.util.GISUtils" />
-</Context>
