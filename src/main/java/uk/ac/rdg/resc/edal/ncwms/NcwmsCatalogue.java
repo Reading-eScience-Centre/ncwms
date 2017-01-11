@@ -50,6 +50,7 @@ import uk.ac.rdg.resc.edal.graphics.utils.StyleCatalogue;
 import uk.ac.rdg.resc.edal.metadata.VariableMetadata;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsSupportedCrsCodes;
 import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
 import uk.ac.rdg.resc.edal.wms.util.ContactInfo;
 import uk.ac.rdg.resc.edal.wms.util.ServerInfo;
@@ -63,6 +64,7 @@ import uk.ac.rdg.resc.edal.wms.util.ServerInfo;
 public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     private static final String DYNAMIC_DATASET_CACHE_NAME = "dynamicDatasetCache";
     private StyleCatalogue styleCatalogue;
+    private static String[] supportedCrsCodes;
 
     public NcwmsCatalogue(NcwmsConfig config) throws IOException {
         super(config, new SimpleLayerNameMapper());
@@ -76,6 +78,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     public NcwmsConfig getConfig() {
         return (NcwmsConfig) super.getConfig();
     }
+
+    public NcwmsSupportedCrsCodes getSupportedNcwmsCrsCodes() { return ((NcwmsConfig) config).getSupportedNcwmsCrsCodes(); }
 
     @Override
     public ServerInfo getServerInfo() {

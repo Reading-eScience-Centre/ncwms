@@ -26,4 +26,17 @@
         <url></url>
         <allowglobalcapabilities>true</allowglobalcapabilities>
     </server>
+    <crsCodes>
+        <code>"EPSG:4326"</code>
+        <code>"CRS:84"</code>
+        <code>"EPSG:41001"</code>
+        <code>"EPSG:27700"</code>
+        <code>"EPSG:3408"</code>
+        <code>"EPSG:3409"</code>
+        <code>"EPSG:3857"</code>
+        <code>"EPSG:5041"</code>
+        <code>"EPSG:5042"</code>
+        <code>"EPSG:32661"</code>
+        <code>"EPSG:32761"</code>
+    </crsCodes>
 </config>

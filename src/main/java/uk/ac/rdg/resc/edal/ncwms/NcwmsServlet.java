@@ -81,6 +81,10 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
         if (config instanceof NcwmsCatalogue) {
             NcwmsCatalogue ncwmsCatalogue = (NcwmsCatalogue) config;
             setCatalogue(ncwmsCatalogue);
+            String[] configDefinedCrsCodes = ((NcwmsCatalogue) config).getSupportedNcwmsCrsCodes().getSupportedCrsCodes();
+            if (configDefinedCrsCodes != null) {
+                super.setCrsCodes(configDefinedCrsCodes);
+            }
         } else {
             String message;
             if (config == null) {
