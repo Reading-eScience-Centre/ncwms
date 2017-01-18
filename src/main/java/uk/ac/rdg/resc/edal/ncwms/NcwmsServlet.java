@@ -28,6 +28,8 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
+import java.io.IOException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,16 +38,19 @@ import java.util.Map;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
+import uk.ac.rdg.resc.edal.exceptions.EdalException;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.wms.RequestParams;
-import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
 import uk.ac.rdg.resc.edal.wms.WmsServlet;
+import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
 
 /**
  * Servlet implementation class NcWmsServlet
@@ -56,6 +61,8 @@ import uk.ac.rdg.resc.edal.wms.WmsServlet;
 public class NcwmsServlet extends WmsServlet implements Servlet {
     private static final long serialVersionUID = 1L;
     private static final Logger log = LoggerFactory.getLogger(NcwmsServlet.class);
+
+    private NcwmsCatalogue ncwmsCatalogue = null;
 
     /**
      * @see WmsServlet#WmsServlet()
@@ -79,7 +86,7 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
         Object config = servletConfig.getServletContext().getAttribute(
                 NcwmsApplicationServlet.CONTEXT_NCWMS_CATALOGUE);
         if (config instanceof NcwmsCatalogue) {
-            NcwmsCatalogue ncwmsCatalogue = (NcwmsCatalogue) config;
+            ncwmsCatalogue = (NcwmsCatalogue) config;
             setCatalogue(ncwmsCatalogue);
             String[] configDefinedCrsCodes = ((NcwmsCatalogue) config).getSupportedNcwmsCrsCodes().getSupportedCrsCodes();
             if (configDefinedCrsCodes != null) {
@@ -205,8 +212,7 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
             }
             params = params.mergeParameters(newParams);
         }
-        super.dispatchWmsRequest(request, params, httpServletRequest, httpServletResponse,
-                catalogue);
+        super.dispatchWmsRequest(request, params, httpServletRequest, httpServletResponse, catalogue);
     }
 
     /**
