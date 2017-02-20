@@ -86,12 +86,9 @@ mvn javadoc:aggregate
 git add apidocs
 git stash save
 git checkout gh-pages
+git rm -r apidocs
 git stash pop
-```
-a merge will happen here.  If there are any conflicts, ALWAYS go with the freshly-generated version.
-```
-git add apidocs (to add API docs for new classes)
-git commit -a
+git commit -m "Updated apidocs"
 git push origin gh-pages
 ```
 
