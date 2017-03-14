@@ -49,6 +49,13 @@
         <servlet-class>uk.ac.rdg.resc.godiva.server.ConfigServlet</servlet-class>
         <load-on-startup>7</load-on-startup>
     </servlet>
+    <servlet>
+        <description>The servlet which serves Ehcache statistics</description>
+        <display-name>EhcacheStatisticsServlet</display-name>
+        <servlet-name>EhcacheStatisticsServlet</servlet-name>
+        <servlet-class>uk.ac.rdg.resc.edal.ncwms.NcwmsEhcacheStatsServlet</servlet-class>
+        <load-on-startup>8</load-on-startup>
+    </servlet>
     <filter>
         <filter-name>CORS</filter-name>
         <filter-class>com.thetransactioncompany.cors.CORSFilter</filter-class>
@@ -89,6 +96,10 @@
     <servlet-mapping>
         <servlet-name>NcwmsApiServlet</servlet-name>
         <url-pattern>/api/datasetinfo</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>EhcacheStatisticsServlet</servlet-name>
+        <url-pattern>/statistics</url-pattern>
     </servlet-mapping>
 
     <welcome-file-list>
