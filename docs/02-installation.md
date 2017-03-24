@@ -44,3 +44,76 @@ Security for the administration of ncWMS is delegated to the servlet container (
 ```
 
 Access to the administration interface would then be granted to a user with the name `admin` and the password `ncWMS-password`
+
+
+## Docker version {#docker}
+
+**Quickstart**
+
+```bash
+$ docker run \
+    -d \
+    -p 80:8080 \
+    -p 443:8443 \
+    -v /path/to/a/config.xml:/usr/local/tomcat/.ncWMS2/config.xml
+    axiom/ncwms:dev
+```
+
+Note: `-v` arguments require absolute path.
+
+**Production**
+
+```bash
+$ docker run \
+    -d \
+    -p 80:8080 \
+    -v /path/to/your/tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml \
+    -v /path/to/your/ncwms/config/directory:/usr/local/tomcat/.ncWMS2 \
+    -e "ADVERTISED_PALETTES=div-RdBu,div-RdBu-inv,seq-cubeYF" \
+    -e "DEFAULT_PALETTE=div-RdBu" \
+    --name ncwms \
+    axiom/ncwms:dev
+```
+
+### Configuration
+
+#### Tomcat
+
+See [these instructions](https://github.com/unidata/docker-tomcat) for configuring Tomcat
+
+
+#### ncWMS
+
+Mount your own `config` directory:
+
+```bash
+$ docker run \
+    -v /path/to/your/ncwms/config/directory:/usr/local/tomcat/.ncWMS2 \
+    ... \
+    axiom/ncwms:dev
+```
+
+Set your own [default palette](04-usage.md#getmap)
+
+```bash
+$ docker run \
+    -e "DEFAULT_PALETTE=seq-BuYl" \
+    ... \
+    axiom/ncwms:dev
+```
+
+Set your own [advertised palettes](04-usage.md#getmap)
+
+```bash
+$ docker run \
+    -e "ADVERTISED_PALETTES=div-RdBu,div-RdBu-inv,seq-cubeYF" \
+    ... \
+    axiom/ncwms:dev
+```
+
+#### Users
+
+By default, Tomcat will start with [two user accounts](https://github.com/axiom-data-science/ncwms/blob/master/config/tomcat-users.xml). The passwords are equal to the user name.
+
+* `ncwms` - used to admin ncWMS
+* `admin` - can be used by everything else (has full privileges)
