@@ -111,6 +111,17 @@ $ docker run \
     axiom/ncwms:dev
 ```
 
+#### JMX
+
+You can set the `JMX_OPTS` environmental variable when running the docker container to enable JMX. Port 9090 is exposed via the `Dockerfile` but you can use whichever port you would like.
+
+```bash
+$ docker run \
+    -e "JMX_OPS=-Dcom.sun.management.jmxremote.rmi.port=9090 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.port=9090 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false -Djava.rmi.server.hostname=0.0.0.0" \
+    ... \
+    axiom/ncwms:dev
+```
+
 #### Users
 
 By default, Tomcat will start with [two user accounts](https://github.com/axiom-data-science/ncwms/blob/master/config/tomcat-users.xml). The passwords are equal to the user name.

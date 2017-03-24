@@ -18,7 +18,6 @@ bin/
 *.iml
 
 .git
-data/
 book.json
 README.md
 CHANGELOG

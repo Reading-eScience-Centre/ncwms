@@ -30,7 +30,7 @@ RUN mkdir /edal && \
     cd /edal && \
     git clone https://github.com/axiom-data-science/edal-java.git && \
     cd edal-java && \
-    git checkout dev && \
+    git checkout simpledev && \
     JAVA_HOME=/usr/lib/jvm/java-8-oracle mvn clean install
 
 # Compile and install ncWMS
@@ -43,10 +43,13 @@ RUN cd /ncWMS && \
 
 # Set login-config to BASIC since it is handled through Tomcat
 RUN sed -i -e 's/DIGEST/BASIC/' $CATALINA_HOME/webapps/ncWMS/WEB-INF/web.xml && \
+    cp /ncWMS/config/setenv.sh $CATALINA_HOME/bin/setenv.sh && \
+    cp /ncWMS/config/ecache.xml $CATALINA_HOME/conf/ecache.xml && \
     cp /ncWMS/config/tomcat-users.xml $CATALINA_HOME/conf/tomcat-users.xml && \
     mkdir -p $CATALINA_HOME/conf/Catalina/localhost/ && \
     cp /ncWMS/config/ncWMS.xml $CATALINA_HOME/conf/Catalina/localhost/ncWMS.xml && \
-    cp /ncWMS/config/javaopts.sh $CATALINA_HOME/bin/javaopts.sh
+    mkdir -p $CATALINA_HOME/.ncWMS2 && \
+    cp /ncWMS/config/config.xml $CATALINA_HOME/.ncWMS2/config.xml
 
 ENTRYPOINT ["/ncWMS/entrypoint.sh"]
 

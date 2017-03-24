@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <config>
     <datasets>
-        <dataset id="FVCOM" title="FVCOM" location="/usr/local/ncWMS/data/fvcom_example.nc" queryable="true" downloadable="false" dataReaderClass="" copyrightStatement="" moreInfo="" disabled="false" updateInterval="-1">
+        <dataset id="FVCOM" title="FVCOM" location="/ncWMS/samples/fvcom_example.nc" queryable="true" downloadable="false" dataReaderClass="" copyrightStatement="" moreInfo="" disabled="false" updateInterval="-1">
             <variables/>
         </dataset>
     </datasets>
-    <cache enabled="false">
-        <inMemorySizeMB>256</inMemorySizeMB>
+    <cache enabled="true">
+        <inMemorySizeMB>1024</inMemorySizeMB>
         <elementLifetimeMinutes>0.0</elementLifetimeMinutes>
     </cache>
     <dynamicServices/>
