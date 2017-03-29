@@ -464,12 +464,17 @@ public class NcwmsAdminServlet extends HttpServlet {
 
         /* Set the properties of the cache */
         cache.setEnabled(request.getParameter("cache.enable") != null);
-        cache.setInMemorySizeMB(Integer.parseInt(request.getParameter("cache.inMemorySizeMB")));
-        cache.setElementLifetimeMinutes(Float.parseFloat(request
-                .getParameter("cache.elementLifetimeMinutes")));
+        String tmpMemorySize = request.getParameter("cache.inMemorySizeMB");
+        if (!tmpMemorySize.isEmpty()) {
+            cache.setInMemorySizeMB(Integer.parseInt(tmpMemorySize));
+        }
+        String tmpLifetime = request.getParameter("cache.elementLifetimeMinutes");
+        if (!tmpLifetime.isEmpty()) {
+            cache.setElementLifetimeMinutes(Float.parseFloat(tmpLifetime));
+        }
+
         /*
-         * Update the cache settings. This will clear any cached items from
-         * memory if the cache has changed.
+         * Update the cache settings.
          */
         catalogue.setCache(cache);
 

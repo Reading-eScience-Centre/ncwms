@@ -243,8 +243,8 @@
                 <td>N/A</td>
             </tr>
 #end
-        </table>        
-        
+        </table>
+
         <h2>Cache settings</h2>
         <p>This ncWMS server uses a cache of recently-extracted features to increase
         performance and reduce the load on the server.  Note that the cache will use up

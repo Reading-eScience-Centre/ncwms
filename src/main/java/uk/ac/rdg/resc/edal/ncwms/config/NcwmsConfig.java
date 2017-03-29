@@ -59,7 +59,7 @@ import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
  * 
  * @author Guy Griffiths
  */
-@XmlType(propOrder = { "dynamicServices", "contact", "serverInfo" })
+@XmlType(propOrder = { "dynamicServices", "contact", "serverInfo", "crsCodes" })
 @XmlRootElement(name = "config")
 public class NcwmsConfig extends CatalogueConfig {
     private static final Logger log = LoggerFactory.getLogger(NcwmsConfig.class);
@@ -71,6 +71,8 @@ public class NcwmsConfig extends CatalogueConfig {
     private NcwmsContact contact = new NcwmsContact();
     @XmlElement(name = "server")
     private NcwmsServerInfo serverInfo = new NcwmsServerInfo();
+    @XmlElement(name = "crsCodes")
+    private NcwmsSupportedCrsCodes crsCodes = new NcwmsSupportedCrsCodes();
 
     /*
      * Used for JAX-B
@@ -85,11 +87,12 @@ public class NcwmsConfig extends CatalogueConfig {
     }
 
     public NcwmsConfig(DatasetConfig[] datasets, NcwmsDynamicService[] dynamicServices,
-            NcwmsContact contact, NcwmsServerInfo serverInfo, CacheInfo cacheInfo) {
+            NcwmsContact contact, NcwmsServerInfo serverInfo, CacheInfo cacheInfo, NcwmsSupportedCrsCodes crsCodes) {
         super(datasets, cacheInfo);
         setDynamicServices(dynamicServices);
         this.contact = contact;
         this.serverInfo = serverInfo;
+        this.crsCodes = crsCodes;
     }
 
     public NcwmsContact getContactInfo() {
@@ -98,6 +101,10 @@ public class NcwmsConfig extends CatalogueConfig {
 
     public NcwmsServerInfo getServerInfo() {
         return serverInfo;
+    }
+
+    public NcwmsSupportedCrsCodes getSupportedNcwmsCrsCodes() {
+        return crsCodes;
     }
 
     /*
@@ -149,6 +156,9 @@ public class NcwmsConfig extends CatalogueConfig {
         sb.append("Server Info\n");
         sb.append("-----------\n");
         sb.append(serverInfo.toString());
+        sb.append("\n\n");
+        sb.append("Supported CRS Codes\n");
+        sb.append("-----------\n");       sb.append(crsCodes.toString());
         sb.append("\n");
         return sb.toString();
     }
@@ -158,9 +168,7 @@ public class NcwmsConfig extends CatalogueConfig {
 
         Unmarshaller unmarshaller = context.createUnmarshaller();
         Source source = new StreamSource(xmlConfig);
-        NcwmsConfig config = (NcwmsConfig) unmarshaller.unmarshal(source, NcwmsConfig.class)
-                .getValue();
-
+        NcwmsConfig config = (NcwmsConfig) unmarshaller.unmarshal(source, NcwmsConfig.class).getValue();
         return config;
     }
 
@@ -173,7 +181,7 @@ public class NcwmsConfig extends CatalogueConfig {
             log.warn("No config file exists in the given location (" + configFile.getAbsolutePath()
                     + ").  Creating one with defaults");
             config = new NcwmsConfig(new DatasetConfig[0], new NcwmsDynamicService[0],
-                    new NcwmsContact(), new NcwmsServerInfo(), new CacheInfo());
+                    new NcwmsContact(), new NcwmsServerInfo(), new CacheInfo(), new NcwmsSupportedCrsCodes());
             config.configFile = configFile;
             config.save();
         } else {

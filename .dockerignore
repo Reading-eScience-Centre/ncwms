@@ -1,4 +1,3 @@
-# General
 target/
 .classpath
 .project
@@ -12,7 +11,17 @@ src/main/webapp/godiva3/
 src/main/webapp/WEB-INF/deploy/
 pom-ackup.xml
 pom.xml.bak
+
 bin/
 *.swp
 *.idea
 *.iml
+
+.git
+book.json
+README.md
+CHANGELOG
+.travis.yml
+.gitignore
+release_procedure.md
+Dockerfile

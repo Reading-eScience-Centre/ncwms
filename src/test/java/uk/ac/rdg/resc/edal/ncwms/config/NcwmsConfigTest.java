@@ -36,6 +36,7 @@ import java.util.Arrays;
 
 import javax.xml.bind.JAXBException;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.SAXException;
@@ -44,6 +45,7 @@ import uk.ac.rdg.resc.edal.catalogue.jaxb.CacheInfo;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
 import uk.ac.rdg.resc.edal.util.Extents;
+import uk.ac.rdg.resc.edal.ncwms.NcwmsCatalogue;
 
 public class NcwmsConfigTest {
 
@@ -74,7 +76,10 @@ public class NcwmsConfigTest {
                 "a fake server", Arrays.asList("fake", "con", "front"), "http://google.com",
                 true);
         CacheInfo cacheInfo = new CacheInfo(true, 2000, 10.0f);
-        config = new NcwmsConfig(datasets, new NcwmsDynamicService[0], contact, serverInfo, cacheInfo);
+        String[] codes = {"CRS:187", "EPSG:187"};
+        NcwmsSupportedCrsCodes crsCodes = new NcwmsSupportedCrsCodes(codes);
+
+        config = new NcwmsConfig(datasets, new NcwmsDynamicService[0], contact, serverInfo, cacheInfo, crsCodes);
     }
 
     @Test
@@ -97,6 +102,12 @@ public class NcwmsConfigTest {
         assertEquals(variableConfig.getDefaultPlottingParameters().isLogScaling(), false);
         variableConfig.setColorScaleRange(Extents.newExtent(-10f, 10f));
         assertEquals(variableConfig.getDefaultPlottingParameters().getColorScaleRanges().get(0), Extents.newExtent(-10f, 10f));
+    }
+
+    @Test
+    public void testCrsCodeConfig(){
+        String[] codes = {"CRS:187", "EPSG:187"};
+        assertEquals(config.getSupportedNcwmsCrsCodes().getSupportedCrsCodes(), codes);
     }
     
 //    @Test

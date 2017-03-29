@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='utf-8'?>
+<tomcat-users xmlns="http://tomcat.apache.org/xml"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+              version="1.0">
+
+  <role rolename="admin-gui"/>
+  <role rolename="admin-script"/>
+  <role rolename="manager-gui"/>
+  <role rolename="manager-script"/>
+  <role rolename="manager-jmx"/>
+  <role rolename="manager-status"/>
+  <role rolename="ncWMS-admin"/>
+
+  <user username="ncwms"
+        password="823f3f8e9a2727375993229e4a71593618441c07"
+        roles="ncWMS-admin"/>
+
+  <user username="admin"
+        password="d033e22ae348aeb5660fc2140aec35850c4da997"
+        roles="manager-gui,manager-script,manager-jmx,manager-status,admin-script,admin-gui"/>
+
+</tomcat-users>

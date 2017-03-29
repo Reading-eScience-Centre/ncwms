@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<config>
+    <datasets>
+        <dataset id="FVCOM" title="FVCOM" location="/ncWMS/samples/fvcom_example.nc" queryable="true" downloadable="false" dataReaderClass="" copyrightStatement="" moreInfo="" disabled="false" updateInterval="-1">
+            <variables/>
+        </dataset>
+    </datasets>
+    <cache enabled="true">
+        <inMemorySizeMB>1024</inMemorySizeMB>
+        <elementLifetimeMinutes>0.0</elementLifetimeMinutes>
+    </cache>
+    <dynamicServices/>
+    <contact>
+        <name></name>
+        <organization></organization>
+        <telephone></telephone>
+        <email></email>
+    </contact>
+    <server>
+        <title>ncWMS Server</title>
+        <allowFeatureInfo>true</allowFeatureInfo>
+        <maxImageWidth>1024</maxImageWidth>
+        <maxImageHeight>1024</maxImageHeight>
+        <abstract></abstract>
+        <keywords></keywords>
+        <url></url>
+        <allowglobalcapabilities>true</allowglobalcapabilities>
+    </server>
+    <crsCodes>
+        <code>"EPSG:4326"</code>
+        <code>"CRS:84"</code>
+        <code>"EPSG:41001"</code>
+        <code>"EPSG:27700"</code>
+        <code>"EPSG:3408"</code>
+        <code>"EPSG:3409"</code>
+        <code>"EPSG:3857"</code>
+        <code>"EPSG:5041"</code>
+        <code>"EPSG:5042"</code>
+        <code>"EPSG:32661"</code>
+        <code>"EPSG:32761"</code>
+    </crsCodes>
+</config>

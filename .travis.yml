@@ -1,0 +1,12 @@
+sudo: required 
+language: java
+
+services:
+    - docker
+
+install:
+    - docker build -t ncwms/${TRAVIS_BRANCH,,} .
+    - docker run -d -p 8888:8080 -p 443:8443 --name ncwms ncwms/${TRAVIS_BRANCH,,}
+
+script:
+    - docker ps | grep -q ncwms
