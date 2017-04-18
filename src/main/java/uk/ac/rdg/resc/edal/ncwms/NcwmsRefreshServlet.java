@@ -28,32 +28,19 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
-import org.apache.velocity.app.VelocityEngine;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
+import java.io.IOException;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
-/**
- * An {@link HttpServlet} which deals with the admin pages of ncWMS -
- * adding/removing datasets, updating contact info, configuring cache etc.
- *
- * @author Guy Griffiths
- * @author Nathan Potter
- */
+import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
+
 public class NcwmsRefreshServlet extends HttpServlet {
-    private static final Logger log = LoggerFactory.getLogger(NcwmsRefreshServlet.class);
-
-    private VelocityEngine velocityEngine;
+    private static final long serialVersionUID = 1L;
     private NcwmsCatalogue catalogue;
 
     public NcwmsRefreshServlet() throws IOException, Exception {
@@ -72,16 +59,6 @@ public class NcwmsRefreshServlet extends HttpServlet {
                     + NcwmsApplicationServlet.CONTEXT_NCWMS_CATALOGUE
                     + "\" attribute of the ServletContext has been incorrectly set.");
         }
-
-        // Get Velocity Engine context
-        Object engine = servletConfig.getServletContext().getAttribute(NcwmsApplicationServlet.CONTEXT_VELOCITY_ENGINE);
-        if (engine instanceof VelocityEngine) {
-            velocityEngine = (VelocityEngine) engine;
-        } else {
-            throw new ServletException("VelocityEngine object is incorrect type.  The \""
-                    + NcwmsApplicationServlet.CONTEXT_VELOCITY_ENGINE
-                    + "\" attribute of the ServletContext has been incorrectly set.");
-        }
     }
 
     protected void setCatalogue(NcwmsCatalogue catalogue){
@@ -97,6 +74,6 @@ public class NcwmsRefreshServlet extends HttpServlet {
         DatasetConfig dataset = ncwmsConfig.getDatasetInfo(datasetId);
         dataset.forceRefresh();
         // Return 202 for accepted
-        response.setStatus(response.SC_ACCEPTED);
+        response.setStatus(HttpServletResponse.SC_ACCEPTED);
     }
 }

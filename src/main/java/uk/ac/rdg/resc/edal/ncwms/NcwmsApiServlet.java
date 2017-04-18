@@ -28,53 +28,24 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.velocity.Template;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.app.event.EventCartridge;
-import org.apache.velocity.app.event.implement.EscapeHtmlReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import uk.ac.rdg.resc.edal.catalogue.jaxb.CacheInfo;
-import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
-import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
-import uk.ac.rdg.resc.edal.graphics.utils.ColourPalette;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsContact;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsServerInfo;
-import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
-import uk.ac.rdg.resc.edal.util.Extents;
-import uk.ac.rdg.resc.edal.util.TimeUtils;
-import uk.ac.rdg.resc.edal.wms.RequestParams;
-
+import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.SocketException;
-import java.util.*;
 
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-/**
- * An {@link HttpServlet} which deals with the admin pages of ncWMS -
- * adding/removing datasets, updating contact info, configuring cache etc.
- *
- * @author Guy Griffiths
- * @author Nathan Potter
- */
+import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
+import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
+
 public class NcwmsApiServlet extends HttpServlet {
-    private static final Logger log = LoggerFactory.getLogger(NcwmsApiServlet.class);
-
-    private VelocityEngine velocityEngine;
+    private static final long serialVersionUID = 1L;
     private NcwmsCatalogue catalogue;
 
     public NcwmsApiServlet() throws IOException, Exception {
@@ -93,18 +64,6 @@ public class NcwmsApiServlet extends HttpServlet {
         } else {
             throw new ServletException("ncWMS configuration object is incorrect type.  The \""
                     + NcwmsApplicationServlet.CONTEXT_NCWMS_CATALOGUE
-                    + "\" attribute of the ServletContext has been incorrectly set.");
-        }
-
-        /*
-         * Get the pre-loaded velocity engine
-         */
-        Object engine = servletConfig.getServletContext().getAttribute(NcwmsApplicationServlet.CONTEXT_VELOCITY_ENGINE);
-        if (engine instanceof VelocityEngine) {
-            velocityEngine = (VelocityEngine) engine;
-        } else {
-            throw new ServletException("VelocityEngine object is incorrect type.  The \""
-                    + NcwmsApplicationServlet.CONTEXT_VELOCITY_ENGINE
                     + "\" attribute of the ServletContext has been incorrectly set.");
         }
     }
@@ -132,13 +91,12 @@ public class NcwmsApiServlet extends HttpServlet {
         datasetInfo.put("title", dataset.getTitle());
         datasetInfo.put("lastUpdate", dataset.getLastUpdateTime());
         datasetInfo.put("status", decodeState(dataset));
-        datasetInfo.put("message", null);
         JSONArray variables = new JSONArray();
         for (VariableConfig variable : dataset.getVariables()){
             JSONObject var = new JSONObject();
             var.put("id", variable.getId());
             var.put("title", variable.getTitle());
-            variables.add(var);
+            variables.put(var);
         }
         datasetInfo.put("variables", variables);
 

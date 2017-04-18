@@ -28,31 +28,33 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
-import java.util.Arrays;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import static org.mockito.Mockito.*;
-import static org.junit.Assert.*;
-
 import org.joda.time.DateTime;
-import org.junit.Test;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Before;
+import org.junit.Test;
 
-import uk.ac.rdg.resc.edal.ncwms.config.*;
-import uk.ac.rdg.resc.edal.wms.RequestParams;
+import uk.ac.rdg.resc.edal.catalogue.jaxb.CacheInfo;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
-import uk.ac.rdg.resc.edal.catalogue.jaxb.CacheInfo;
-import uk.ac.rdg.resc.edal.catalogue.DataCatalogue;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsContact;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsServerInfo;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsSupportedCrsCodes;
 import uk.ac.rdg.resc.edal.util.Extents;
-
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
 
 public class NcwmsApiTest {
 
@@ -122,13 +124,12 @@ public class NcwmsApiTest {
         datasetInfo.put("title", "A Dataset");
         datasetInfo.put("lastUpdate", DateTime.parse("2012-01-01"));
         datasetInfo.put("status", servlet.decodeState(dataset));
-        datasetInfo.put("message", null);
         JSONArray variables = new JSONArray();
         for (VariableConfig variable : dataset.getVariables()){
             JSONObject var = new JSONObject();
-            var.put("id", "varId");
+            var.put("id", variable.getId());
             var.put("title", "A Variable");
-            variables.add(var);
+            variables.put(var);
         }
         datasetInfo.put("variables", variables);
         servlet.setCatalogue(mockedNcwmsCatalogue);

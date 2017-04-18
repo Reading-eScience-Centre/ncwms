@@ -28,35 +28,23 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
-import com.google.gson.Gson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.statistics.StatisticsGateway;
 
-/**
- * An {@link HttpServlet} which deals with the admin pages of ncWMS -
- * adding/removing datasets, updating contact info, configuring cache etc.
- *
- * @author Guy Griffiths
- * @author Nathan Potter
- */
+import org.json.JSONObject;
+
 public class NcwmsEhcacheStatsServlet extends HttpServlet {
-    private static final Logger log = LoggerFactory.getLogger(NcwmsEhcacheStatsServlet.class);
+    private static final long serialVersionUID = 1L;
 
     private CacheManager cacheManager;
 
@@ -68,7 +56,9 @@ public class NcwmsEhcacheStatsServlet extends HttpServlet {
     public void init(ServletConfig servletConfig) throws ServletException {
         super.init(servletConfig);
 
-        // Get the CacheManager
+        /*
+         * Get the CacheManager
+         */
         cacheManager = CacheManager.getInstance();
     }
 
@@ -77,12 +67,14 @@ public class NcwmsEhcacheStatsServlet extends HttpServlet {
             throws ServletException, IOException {
         String[] cacheNames = cacheManager.getCacheNames();
 
-        // Gather the stats
-        HashMap<String, HashMap<String, Long>> allStats = new HashMap<>();
-        for(String name : cacheNames){
+        /*
+         * Gather the stats
+         */
+        JSONObject allStats = new JSONObject();
+        for (String name : cacheNames) {
             Cache cache = cacheManager.getCache(name);
 
-            HashMap<String, Long> cacheStats = new HashMap<String, Long>();
+            JSONObject cacheStats = new JSONObject();
             StatisticsGateway statisticsGateway = cache.getStatistics();
             cacheStats.put("CacheSize", statisticsGateway.getSize());
             cacheStats.put("HitCount", statisticsGateway.cacheHitCount());
@@ -96,12 +88,10 @@ public class NcwmsEhcacheStatsServlet extends HttpServlet {
             allStats.put(name, cacheStats);
         }
 
-        // Return things
         response.setContentType("application/json");
-        Gson gson = new Gson();
-        String jsonStats = gson.toJson(allStats);
+        
         PrintWriter out = response.getWriter();
-        out.print(jsonStats);
+        out.print(allStats.toString());
         out.flush();
     }
 }

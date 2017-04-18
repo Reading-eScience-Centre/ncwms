@@ -28,8 +28,6 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
-import java.io.IOException;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,19 +36,16 @@ import java.util.Map;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
-import uk.ac.rdg.resc.edal.exceptions.EdalException;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 import uk.ac.rdg.resc.edal.wms.RequestParams;
-import uk.ac.rdg.resc.edal.wms.WmsServlet;
 import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
+import uk.ac.rdg.resc.edal.wms.WmsServlet;
 
 /**
  * Servlet implementation class NcWmsServlet

@@ -28,7 +28,9 @@
 
 package uk.ac.rdg.resc.edal.ncwms.config;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
+
 import java.io.FileNotFoundException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -36,7 +38,6 @@ import java.util.Arrays;
 
 import javax.xml.bind.JAXBException;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.SAXException;
@@ -45,7 +46,6 @@ import uk.ac.rdg.resc.edal.catalogue.jaxb.CacheInfo;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
 import uk.ac.rdg.resc.edal.util.Extents;
-import uk.ac.rdg.resc.edal.ncwms.NcwmsCatalogue;
 
 public class NcwmsConfigTest {
 
@@ -106,8 +106,11 @@ public class NcwmsConfigTest {
 
     @Test
     public void testCrsCodeConfig(){
+        /*
+         * Commented out deprecated method.
+         */
         String[] codes = {"CRS:187", "EPSG:187"};
-        assertEquals(config.getSupportedNcwmsCrsCodes().getSupportedCrsCodes(), codes);
+        assertArrayEquals(config.getSupportedNcwmsCrsCodes().getSupportedCrsCodes(), codes);
     }
     
 //    @Test
