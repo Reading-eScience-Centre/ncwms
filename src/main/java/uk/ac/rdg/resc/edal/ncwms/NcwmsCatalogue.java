@@ -82,7 +82,9 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
         return (NcwmsConfig) super.getConfig();
     }
 
-    public NcwmsSupportedCrsCodes getSupportedNcwmsCrsCodes() { return ((NcwmsConfig) config).getSupportedNcwmsCrsCodes(); }
+    public NcwmsSupportedCrsCodes getSupportedNcwmsCrsCodes() {
+        return ((NcwmsConfig) config).getSupportedNcwmsCrsCodes();
+    }
 
     @Override
     public ServerInfo getServerInfo() {
@@ -105,9 +107,11 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
              * cache.
              */
             Cache dynamicDatasetCache = cacheManager.getCache(DYNAMIC_DATASET_CACHE_NAME);
-            Element element = dynamicDatasetCache.get(datasetId);
-            if (element != null && element.getObjectValue() != null) {
-                return (Dataset) element.getObjectValue();
+            if (dynamicDatasetCache != null) {
+                Element element = dynamicDatasetCache.get(datasetId);
+                if (element != null && element.getObjectValue() != null) {
+                    return (Dataset) element.getObjectValue();
+                }
             }
             /*
              * Check to see if we have a dynamic service defined which this
@@ -117,10 +121,10 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             if (dynamicService == null || dynamicService.isDisabled()) {
                 return null;
             }
-            
-            if(datasetId.equals(dynamicService.getAlias())) {
+
+            if (datasetId.equals(dynamicService.getAlias())) {
                 /*
-                 * Just the alias has been requested.  This isn't a dataset!
+                 * Just the alias has been requested. This isn't a dataset!
                  */
                 return null;
             }
