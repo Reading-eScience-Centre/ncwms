@@ -30,7 +30,7 @@ RUN mkdir /edal && \
     cd /edal && \
     git clone https://github.com/axiom-data-science/edal-java.git && \
     cd edal-java && \
-    git checkout simpledev && \
+    git checkout develop && \
     JAVA_HOME=/usr/lib/jvm/java-8-oracle mvn clean install
 
 # Compile and install ncWMS
