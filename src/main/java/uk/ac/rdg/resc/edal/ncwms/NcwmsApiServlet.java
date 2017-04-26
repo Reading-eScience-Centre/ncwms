@@ -44,6 +44,12 @@ import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 
+/*
+ * An {@link HttpServlet} which provides information about datasets from
+ * DatasetConfig instance via a REST API.
+ *
+ * @author Jesse Lopez
+ */
 public class NcwmsApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private NcwmsCatalogue catalogue;
