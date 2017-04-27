@@ -43,6 +43,12 @@ import net.sf.ehcache.statistics.StatisticsGateway;
 
 import org.json.JSONObject;
 
+/**
+ * An {@link HttpServlet} that returns caching statistics in JSON format.
+ *
+ * @author Jesse Lopez
+ */
+
 public class NcwmsEhcacheStatsServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 

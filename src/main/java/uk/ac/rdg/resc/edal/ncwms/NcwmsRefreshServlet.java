@@ -39,6 +39,12 @@ import javax.servlet.http.HttpServletResponse;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
 
+/**
+ * An {@link HttpServlet} which requests a dataset to be refreshed via an HTTP
+ * endpoint.
+ *
+ * @author Jesse Lopez
+ */
 public class NcwmsRefreshServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private NcwmsCatalogue catalogue;
