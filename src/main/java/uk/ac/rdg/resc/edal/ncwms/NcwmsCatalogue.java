@@ -154,7 +154,9 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 /*
                  * Store in the cache
                  */
-                dynamicDatasetCache.put(new Element(datasetId, dynamicDataset));
+                if (dynamicDatasetCache != null) {
+                    dynamicDatasetCache.put(new Element(datasetId, dynamicDataset));
+                }
                 return dynamicDataset;
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException
                     | IOException | EdalException e) {
