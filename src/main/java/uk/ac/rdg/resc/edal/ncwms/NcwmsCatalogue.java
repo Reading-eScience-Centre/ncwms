@@ -31,8 +31,13 @@ package uk.ac.rdg.resc.edal.ncwms;
 import java.io.IOException;
 
 import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 
+import net.sf.ehcache.config.CacheConfiguration;
+import net.sf.ehcache.config.Configuration;
+import net.sf.ehcache.config.PersistenceConfiguration;
+import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 import uk.ac.rdg.resc.edal.catalogue.DataCatalogue;
 import uk.ac.rdg.resc.edal.catalogue.SimpleLayerNameMapper;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
@@ -62,8 +67,15 @@ import uk.ac.rdg.resc.edal.wms.util.ServerInfo;
  * @author Guy Griffiths
  */
 public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
-    private static final String DYNAMIC_DATASET_CACHE_NAME = "dynamicDatasetCache";
     private StyleCatalogue styleCatalogue;
+
+    private static final String CACHE_NAME = "dynamicDatasetCache";
+    private static final int MAX_HEAP_ENTRIES = 10;
+    private static final int TIME_TO_LIVE_SECONDS = 600;
+    private static final MemoryStoreEvictionPolicy EVICTION_POLICY = MemoryStoreEvictionPolicy.LFU;
+    private static final PersistenceConfiguration.Strategy PERSISTENCE_STRATEGY = PersistenceConfiguration.Strategy.NONE;
+    private static final CacheConfiguration.TransactionalMode TRANSACTIONAL_MODE = CacheConfiguration.TransactionalMode.OFF;
+    private static Cache dynamicDatasetCache;
 
     public NcwmsCatalogue() {
         super();
@@ -72,6 +84,22 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     public NcwmsCatalogue(NcwmsConfig config) throws IOException {
         super(config, new SimpleLayerNameMapper());
         this.styleCatalogue = SldTemplateStyleCatalogue.getStyleCatalogue();
+
+        if (cacheManager.cacheExists(CACHE_NAME) == false) {
+            /*
+             * Configure cache
+             */
+            CacheConfiguration cacheConfig = new CacheConfiguration(CACHE_NAME, MAX_HEAP_ENTRIES)
+                    .eternal(true)
+                    .memoryStoreEvictionPolicy(EVICTION_POLICY)
+                    .persistence(new PersistenceConfiguration().strategy(PERSISTENCE_STRATEGY))
+                    .transactionalMode(TRANSACTIONAL_MODE)
+                    .timeToLiveSeconds(TIME_TO_LIVE_SECONDS);
+            dynamicDatasetCache = new Cache(cacheConfig);
+            cacheManager.addCache(dynamicDatasetCache);
+        } else {
+            dynamicDatasetCache = cacheManager.getCache(CACHE_NAME);
+        }
     }
 
     /**
@@ -106,13 +134,11 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
              * We may have a dynamic dataset. First check the dynamic dataset
              * cache.
              */
-            Cache dynamicDatasetCache = cacheManager.getCache(DYNAMIC_DATASET_CACHE_NAME);
-            if (dynamicDatasetCache != null) {
-                Element element = dynamicDatasetCache.get(datasetId);
-                if (element != null && element.getObjectValue() != null) {
-                    return (Dataset) element.getObjectValue();
-                }
+            Element element = dynamicDatasetCache.get(datasetId);
+            if (element != null && element.getObjectValue() != null) {
+                return (Dataset) element.getObjectValue();
             }
+
             /*
              * Check to see if we have a dynamic service defined which this
              * dataset ID can map to
