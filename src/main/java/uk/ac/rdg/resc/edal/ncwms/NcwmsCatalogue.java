@@ -69,7 +69,6 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
 
     private static final String CACHE_NAME = "dynamicDatasetCache";
     private static final int MAX_HEAP_ENTRIES = 10;
-    private static final int TIME_TO_LIVE_SECONDS = 600;
     private static final MemoryStoreEvictionPolicy EVICTION_POLICY = MemoryStoreEvictionPolicy.LFU;
     private static final PersistenceConfiguration.Strategy PERSISTENCE_STRATEGY = PersistenceConfiguration.Strategy.NONE;
     private static final CacheConfiguration.TransactionalMode TRANSACTIONAL_MODE = CacheConfiguration.TransactionalMode.OFF;
@@ -91,8 +90,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                     .eternal(true)
                     .memoryStoreEvictionPolicy(EVICTION_POLICY)
                     .persistence(new PersistenceConfiguration().strategy(PERSISTENCE_STRATEGY))
-                    .transactionalMode(TRANSACTIONAL_MODE)
-                    .timeToLiveSeconds(TIME_TO_LIVE_SECONDS);
+                    .transactionalMode(TRANSACTIONAL_MODE);
             dynamicDatasetCache = new Cache(cacheConfig);
             cacheManager.addCache(dynamicDatasetCache);
         } else {

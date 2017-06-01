@@ -101,11 +101,17 @@
         <servlet-name>EhcacheStatisticsServlet</servlet-name>
         <url-pattern>/statistics</url-pattern>
     </servlet-mapping>
+    <listener>
+        <listener-class>uk.ac.rdg.resc.edal.wms.WmsContextListener</listener-class>
+    </listener>
 
     <welcome-file-list>
         <welcome-file>index.htm</welcome-file>
     </welcome-file-list>
 
+    <security-role>
+        <role-name>ncWMS-admin</role-name>
+    </security-role>
     <security-constraint>
         <web-resource-collection>
             <web-resource-name>admin</web-resource-name>
