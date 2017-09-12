@@ -1,5 +1,5 @@
-Release Procedure for EDAL
-==========================
+Release Procedure for ncWMS
+===========================
 
 Prerequisites
 -------------
