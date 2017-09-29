@@ -102,7 +102,7 @@ The GetLegendGraphic request generates an image which can be used as a legend. T
 * WIDTH: The width of the image to generate. If missing, defaults to 50
 * HEIGHT: The height of the image to generate. If missing, defaults to 200
 
-For a full legend, the additional parameters `LAYERS` and either `STYLES`, `SLD`, or `SLD_BODY` must be supplied. This is because a single WMS layer may depend on an arbitrary number of sub-layers, depending on the style it is plotted in. In addition to these parameters, the optional parameters controlling the style may be supplied (these are the same as documented in the GetMap request):
+For a full legend, the additional parameters `LAYERS` and either `STYLES`, `SLD`, or `SLD_BODY` must be supplied, and the `PALETTE` parameter will be ignored (the colours to use will be based on what is specified in either `STYLES` or the SLD document). This is because a single WMS layer may depend on an arbitrary number of sub-layers, depending on the style it is plotted in. In addition to these parameters, the optional parameters controlling the style may be supplied (these are the same as documented in the GetMap request):
 
 * COLORSCALERANGE
 * NUMCOLORBANDS
