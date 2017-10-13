@@ -26,11 +26,12 @@ RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main\ndeb-
      export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 
 # Compile edal to use required features in develop branch
+ENV EDAL_VERSION edal-1.2.10
 RUN mkdir /edal && \
     cd /edal && \
     git clone https://github.com/Reading-eScience-Centre/edal-java.git && \
     cd edal-java && \
-    git checkout develop && \
+    git checkout ${EDAL_VERSION} && \
     JAVA_HOME=/usr/lib/jvm/java-8-oracle mvn clean install
 
 # Compile and install ncWMS

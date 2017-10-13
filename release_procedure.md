@@ -43,10 +43,13 @@ Once all code is ready to be released, all tests pass, **and all documentation i
 git checkout -b release-VERSION
 ```
 
-### Set the release versions in the pom file:
-Edit the pom.xml file and change:
+### Set the release versions:
+Edit the `pom.xml` file and change:
 * The version of the pom to the correct version (normally this is just removing the -SNAPSHOT suffix)
 * The version of EDAL to use in the properties.  This should match the version of ncWMS but be one major version lower - e.g. ncWMS 2.1 uses EDAL 1.1
+
+Edit the `Dockerfile` and change:
+* The EDAL_VERSION variable to point to the git tag of EDAL to use (`edal-x.y.z`)
 
 ### Build the software:
 ```
