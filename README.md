@@ -1,6 +1,6 @@
 # ncWMS2
 
-[![Build Status](https://travis-ci.org/axiom-data-science/ncwms.svg?branch=test_hook)](https://travis-ci.org/axiom-data-science/ncwms)
+[![Build Status](https://travis-ci.org/Reading-eScience-Centre/ncwms.svg?branch=test_hook)](https://travis-ci.org/Reading-eScience-Centre/ncwms)
 
 - [Documentation](https://reading-escience-centre.gitbooks.io/ncwms-user-guide/content/)
 - [Source code](https://github.com/Reading-eScience-Centre/ncwms)
@@ -47,7 +47,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Authors and Contributors
 
-ncWMS is developed by the [Reading e-Science Centre](http://www.met.reading.ac.uk/resc/home/) and is mainainted by [@guygriffiths](https://github.com/guygriffiths).
+ncWMS is developed by the [Reading e-Science Centre](http://www.met.reading.ac.uk/resc/home/) and is maintained by [@guygriffiths](https://github.com/guygriffiths).
 
 Contributors:
 
