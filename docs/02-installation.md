@@ -56,7 +56,7 @@ $ docker run \
     -p 80:8080 \
     -p 443:8443 \
     -v /path/to/a/config.xml:/usr/local/tomcat/.ncWMS2/config.xml
-    axiom/ncwms:dev
+    guygriffiths/ncwms
 ```
 
 Note: `-v` arguments require absolute path.
@@ -72,7 +72,7 @@ $ docker run \
     -e "ADVERTISED_PALETTES=div-RdBu,div-RdBu-inv,seq-cubeYF" \
     -e "DEFAULT_PALETTE=div-RdBu" \
     --name ncwms \
-    axiom/ncwms:dev
+    guygriffiths/ncwms
 ```
 
 ### Configuration
@@ -90,7 +90,7 @@ Mount your own `config` directory:
 $ docker run \
     -v /path/to/your/ncwms/config/directory:/usr/local/tomcat/.ncWMS2 \
     ... \
-    axiom/ncwms:dev
+    guygriffiths/ncwms
 ```
 
 Set your own [default palette](04-usage.md#getmap)
@@ -99,7 +99,7 @@ Set your own [default palette](04-usage.md#getmap)
 $ docker run \
     -e "DEFAULT_PALETTE=seq-BuYl" \
     ... \
-    axiom/ncwms:dev
+    guygriffiths/ncwms
 ```
 
 Set your own [advertised palettes](04-usage.md#getmap)
@@ -108,7 +108,7 @@ Set your own [advertised palettes](04-usage.md#getmap)
 $ docker run \
     -e "ADVERTISED_PALETTES=div-RdBu,div-RdBu-inv,seq-cubeYF" \
     ... \
-    axiom/ncwms:dev
+    guygriffiths/ncwms
 ```
 
 #### JMX
@@ -117,14 +117,14 @@ You can set the `JMX_OPTS` environmental variable when running the docker contai
 
 ```bash
 $ docker run \
-    -e "JMX_OPS=-Dcom.sun.management.jmxremote.rmi.port=9090 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.port=9090 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false -Djava.rmi.server.hostname=0.0.0.0" \
+    -e "JMX_OPTS=-Dcom.sun.management.jmxremote.rmi.port=9090 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.port=9090 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false -Djava.rmi.server.hostname=0.0.0.0" \
     ... \
-    axiom/ncwms:dev
+    guygriffiths/ncwms
 ```
 
 #### Users
 
-By default, Tomcat will start with [two user accounts](https://github.com/axiom-data-science/ncwms/blob/master/config/tomcat-users.xml). The passwords are equal to the user name.
+By default, Tomcat will start with [two user accounts](https://github.com/Reading-eScience-Centre/ncwms/blob/master/config/tomcat-users.xml). The passwords are equal to the user name.
 
 * `ncwms` - used to admin ncWMS
 * `admin` - can be used by everything else (has full privileges)

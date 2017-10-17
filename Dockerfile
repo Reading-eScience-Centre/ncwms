@@ -10,9 +10,6 @@ RUN \
         && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Fix for maven missing sting library
-RUN ln -s /usr/share/java/commons-lang.jar /usr/share/maven/lib/commons-lang.jar
-
 # Fix for java8 in jessie
 # https://serverfault.com/questions/830636/cannot-install-openjdk-8-jre-headless-on-debian-jessie/830637#830637
 # https://askubuntu.com/questions/190582/installing-java-automatically-with-silent-option
@@ -26,11 +23,12 @@ RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main\ndeb-
      export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 
 # Compile edal to use required features in develop branch
+ENV EDAL_VERSION edal-1.2.10
 RUN mkdir /edal && \
     cd /edal && \
     git clone https://github.com/Reading-eScience-Centre/edal-java.git && \
     cd edal-java && \
-    git checkout develop && \
+    git checkout ${EDAL_VERSION} && \
     JAVA_HOME=/usr/lib/jvm/java-8-oracle mvn clean install
 
 # Compile and install ncWMS
