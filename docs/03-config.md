@@ -97,7 +97,7 @@ This config file can also be used to define new base layers and overlays in addi
 
 ### Optional Parameters
 * `xxxTitle` - The title to display in the layer switcher.  If missing, it will default to the layer ID (`xxx` in this case)
-* `xxxProjection` - The projection of the layer.  If missing, defaults to `CRS:84`.  Note that although this is mostly equivalent to `EPSG:4326`, it is not supported by all servers.  It is generally preferred to `EPSG:4326` since this latter is handled differently by WMS versions `1.1.1` and `1.3.0`.
+* `xxxProjection` - The projection of the layer.  If missing, defaults to `CRS:84`.  Note that although this is mostly equivalent to `EPSG:4326`, it is not supported by all servers.  It is generally preferred to `EPSG:4326` since this latter is handled differently by WMS versions `1.1.1` and `1.3.0`.  Supported projections are `CRS:84`, `EPSG:4326`, `EPSG:3857`, `EPSG:900913`, `EPSG:32661`, `EPSG:32761`, `EPSG:5401`, `EPSG:5402`.
 * `xxxVersion` - The WMS version to use.  Defaults to `1.1.1`
 * `xxxFormat` - The image format to use.  Defaults to `image/png`
 * `xxxOnByDefault` - Whether this layer should be visible on first load.  For overlays, any number can be visible initially.  For base layers, only one layer may be selected on load.  If multiple base layers have this parameter defined as `true`, then one of them will be the default layer (but which one it will be is undefined behaviour). 
