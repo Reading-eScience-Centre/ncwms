@@ -88,3 +88,17 @@ The `godiva3.properties` file can contain the following entries:
 * `mapHeight` - This must be an integer and is the height, in pixels, of the main map in Godiva3
 * `mapWidth` - This must be an integer and is the width, in pixels, of the main map in Godiva3
 * `proxy` - This is a string containing a proxy URL through which all requests will be made.  Request URLs are appended to the end of this proxy URL prior to being made, so any required parameters must be included in it. 
+
+This config file can also be used to define new base layers and overlays in addition to the defaults.  Base layers can be used as background maps and will always appear underneath ncWMS layers, whereas overlays are designed to be overlaid (as the name suggests) and will always appear above ncWMS layers.  Each user-defined layer requires several parameters, and this grouping is defined by a common ID prefix.  It is not important what this is, so long as it is common to all parameters.  For example, the parameters `mylayerURL` and `mylayerTitle` both refer to the same layer, whereas `yourlayerURL` refers to a separate layer.  The available parameters are:
+
+### Mandatory Parameters
+* `xxxURL` - The URL of the WMS server.  This should contain the WMS URL including the final query separator (usually `?`).  This is because some WMS servers may require default options (e.g. `http://baselayer.server.com/wms?OPTION=VALUE&`)
+* `xxxLayers` - A comma-separated list of layers to plot.
+
+### Optional Parameters
+* `xxxTitle` - The title to display in the layer switcher.  If missing, it will default to the layer ID (`xxx` in this case)
+* `xxxProjection` - The projection of the layer.  If missing, defaults to `CRS:84`.  Note that although this is mostly equivalent to `EPSG:4326`, it is not supported by all servers.  It is generally preferred to `EPSG:4326` since this latter is handled differently by WMS versions `1.1.1` and `1.3.0`.
+* `xxxVersion` - The WMS version to use.  Defaults to `1.1.1`
+* `xxxFormat` - The image format to use.  Defaults to `image/png`
+* `xxxOnByDefault` - Whether this layer should be visible on first load.  For overlays, any number can be visible initially.  For base layers, only one layer may be selected on load.  If multiple base layers have this parameter defined as `true`, then one of them will be the default layer (but which one it will be is undefined behaviour). 
+* `xxxIsOverlay` - Whether to use this as an overlay (as opposed to a base map).  Defaults to `false`
