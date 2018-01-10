@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
+import uk.ac.rdg.resc.edal.util.GISUtils;
 import uk.ac.rdg.resc.edal.wms.RequestParams;
 import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
 import uk.ac.rdg.resc.edal.wms.WmsServlet;
@@ -70,6 +71,7 @@ public class NcwmsServlet extends WmsServlet implements Servlet {
     public void destroy() {
         super.destroy();
         NcwmsConfig.shutdown();
+        GISUtils.releaseEpsgDatabase();
     }
 
     @Override
