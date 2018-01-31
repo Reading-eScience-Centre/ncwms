@@ -58,7 +58,9 @@ In additional to the standard WMS methods, ncWMS provides a number of additional
 
 ### GetTimeseries
 
-This produces either a timeseries graph or, if downloading is enabled, a CSV file containing the data. The URL parameters are identical to those of a GetFeatureInfo request. The `TIME` parameter should specify a range of times in the form `starttime/endtime`, and the supported formats are:
+This produces either a timeseries graph or, if downloading is enabled, a CSV file containing the data. The URL parameters must include all mandatory parameters of a GetFeatureInfo request to specify the location where the query is taking place.  In addition, the parameters `CHARTWIDTH` and `CHARTHEIGHT` specify the output size of the graph - note that the `HEIGHT` and `WIDTH` parameters define the location of the query (along with `BBOX`, `X`/`I`, and `Y`/`J`).
+
+The `TIME` parameter should specify a range of times in the form `starttime/endtime`, and the supported formats are:
 
 * image/png
 * image/jpg
@@ -67,7 +69,7 @@ This produces either a timeseries graph or, if downloading is enabled, a CSV fil
 
 ### GetVerticalProfile
 
-This produces either a vertical profile graph or, if downloading is enabled, a CSV file containing the data. The URL parameters are identical to those of a GetFeatureInfo request. The `ELEVATION` parameter should specify a range of elevations in the form `startelevation/endelevation`, and the supported formats are:
+This produces either a vertical profile graph or, if downloading is enabled, a CSV file containing the data. The URL parameters are identical to those of a GetTimeseries request. The `ELEVATION` parameter should specify a range of elevations in the form `startelevation/endelevation`, and the supported formats are:
 
 * image/png
 * image/jpg
