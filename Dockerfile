@@ -1,4 +1,4 @@
-FROM unidata/tomcat-docker:8
+FROM unidata/tomcat-docker:8.5
 MAINTAINER Kyle Wilcox <kyle@axiomdatascience.com>
 
 RUN \
