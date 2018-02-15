@@ -79,7 +79,7 @@ $ docker run \
 
 #### Tomcat
 
-See [these instructions](https://github.com/unidata/tomcat-docker) for configuring Tomcat
+See [these instructions](https://github.com/unidata/docker-tomcat) for configuring Tomcat
 
 
 #### ncWMS
