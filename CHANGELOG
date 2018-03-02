@@ -1,3 +1,9 @@
+2.4.0
+=====
+Updated to EDAK 1.4.0
+NOTE:
+	For this release of ncWMS2, the H2 EPSG cache (.ncWMS2/.h2) must be cleared, otherwise errors will occur
+
 2.3.1
 =====
 Updated to EDAL 1.3.1
