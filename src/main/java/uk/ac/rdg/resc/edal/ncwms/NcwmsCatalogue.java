@@ -36,6 +36,7 @@ import net.sf.ehcache.Element;
 import net.sf.ehcache.config.CacheConfiguration;
 import net.sf.ehcache.config.PersistenceConfiguration;
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
+import uk.ac.rdg.resc.edal.cache.EdalCache;
 import uk.ac.rdg.resc.edal.catalogue.DataCatalogue;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
@@ -82,7 +83,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
         super(config, new SimpleLayerNameMapper());
         this.styleCatalogue = SldTemplateStyleCatalogue.getStyleCatalogue();
 
-        if (cacheManager.cacheExists(CACHE_NAME) == false) {
+        if (EdalCache.cacheManager.cacheExists(CACHE_NAME) == false) {
             /*
              * Configure cache
              */
@@ -92,9 +93,9 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                     .persistence(new PersistenceConfiguration().strategy(PERSISTENCE_STRATEGY))
                     .transactionalMode(TRANSACTIONAL_MODE);
             dynamicDatasetCache = new Cache(cacheConfig);
-            cacheManager.addCache(dynamicDatasetCache);
+            EdalCache.cacheManager.addCache(dynamicDatasetCache);
         } else {
-            dynamicDatasetCache = cacheManager.getCache(CACHE_NAME);
+            dynamicDatasetCache = EdalCache.cacheManager.getCache(CACHE_NAME);
         }
     }
 

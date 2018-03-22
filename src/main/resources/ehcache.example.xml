@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This file provides an example of a configuration for EHCache -->
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd"
+         updateCheck="true" monitoring="autodetect"
+         dynamicConfig="true" name="EDAL-WMS-CacheManager">
+
+    <diskStore path="java.io.tmpdir"/>
+    <cacheManagerEventListenerFactory class="" properties=""/>
+
+
+    <!--
+    Default Cache configuration. These settings will be applied to caches
+    created programmatically using CacheManager.add(String cacheName).
+    This element is optional, and using CacheManager.add(String cacheName) when
+    its not present will throw CacheException
+
+    The defaultCache has an implicit name "default" which is a reserved cache name.
+    -->
+    <defaultCache
+           maxEntriesLocalHeap="0"
+           eternal="false"
+           timeToIdleSeconds="1200"
+           timeToLiveSeconds="1200">
+      <terracotta/>
+    </defaultCache>
+
+    <!--
+    ncWMS Cache: dynamicDatasetCache
+    -->
+    <cache name="dynamicDatasetCache"
+           maxEntriesLocalHeap="10"
+           eternal="false"
+           timeToLiveSeconds="600"
+           memoryStoreEvictionPolicy="LRU"
+           transactionalMode="off"
+           statistics="true">
+        <persistence strategy="none"/>
+    </cache>
+
+    <!--
+    EDAL Cache: featureCache
+    - Previously defined in uk.ac.rdg.resc.edal.catalogue.DataCatalogue:
+    - Can be dynamically updated via ncWMS admin interface
+    - Configuration precedence
+        - 1) admin panel
+        - 2) ehcache.xml (this document)
+        - 3) defaults hardcoded in uk.ac.rdg.resc.edal.catalogue.DataCatalogue.java
+    -->
+    <cache name="featureCache"
+           eternal="true"
+           timeToLiveSeconds="0"
+           maxBytesLocalHeap="512M"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off"
+           statistics="true">
+        <sizeOfPolicy maxDepth="4000000"/>
+        <persistence strategy="none"/>
+    </cache>
+
+   <!--
+    cache: domainMapperCache
+    - Default defined/derived in uk.ac.rdg.resc.edal.dataset.Domain2DMapper
+    - Cache datasets that are mapped to different domains
+    -->
+    <cache name="domainMapperCache"
+           eternal="true"
+           timeToLiveSeconds="0"
+           maxEntriesLocalHeap="100"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off"
+           statistics="true">
+        <persistence strategy="none"/>
+    </cache>
+
+   <!--
+    cache: meshDatasetCache
+    - Default defined/derived in uk.ac.rdg.resc.edal.dataset.HorizontalMesh4dDataset
+    - Cache unstructured grids
+    -->
+    <cache name="meshDatasetCache"
+           eternal="true"
+           timeToLiveSeconds="0"
+           maxEntriesLocalHeap="50"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off"
+           statistics="true">
+        <persistence strategy="none"/>
+    </cache>
+</ehcache>
