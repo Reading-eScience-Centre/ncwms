@@ -263,18 +263,22 @@ public class NcwmsAdminServlet extends HttpServlet {
          */
         response.setContentType("text/plain");
 
-        writer.write("Dataset: " + dataset.getId() + " (" + dataset.getLocation() + "): "
-                + dataset.getState() + "\n");
-        if (dataset.getState() == DatasetState.ERROR) {
-            writer.write("\nStack trace:\n");
-            Throwable error = dataset.getException();
-            StackTraceElement[] stackTrace = error.getStackTrace();
-            for (StackTraceElement el : stackTrace) {
-                writer.write("\t" + el.toString() + "\n");
+        if (dataset != null) {
+            writer.write("Dataset: " + dataset.getId() + " (" + dataset.getLocation() + "): "
+                    + dataset.getState() + "\n");
+            if (dataset.getState() == DatasetState.ERROR) {
+                writer.write("\nStack trace:\n");
+                Throwable error = dataset.getException();
+                StackTraceElement[] stackTrace = error.getStackTrace();
+                for (StackTraceElement el : stackTrace) {
+                    writer.write("\t" + el.toString() + "\n");
+                }
+                if (error.getCause() != null) {
+                    writer.write("\nCaused by:\n\t" + error.getCause().toString() + "\n");
+                }
             }
-            if (error.getCause() != null) {
-                writer.write("\nCaused by:\n\t" + error.getCause().toString() + "\n");
-            }
+        } else {
+            writer.write("Dataset: "+datasetId+" not found on this server\n");
         }
     }
 
@@ -740,13 +744,12 @@ public class NcwmsAdminServlet extends HttpServlet {
                 }
 
                 w.write("Dataset " + id + " (" + location + ") is being added.\n");
-                
-                w.write("Check the status at "
-                        + request.getRequestURL().toString().replaceAll("addDataset", "datasetStatus")
-                        + "?dataset=" + id+"\n");
+
+                w.write("Check the status at " + request.getRequestURL().toString()
+                        .replaceAll("addDataset", "datasetStatus") + "?dataset=" + id + "\n");
             } else {
                 w.write("Dataset " + id + " (" + location + ") cannot be added.\n");
-                w.write("Cause:\n" + message+"\n");
+                w.write("Cause:\n" + message + "\n");
             }
         } catch (IOException e) {
             /*
