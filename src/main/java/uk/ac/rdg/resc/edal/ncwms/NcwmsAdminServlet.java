@@ -117,7 +117,7 @@ public class NcwmsAdminServlet extends HttpServlet {
                     + "\" attribute of the ServletContext has been incorrectly set.");
         }
     }
-
+    
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -748,6 +748,7 @@ public class NcwmsAdminServlet extends HttpServlet {
                 w.write("Check the status at " + request.getRequestURL().toString()
                         .replaceAll("addDataset", "datasetStatus") + "?dataset=" + id + "\n");
             } else {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 w.write("Dataset " + id + " (" + location + ") cannot be added.\n");
                 w.write("Cause:\n" + message + "\n");
             }
@@ -783,6 +784,7 @@ public class NcwmsAdminServlet extends HttpServlet {
         try (BufferedWriter w = new BufferedWriter(response.getWriter())) {
             w.write("Dataset " + id + " has been removed.\n");
             if (!saved) {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 w.write("There was a problem saving the config file to disk.\n");
                 w.write("This may mean the dataset will reappear on restart.\n");
                 w.write("Please check the server logs for details\n");
