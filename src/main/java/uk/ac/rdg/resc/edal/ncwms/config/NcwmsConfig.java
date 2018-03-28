@@ -59,14 +59,16 @@ import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
  * 
  * @author Guy Griffiths
  */
-@XmlType(propOrder = { "dynamicServices", "contact", "serverInfo", "crsCodes" })
+@XmlType(propOrder = { "dynamicServices", "dynamicCache", "contact", "serverInfo", "crsCodes" })
 @XmlRootElement(name = "config")
 public class NcwmsConfig extends CatalogueConfig {
     private static final Logger log = LoggerFactory.getLogger(NcwmsConfig.class);
 
     /* Included in XML - see setDynamicServices for details */
     private Map<String, NcwmsDynamicService> dynamicServices = new LinkedHashMap<String, NcwmsDynamicService>();
-
+    
+    @XmlElement(name = "dynamicCache")
+    private NcwmsDynamicCacheInfo dynamicCache = new NcwmsDynamicCacheInfo();
     @XmlElement(name = "contact")
     private NcwmsContact contact = new NcwmsContact();
     @XmlElement(name = "server")
@@ -144,6 +146,10 @@ public class NcwmsConfig extends CatalogueConfig {
         dynamicService.setAlias(newAlias);
 
         dynamicServices.put(newAlias, dynamicService);
+    }
+    
+    public NcwmsDynamicCacheInfo getDynamicCacheInfo() {
+        return dynamicCache;
     }
 
     @Override

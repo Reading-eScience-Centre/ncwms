@@ -63,6 +63,7 @@ import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig.DatasetState;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
 import uk.ac.rdg.resc.edal.graphics.utils.ColourPalette;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsContact;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicCacheInfo;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsServerInfo;
 import uk.ac.rdg.resc.edal.util.Extents;
@@ -357,6 +358,7 @@ public class NcwmsAdminServlet extends HttpServlet {
         NcwmsContact contact = catalogue.getConfig().getContactInfo();
         NcwmsServerInfo server = catalogue.getConfig().getServerInfo();
         CacheInfo cache = catalogue.getConfig().getCacheSettings();
+        NcwmsDynamicCacheInfo dynamicCache = catalogue.getConfig().getDynamicCacheInfo();
 
         contact.setName(request.getParameter("contact.name"));
         contact.setOrganisation(request.getParameter("contact.org"));
@@ -578,7 +580,9 @@ public class NcwmsAdminServlet extends HttpServlet {
             i++;
         }
 
-        /* Set the properties of the cache */
+        /* 
+         * Set the properties of the cache
+         */
         cache.setEnabled(request.getParameter("cache.enable") != null);
         String tmpMemorySize = request.getParameter("cache.inMemorySizeMB");
         if (!tmpMemorySize.isEmpty()) {
@@ -593,6 +597,27 @@ public class NcwmsAdminServlet extends HttpServlet {
          * Update the cache settings.
          */
         catalogue.setCache(cache);
+        
+        /* 
+         * Set the properties of the dynamic dataset cache
+         */
+        dynamicCache.setEnabled(request.getParameter("dynamicCache.enable") != null);
+        String nDatasets = request.getParameter("dynamicCache.nDatasets");
+        if (!nDatasets.isEmpty()) {
+            dynamicCache.setNumberOfDatasets(Integer.parseInt(nDatasets));
+        }
+        tmpLifetime = request.getParameter("dynamicCache.elementLifetimeMinutes");
+        if (!tmpLifetime.isEmpty()) {
+            dynamicCache.setElementLifetimeMinutes(Float.parseFloat(tmpLifetime));
+        }
+        if(request.getParameter("dynamicCache.empty") != null) {
+            catalogue.emptyDynamicDatasetCache();
+        }
+        
+        /*
+         * Update the dynamic cache settings.
+         */
+        catalogue.updateDynamicDatasetCache(dynamicCache);
 
         /* Save the updated config information to disk */
         try {

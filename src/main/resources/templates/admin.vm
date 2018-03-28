@@ -244,6 +244,39 @@
             </tr>
 #end
         </table>
+        
+        <h3>Dynamic Dataset Cache</h3>
+        <p>Dynamic datasets will be created on access.  This creation can have a fair amount of overhead when it calculates the domain and available variables present in a dataset.</p>
+        <p>To avoid this overhead, dataset metadata is cached between calls.  However, this can be undesirable if the underlying data is regularly changing.</p>
+        <table border="1">
+            <tr>
+                <th>Enable cache?</th>
+                <td><input type="checkbox" name="dynamicCache.enable"#if(${config.dynamicCacheInfo.enabled}) checked="checked"#end/></td>
+                <td>Check this box to enable the dynamic dataset cache.  <font color="red">This can be changed while the server is running, but disabling
+                it will clear the current cache (freeing up memory).</font></td>
+            </tr>
+            <tr>
+                <th>Number of datasets to cache</th>
+                <td><input type="text" name="dynamicCache.nDatasets" value="${config.dynamicCacheInfo.numberOfDatasets}"/></td>
+                <td>The maximum number of datasets to cache.  Once the cache exceeds this size, elements will be removed from it,
+                based on how frequently they have been used, followed by how recently they have been used.
+                <font color="red">This can be changed while the server is running, but if you change this value the current
+                cache will be emptied.</font></td>
+            </tr>
+            <tr>
+                <th>Lifetime of in-memory elements (minutes)</th>
+                <td><input type="text" name="dynamicCache.elementLifetimeMinutes" value="${config.dynamicCacheInfo.elementLifetimeMinutes}"/></td>
+                <td>The time each element will remain in the cache for.  Setting this to zero means that each element will remain
+                indefinitely, only being removed once the number of datasets is exceeded, and cache cleanup occurs.
+                <font color="red">This can be changed while the server is running, but if you change this value the current
+                cache will be emptied.</font></td>
+            </tr>
+            <tr>
+                <th>Empty cache</th>
+                <td><input type="checkbox" name="dynamicCache.empty" /></td>
+                <td>Check this box to empty the current cache.  This is useful when you have just updated a dynamic dataset, but still generally wish to keep datasets cached.</td>
+            </tr>
+        </table>
 
         <h2>Cache settings</h2>
         <p>This ncWMS server uses a cache of recently-extracted features to increase
