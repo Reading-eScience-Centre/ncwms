@@ -1,10 +1,12 @@
 # Configuration
 
-Configuration of ncWMS is performed by either accessing the administration web interface ([http://serveraddress/ncWMS2/admin/](http://localhost:8080/ncWMS2/admin/)) or by directly modifying `config.xml` in the configuration directory. It is recommended to use the web interface - precise documentation of the XML configuration file is beyond the scope of this guide.
+Configuration of ncWMS is normally performed by either accessing the administration web interface ([http://serveraddress/ncWMS2/admin/](http://localhost:8080/ncWMS2/admin/)) or by directly modifying `config.xml` in the configuration directory. It is recommended to use the web interface - precise documentation of the XML configuration file is beyond the scope of this guide.
 
 Once any changes have been made on this page, click the "Save configuration" button to apply them.
 
-## Adding datasets {#datasets}
+Additionally, adding datasets, removing datasets, and checking the status of a dataset can also be performed by submitting HTTP requests to an API endpoint.
+
+## Configuring datasets via the admin interface {#datasets}
 
 On the admin page, new datasets can be added by filling in the information in the "Required Data" column of the Datasets section. All other fields are optional. Already-configured datasets can be modified here.
 
@@ -12,7 +14,7 @@ On the admin page, new datasets can be added by filling in the information in th
 
 * ID: An alphanumeric identifier for the dataset. This must be unique on the server.
 * Title: The title of the dataset. This is displayed in menus etc. on the user interface.
-* Location: The location of the dataset. This should be either a location on disk or an OPeNDAP URL. _Note that locations should use slashes - not backslashes - regardless of operating system_. For example, on Windows a path such as `C:/Data/dataset.nc` should be used. If referring to a location on disk, glob expressions of the form `/mnt/data/dataset/**/**/*.nc` are valid. If such an expression refers to multiple NetCDF files, they will be interpreted as having non-overlapping time axes. Any other configuration of data spanning multiple files is not supported, although ncWMS2 does have support for [NcML](http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/ncml/) for more complex aggregations.  If you are using NcML, the .ncml file should be referenced in the location field.
+* Location: The location of the dataset. This should be either a location on disk or an OPeNDAP URL. _Note that locations should use slashes - not backslashes - regardless of operating system_. For example, on Windows a path such as `C:/Data/dataset.nc` should be used. If referring to a location on disk, glob expressions of the form `/mnt/data/dataset/**/**/*.nc` are valid. If such an expression refers to multiple NetCDF files, they will be interpreted as having non-overlapping time axes. Any other configuration of data spanning multiple files is not supported, although ncWMS2 does have support for [NcML](http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/ncml/) for more complex aggregations. If you are using NcML, the .ncml file should be referenced in the location field.
 
 ### Optional Metadata
 
@@ -43,6 +45,81 @@ This is the Java class which should be used to read the data. This should be lef
 ### Remove?
 
 Tick this box to completely remove this dataset from the configuration
+
+## Managing datasets via the API {#datasets-api}
+
+There are 3 methods for managing datasets using an API. All of them require digest authentication by a user with the `ncWMS-admin` role (see [here](./02-installation.md#security) for further details). `addDataset` and `removeDataset` both require HTTP `POST` requests, and `datasetStatus` uses a `GET` request. 
+
+### addDataset
+
+The `addDataset` method is available at the path `admin/addDataset` (e.g. `http://localhost:8080/ncWMS2/admin/addDataset`), and is accessed via a `POST` method containing the following parameters:
+
+* `id` (MANDATORY) - the ID of the dataset to add
+* `location` (MANDATORY) - the location on the local filesystem or an OPeNDAP server. Note that the data must already be present on the server - this method does not provide a way to upload data to the server.
+* `title` - The title of the dataset. If not present, the ID will be used instead.
+* `dataReader` - The data reading class to use to load this dataset. If not present, the default data reader will be used.
+* `moreInfo` - A string providing further information about the dataset. Will be present on plots and available in the Godiva3 interface.
+* `copyright` - A string providing details of copyright about the dataset. Will be present on plots and available in the Godiva3 interface.
+* `queryable` - Should be `true` or `false`. Whether this dataset should be queryable using `GetFeatureInfo` requests. If not present, defaults to `true`.
+* `downloadable` - Should be `true` or `false`. Whether this dataset should be downloadable as CSV. If not present, defaults to `false`. 
+* `autoRefreshMinutes` - How regularly to update this dataset, in minutes. If not present, the dataset will never automatically refresh.
+
+Because adding a dataset has the potential to take a long time, the `addDataset` method only performs a bare minimum of checks to ensure that the dataset is likely to be successfully added to the ncWMS server.  If any of these checks fail, a suitable error message will be returned to the user.  Otherwise, a successful message is returned, along with a URL at which to check the [dataset status](#status).
+
+Example call to `addDataset`, using `curl`:
+
+```
+curl --digest -u ncwmsadmin:adminpassword -d "id=hmgrid&title=Hydromodel Rectilinear&location=/mnt/data/RectilinearGrid/*.xml&dataReader=uk.ac.rdg.resc.edal.dataset.vtk.HydromodelVtkDatasetFactory" -X POST http://localhost:8080/ncWMS2/admin/addDataset
+```
+
+example response:
+
+```
+Dataset hmgrid (/home/guy/Data/hh/RectilinearGrid/*.xml) is being added.
+Check the status at http://localhost:8080/ncWMS2/admin/datasetStatus?dataset=hmgrid
+```
+
+### removeDataset
+
+The `removeDataset` method is available at the path `admin/removeDataset` (e.g. `http://localhost:8080/ncWMS2/admin/removeDataset`), and is accessed via a `POST` method containing a single parameter:
+
+* `id` (MANDATORY) - the ID of the dataset to remove
+
+The method will remove the dataset from the catalogue and immediately return with a message confirming that the dataset has been removed.
+
+Example call to `removeDataset`, using `curl`:
+
+```
+curl --digest -u ncwmsadmin:adminpassword -d "id=hmgrid" -X POST http://localhost:8080/ncWMS2/admin/removeDataset
+```
+
+example response:
+
+```
+Dataset hmgrid has been removed.
+```
+
+### datasetStatus {#status}
+
+
+The `datasetStatus` method is available at the path `admin/datasetStatus` (e.g. `http://localhost:8080/ncWMS2/admin/datasetStatus`), and is accessed via a `GET` method containing a single parameter:
+
+* `dataset` (MANDATORY) - the ID of the dataset to check on.
+
+This will return the status of the dataset, along with any error messages encountered when loading the dataset.  This is the same method accessed from the admin web interface when clicking on a dataset status link.  This method can respond in either `text/html` or `text/plain`, depending on the value of the `Accept` header
+
+Example call to `datasetStatus`, using `curl`:
+
+```
+curl -H "Accept: text/plain" --digest -u ncwmsadmin:adminpassword -X GET http://localhost:8080/ncWMS2/admin/datasetStatus?dataset=hmgrid
+```
+
+example response:
+
+```
+Dataset: hmgrid (/home/guy/Data/hh/RectilinearGrid/*.xml): READY
+```
+
 
 ## Configuring variables {#variables}
 
@@ -81,24 +158,24 @@ This configures the contact information which will appear in the capabilities do
 
 ## Configuring Godiva3
 
-Whilst Godiva3 does not generally need configuring, there are a a few options which can be configured.  This configuration is done though a simple [.properties](https://en.wikipedia.org/wiki/.properties) file, named `godiva3.properties` which is stored in the ncWMS2 configuration directory.  For convenience, this file is created with default settings the first time ncWMS is run, but can of course be created prior to running ncWMS for the first time.
+Whilst Godiva3 does not generally need configuring, there are a a few options which can be configured. This configuration is done though a simple [.properties](https://en.wikipedia.org/wiki/.properties) file, named `godiva3.properties` which is stored in the ncWMS2 configuration directory. For convenience, this file is created with default settings the first time ncWMS is run, but can of course be created prior to running ncWMS for the first time.
 
 The `godiva3.properties` file can contain the following entries:
 
 * `mapHeight` - This must be an integer and is the height, in pixels, of the main map in Godiva3
 * `mapWidth` - This must be an integer and is the width, in pixels, of the main map in Godiva3
-* `proxy` - This is a string containing a proxy URL through which all requests will be made.  Request URLs are appended to the end of this proxy URL prior to being made, so any required parameters must be included in it. 
+* `proxy` - This is a string containing a proxy URL through which all requests will be made. Request URLs are appended to the end of this proxy URL prior to being made, so any required parameters must be included in it. 
 
-This config file can also be used to define new base layers and overlays in addition to the defaults.  Base layers can be used as background maps and will always appear underneath ncWMS layers, whereas overlays are designed to be overlaid (as the name suggests) and will always appear above ncWMS layers.  Each user-defined layer requires several parameters, and this grouping is defined by a common ID prefix.  It is not important what this is, so long as it is common to all parameters.  For example, the parameters `mylayerURL` and `mylayerTitle` both refer to the same layer, whereas `yourlayerURL` refers to a separate layer.  The available parameters are:
+This config file can also be used to define new base layers and overlays in addition to the defaults. Base layers can be used as background maps and will always appear underneath ncWMS layers, whereas overlays are designed to be overlaid (as the name suggests) and will always appear above ncWMS layers. Each user-defined layer requires several parameters, and this grouping is defined by a common ID prefix. It is not important what this is, so long as it is common to all parameters. For example, the parameters `mylayerURL` and `mylayerTitle` both refer to the same layer, whereas `yourlayerURL` refers to a separate layer. The available parameters are:
 
 ### Mandatory Parameters
-* `xxxURL` - The URL of the WMS server.  This should contain the WMS URL including the final query separator (usually `?`).  This is because some WMS servers may require default options (e.g. `http://baselayer.server.com/wms?OPTION=VALUE&`)
+* `xxxURL` - The URL of the WMS server. This should contain the WMS URL including the final query separator (usually `?`). This is because some WMS servers may require default options (e.g. `http://baselayer.server.com/wms?OPTION=VALUE&`)
 * `xxxLayers` - A comma-separated list of layers to plot.
 
 ### Optional Parameters
-* `xxxTitle` - The title to display in the layer switcher.  If missing, it will default to the layer ID (`xxx` in this case)
-* `xxxProjection` - The projection of the layer.  If missing, defaults to `CRS:84`.  Note that although this is mostly equivalent to `EPSG:4326`, it is not supported by all servers.  It is generally preferred to `EPSG:4326` since this latter is handled differently by WMS versions `1.1.1` and `1.3.0`.  Supported projections are `CRS:84`, `EPSG:4326`, `EPSG:3857`, `EPSG:900913`, `EPSG:32661`, `EPSG:32761`, `EPSG:5401`, `EPSG:5402`.
-* `xxxVersion` - The WMS version to use.  Defaults to `1.1.1`
-* `xxxFormat` - The image format to use.  Defaults to `image/png`
-* `xxxOnByDefault` - Whether this layer should be visible on first load.  For overlays, any number can be visible initially.  For base layers, only one layer may be selected on load.  If multiple base layers have this parameter defined as `true`, then one of them will be the default layer (but which one it will be is undefined behaviour). 
-* `xxxIsOverlay` - Whether to use this as an overlay (as opposed to a base map).  Defaults to `false`
+* `xxxTitle` - The title to display in the layer switcher. If missing, it will default to the layer ID (`xxx` in this case)
+* `xxxProjection` - The projection of the layer. If missing, defaults to `CRS:84`. Note that although this is mostly equivalent to `EPSG:4326`, it is not supported by all servers. It is generally preferred to `EPSG:4326` since this latter is handled differently by WMS versions `1.1.1` and `1.3.0`. Supported projections are `CRS:84`, `EPSG:4326`, `EPSG:3857`, `EPSG:900913`, `EPSG:32661`, `EPSG:32761`, `EPSG:5401`, `EPSG:5402`.
+* `xxxVersion` - The WMS version to use. Defaults to `1.1.1`
+* `xxxFormat` - The image format to use. Defaults to `image/png`
+* `xxxOnByDefault` - Whether this layer should be visible on first load. For overlays, any number can be visible initially. For base layers, only one layer may be selected on load. If multiple base layers have this parameter defined as `true`, then one of them will be the default layer (but which one it will be is undefined behaviour). 
+* `xxxIsOverlay` - Whether to use this as an overlay (as opposed to a base map). Defaults to `false`

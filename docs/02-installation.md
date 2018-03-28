@@ -34,7 +34,7 @@ To change the location of the server configuration, you need to redefine the con
 Note that `$HOME` represents the home directory of the user running **the servlet container** and is a special value - other environment variables cannot be used here. Since this setting is at the servlet container level, it will persist across redeploys of ncWMS2.
 
 
-### Security configuration
+### Security configuration {#security}
 
 Security for the administration of ncWMS is delegated to the servlet container (in standalone mode there is no security on any administration). You should define a security role with the name `ncWMS-admin`, and add users with that role. To do this on Tomcat, you could add the following to `tomcat-users.xml`:
 
