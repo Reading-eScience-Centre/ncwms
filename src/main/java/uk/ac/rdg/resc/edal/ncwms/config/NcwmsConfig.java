@@ -174,7 +174,7 @@ public class NcwmsConfig extends CatalogueConfig {
 
         Unmarshaller unmarshaller = context.createUnmarshaller();
         Source source = new StreamSource(xmlConfig);
-        NcwmsConfig config = (NcwmsConfig) unmarshaller.unmarshal(source, NcwmsConfig.class).getValue();
+        NcwmsConfig config = unmarshaller.unmarshal(source, NcwmsConfig.class).getValue();
         return config;
     }
 
