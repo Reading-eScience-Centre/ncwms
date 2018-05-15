@@ -2,6 +2,15 @@
    "http://www.w3.org/TR/html4/loose.dtd">
 <link rel=StyleSheet href="../css/ncWMS.css" type="text/css" />
 <html>
+#if(!$dataset)
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Dataset not found</title>
+    </head>
+    <body>
+        <h2>The requested dataset does not exist on this server</h2>
+    </body>
+#else
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Status of dataset ${dataset.id}</title>
@@ -48,4 +57,5 @@ Caused by:
 #error(${err.cause})
 #end
 
+#end
 #end

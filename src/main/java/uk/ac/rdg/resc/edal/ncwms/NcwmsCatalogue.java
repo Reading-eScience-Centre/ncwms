@@ -32,10 +32,10 @@ import java.io.IOException;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
-
 import net.sf.ehcache.config.CacheConfiguration;
 import net.sf.ehcache.config.PersistenceConfiguration;
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
+import uk.ac.rdg.resc.edal.cache.EdalCache;
 import uk.ac.rdg.resc.edal.catalogue.DataCatalogue;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
@@ -52,6 +52,7 @@ import uk.ac.rdg.resc.edal.graphics.utils.SldTemplateStyleCatalogue;
 import uk.ac.rdg.resc.edal.graphics.utils.StyleCatalogue;
 import uk.ac.rdg.resc.edal.metadata.VariableMetadata;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsConfig;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicCacheInfo;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsSupportedCrsCodes;
 import uk.ac.rdg.resc.edal.wms.WmsCatalogue;
@@ -68,11 +69,11 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     private StyleCatalogue styleCatalogue;
 
     private static final String CACHE_NAME = "dynamicDatasetCache";
-    private static final int MAX_HEAP_ENTRIES = 10;
     private static final MemoryStoreEvictionPolicy EVICTION_POLICY = MemoryStoreEvictionPolicy.LFU;
     private static final PersistenceConfiguration.Strategy PERSISTENCE_STRATEGY = PersistenceConfiguration.Strategy.NONE;
     private static final CacheConfiguration.TransactionalMode TRANSACTIONAL_MODE = CacheConfiguration.TransactionalMode.OFF;
-    private static Cache dynamicDatasetCache;
+    private Cache dynamicDatasetCache;
+    private boolean dynamicCacheEnabled = true;
 
     public NcwmsCatalogue() {
         super();
@@ -82,19 +83,31 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
         super(config, new SimpleLayerNameMapper());
         this.styleCatalogue = SldTemplateStyleCatalogue.getStyleCatalogue();
 
-        if (cacheManager.cacheExists(CACHE_NAME) == false) {
-            /*
-             * Configure cache
-             */
-            CacheConfiguration cacheConfig = new CacheConfiguration(CACHE_NAME, MAX_HEAP_ENTRIES)
-                    .eternal(true)
-                    .memoryStoreEvictionPolicy(EVICTION_POLICY)
-                    .persistence(new PersistenceConfiguration().strategy(PERSISTENCE_STRATEGY))
-                    .transactionalMode(TRANSACTIONAL_MODE);
-            dynamicDatasetCache = new Cache(cacheConfig);
-            cacheManager.addCache(dynamicDatasetCache);
-        } else {
-            dynamicDatasetCache = cacheManager.getCache(CACHE_NAME);
+        dynamicCacheEnabled = config.getDynamicCacheInfo().isEnabled();
+
+        if (dynamicCacheEnabled) {
+            if (EdalCache.cacheManager.cacheExists(CACHE_NAME) == false) {
+                NcwmsDynamicCacheInfo cacheInfo = config.getDynamicCacheInfo();
+                /*
+                 * Configure cache
+                 */
+                CacheConfiguration cacheConfig = new CacheConfiguration(CACHE_NAME,
+                        cacheInfo.getNumberOfDatasets())
+                                .memoryStoreEvictionPolicy(EVICTION_POLICY)
+                                .persistence(new PersistenceConfiguration()
+                                        .strategy(PERSISTENCE_STRATEGY))
+                                .transactionalMode(TRANSACTIONAL_MODE);
+                if (cacheInfo.getElementLifetimeMinutes() > 0) {
+                    cacheConfig.setTimeToLiveSeconds(
+                            (long) (cacheInfo.getElementLifetimeMinutes() * 60));
+                } else {
+                    cacheConfig.eternal(true);
+                }
+                dynamicDatasetCache = new Cache(cacheConfig);
+                EdalCache.cacheManager.addCache(dynamicDatasetCache);
+            } else {
+                dynamicDatasetCache = EdalCache.cacheManager.getCache(CACHE_NAME);
+            }
         }
     }
 
@@ -104,6 +117,46 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
      */
     public NcwmsConfig getConfig() {
         return (NcwmsConfig) super.getConfig();
+    }
+
+    public void updateDynamicDatasetCache(NcwmsDynamicCacheInfo cacheInfo) {
+        dynamicCacheEnabled = cacheInfo.isEnabled();
+
+        if (!EdalCache.cacheManager.cacheExists(CACHE_NAME)) {
+            /*
+             * Create cache
+             */
+            CacheConfiguration cacheConfig = new CacheConfiguration(CACHE_NAME,
+                    cacheInfo.getNumberOfDatasets())
+                            .memoryStoreEvictionPolicy(EVICTION_POLICY)
+                            .persistence(
+                                    new PersistenceConfiguration().strategy(PERSISTENCE_STRATEGY))
+                            .transactionalMode(TRANSACTIONAL_MODE);
+            if (cacheInfo.getElementLifetimeMinutes() > 0) {
+                cacheConfig
+                        .setTimeToLiveSeconds((long) (cacheInfo.getElementLifetimeMinutes() * 60));
+            } else {
+                cacheConfig.eternal(true);
+            }
+            dynamicDatasetCache = new Cache(cacheConfig);
+            EdalCache.cacheManager.addCache(dynamicDatasetCache);
+        } else {
+            /*
+             * Configure existing cache
+             */
+            if (cacheInfo.getElementLifetimeMinutes() > 0) {
+                dynamicDatasetCache.getCacheConfiguration()
+                        .setTimeToLiveSeconds((long) (cacheInfo.getElementLifetimeMinutes() * 60));
+            } else {
+                dynamicDatasetCache.getCacheConfiguration().eternal(true);
+            }
+            dynamicDatasetCache.getCacheConfiguration()
+                    .setMaxEntriesInCache(cacheInfo.getNumberOfDatasets());
+        }
+    }
+
+    public void emptyDynamicDatasetCache() {
+        dynamicDatasetCache.removeAll();
     }
 
     public NcwmsSupportedCrsCodes getSupportedNcwmsCrsCodes() {
@@ -170,8 +223,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 title = title.substring(1);
 
             try {
-                DatasetFactory datasetFactory = DatasetFactory.forName(dynamicService
-                        .getDataReaderClass());
+                DatasetFactory datasetFactory = DatasetFactory
+                        .forName(dynamicService.getDataReaderClass());
                 Dataset dynamicDataset = datasetFactory.createDataset(datasetId, datasetUrl);
                 /*
                  * Store in the cache
@@ -200,8 +253,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
              * The layer is not defined in the XmlDataCatalogue. However, we may
              * still have a dynamic dataset
              */
-            final String layerName = getLayerNameMapper().getLayerName(
-                    variableMetadata.getDataset().getId(), variableMetadata.getId());
+            final String layerName = getLayerNameMapper()
+                    .getLayerName(variableMetadata.getDataset().getId(), variableMetadata.getId());
 
             final NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(layerName);
             if (dynamicService == null) {
@@ -293,8 +346,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
         } else if (getDynamicServiceFromLayerName(datasetId) != null) {
             return "Dynamic service from " + datasetId;
         } else {
-            throw new EdalLayerNotFoundException(datasetId
-                    + " does not refer to an existing dataset");
+            throw new EdalLayerNotFoundException(
+                    datasetId + " does not refer to an existing dataset");
         }
     }
 
@@ -351,11 +404,11 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     }
 
     private VariableConfig getXmlVariable(String layerName) {
-        DatasetConfig datasetInfo = config.getDatasetInfo(getLayerNameMapper()
-                .getDatasetIdFromLayerName(layerName));
+        DatasetConfig datasetInfo = config
+                .getDatasetInfo(getLayerNameMapper().getDatasetIdFromLayerName(layerName));
         if (datasetInfo != null) {
-            return datasetInfo.getVariableById(getLayerNameMapper().getVariableIdFromLayerName(
-                    layerName));
+            return datasetInfo
+                    .getVariableById(getLayerNameMapper().getVariableIdFromLayerName(layerName));
         } else {
             return null;
         }

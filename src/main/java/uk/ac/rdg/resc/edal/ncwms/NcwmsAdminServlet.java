@@ -28,7 +28,9 @@
 
 package uk.ac.rdg.resc.edal.ncwms;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -49,18 +51,25 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.app.event.EventCartridge;
 import org.apache.velocity.app.event.implement.EscapeHtmlReference;
+import org.apache.velocity.exception.MethodInvocationException;
+import org.apache.velocity.exception.ParseErrorException;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.rdg.resc.edal.catalogue.jaxb.CacheInfo;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
+import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig.DatasetState;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.VariableConfig;
 import uk.ac.rdg.resc.edal.graphics.utils.ColourPalette;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsContact;
+import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicCacheInfo;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsServerInfo;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
+import uk.ac.rdg.resc.edal.util.cdm.CdmUtils;
+import uk.ac.rdg.resc.edal.wms.RequestParams;
 
 /**
  * An {@link HttpServlet} which deals with the admin pages of ncWMS -
@@ -86,8 +95,8 @@ public class NcwmsAdminServlet extends HttpServlet {
         /*
          * Retrieve the pre-loaded catalogue and set the admin password
          */
-        Object config = servletConfig.getServletContext().getAttribute(
-                NcwmsApplicationServlet.CONTEXT_NCWMS_CATALOGUE);
+        Object config = servletConfig.getServletContext()
+                .getAttribute(NcwmsApplicationServlet.CONTEXT_NCWMS_CATALOGUE);
         if (config instanceof NcwmsCatalogue) {
             catalogue = (NcwmsCatalogue) config;
         } else {
@@ -99,8 +108,8 @@ public class NcwmsAdminServlet extends HttpServlet {
         /*
          * Retrieve the pre-loaded velocity engine
          */
-        Object engine = servletConfig.getServletContext().getAttribute(
-                NcwmsApplicationServlet.CONTEXT_VELOCITY_ENGINE);
+        Object engine = servletConfig.getServletContext()
+                .getAttribute(NcwmsApplicationServlet.CONTEXT_VELOCITY_ENGINE);
         if (engine instanceof VelocityEngine) {
             velocityEngine = (VelocityEngine) engine;
         } else {
@@ -109,7 +118,7 @@ public class NcwmsAdminServlet extends HttpServlet {
                     + "\" attribute of the ServletContext has been incorrectly set.");
         }
     }
-
+    
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -184,14 +193,98 @@ public class NcwmsAdminServlet extends HttpServlet {
         ec.attachToContext(context);
 
         context.put("dataset", dataset);
+
+        PrintWriter writer;
         try {
-            template.merge(context, response.getWriter());
-        } catch (Exception e) {
-            e.printStackTrace();
+            writer = response.getWriter();
+        } catch (IOException e1) {
+            /*
+             * This is a problem getting the output writer
+             */
+            log.error("Problem writing to output stream");
+            return;
+        }
+
+        /*
+         * We don't do a full analysis of the request headers. We just want to
+         * know whether text/plain is preferred to text/html.
+         */
+        String accepts = request.getHeader("Accept");
+        boolean useHtml = true;
+        double plainWeight = 0.0;
+        double htmlWeight = 0.0;
+        if (accepts != null) {
+            String[] acceptTypes = accepts.split(",");
+            for (String acceptType : acceptTypes) {
+                String[] atSplit = acceptType.split(";");
+
+                double weight = 1.0;
+                if (atSplit.length > 1) {
+                    /*
+                     * Weighting, should be of the form "q=0.9"
+                     */
+                    try {
+                        weight = Double.parseDouble(atSplit[1].split("=")[1]);
+                    } catch (Exception e) {
+                        /*
+                         * The weighting is not properly defined
+                         */
+                    }
+                }
+
+                String type = atSplit[0];
+                if (type.trim().equalsIgnoreCase("text/plain")) {
+                    plainWeight = weight;
+                } else if (type.trim().equalsIgnoreCase("text/html")) {
+                    htmlWeight = weight;
+                }
+            }
+            useHtml = htmlWeight >= plainWeight;
+        }
+
+        if (useHtml) {
+            response.setContentType("text/html");
+            try {
+                template.merge(context, writer);
+                return;
+            } catch (ResourceNotFoundException | ParseErrorException
+                    | MethodInvocationException e) {
+                /*
+                 * These are issues with the templating. Write as plaintext
+                 * instead
+                 */
+            }
+        }
+
+        /*-
+         * Write as plaintext.  We'll get here if:
+         * 
+         * 1) We want to use plaintext
+         * 2) HTML templating failed
+         */
+        response.setContentType("text/plain");
+
+        if (dataset != null) {
+            writer.write("Dataset: " + dataset.getId() + " (" + dataset.getLocation() + "): "
+                    + dataset.getState() + "\n");
+            if (dataset.getState() == DatasetState.ERROR) {
+                writer.write("\nStack trace:\n");
+                Throwable error = dataset.getException();
+                StackTraceElement[] stackTrace = error.getStackTrace();
+                for (StackTraceElement el : stackTrace) {
+                    writer.write("\t" + el.toString() + "\n");
+                }
+                if (error.getCause() != null) {
+                    writer.write("\nCaused by:\n\t" + error.getCause().toString() + "\n");
+                }
+            }
+        } else {
+            writer.write("Dataset: "+datasetId+" not found on this server\n");
         }
     }
 
-    private void displayEditVariablesPage(HttpServletRequest request, HttpServletResponse response) {
+    private void displayEditVariablesPage(HttpServletRequest request,
+            HttpServletResponse response) {
         String datasetId = request.getParameter("dataset");
         if (StringUtils.isBlank(datasetId)) {
             throw new IllegalArgumentException(
@@ -242,6 +335,16 @@ public class NcwmsAdminServlet extends HttpServlet {
              * Update the individual variables
              */
             updateVariables(request, response);
+        } else if ("/addDataset".equals(path)) {
+            /*
+             * Add a new dataset
+             */
+            addDataset(request, response);
+        } else if ("/removeDataset".equals(path)) {
+            /*
+             * Add a new dataset
+             */
+            removeDataset(request, response);
         } else {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
@@ -255,6 +358,7 @@ public class NcwmsAdminServlet extends HttpServlet {
         NcwmsContact contact = catalogue.getConfig().getContactInfo();
         NcwmsServerInfo server = catalogue.getConfig().getServerInfo();
         CacheInfo cache = catalogue.getConfig().getCacheSettings();
+        NcwmsDynamicCacheInfo dynamicCache = catalogue.getConfig().getDynamicCacheInfo();
 
         contact.setName(request.getParameter("contact.name"));
         contact.setOrganisation(request.getParameter("contact.org"));
@@ -269,7 +373,8 @@ public class NcwmsAdminServlet extends HttpServlet {
         server.setMaxImageWidth(Integer.parseInt(request.getParameter("server.maximagewidth")));
         server.setMaxImageHeight(Integer.parseInt(request.getParameter("server.maximageheight")));
         server.setAllowFeatureInfo(request.getParameter("server.allowfeatureinfo") != null);
-        server.setAllowGlobalCapabilities(request.getParameter("server.allowglobalcapabilities") != null);
+        server.setAllowGlobalCapabilities(
+                request.getParameter("server.allowglobalcapabilities") != null);
 
         /*
          * Save the dataset information, checking for removals First look
@@ -289,30 +394,33 @@ public class NcwmsAdminServlet extends HttpServlet {
                     refreshDataset = true;
                 }
                 ds.setLocation(newLocation);
-                String newDataReaderClass = request.getParameter("dataset." + ds.getId()
-                        + ".reader");
+                String newDataReaderClass = request
+                        .getParameter("dataset." + ds.getId() + ".reader");
                 if (!newDataReaderClass.trim().equals(ds.getDataReaderClass().trim())) {
                     refreshDataset = true;
                 }
                 ds.setDataReaderClass(newDataReaderClass);
-                boolean disabled = request.getParameter("dataset." + ds.getId() + ".disabled") != null;
+                boolean disabled = request
+                        .getParameter("dataset." + ds.getId() + ".disabled") != null;
                 if (disabled == false && ds.isDisabled()) {
                     /* We've re-enabled the dataset so need to reload it */
                     refreshDataset = true;
                 }
                 ds.setDisabled(disabled);
-                ds.setQueryable(request.getParameter("dataset." + ds.getId() + ".queryable") != null);
-                ds.setDownloadable(request.getParameter("dataset." + ds.getId() + ".downloadable") != null);
-                ds.setUpdateInterval(Integer.parseInt(request.getParameter("dataset." + ds.getId()
-                        + ".updateinterval")));
+                ds.setQueryable(
+                        request.getParameter("dataset." + ds.getId() + ".queryable") != null);
+                ds.setDownloadable(
+                        request.getParameter("dataset." + ds.getId() + ".downloadable") != null);
+                ds.setUpdateInterval(Integer.parseInt(
+                        request.getParameter("dataset." + ds.getId() + ".updateinterval")));
                 ds.setMoreInfo(request.getParameter("dataset." + ds.getId() + ".moreinfo"));
-                ds.setCopyrightStatement(request.getParameter("dataset." + ds.getId()
-                        + ".copyright"));
+                ds.setCopyrightStatement(
+                        request.getParameter("dataset." + ds.getId() + ".copyright"));
 
                 ds.setMetadataUrl(request.getParameter("dataset." + ds.getId() + ".metadataUrl"));
                 ds.setMetadataDesc(request.getParameter("dataset." + ds.getId() + ".metadataDesc"));
-                ds.setMetadataMimetype(request.getParameter("dataset." + ds.getId()
-                        + ".metadataMimetype"));
+                ds.setMetadataMimetype(
+                        request.getParameter("dataset." + ds.getId() + ".metadataMimetype"));
 
                 if (request.getParameter("dataset." + ds.getId() + ".refresh") != null) {
                     refreshDataset = true;
@@ -353,6 +461,13 @@ public class NcwmsAdminServlet extends HttpServlet {
             /* Look for non-blank ID fields */
             String id = request.getParameter("dataset.new" + i + ".id");
             if (id != null && !id.trim().equals("")) {
+                while (catalogue.getDatasetInfo(id) != null) {
+                    /*
+                     * We already have a dataset with this ID. Add prime marks
+                     * until it's unique.
+                     */
+                    id += "'";
+                }
                 DatasetConfig ds = new DatasetConfig();
                 ds.setId(id);
                 String title = request.getParameter("dataset.new" + i + ".title");
@@ -364,8 +479,8 @@ public class NcwmsAdminServlet extends HttpServlet {
                 ds.setDataReaderClass(request.getParameter("dataset.new" + i + ".reader"));
                 ds.setDisabled(request.getParameter("dataset.new" + i + ".disabled") != null);
                 ds.setQueryable(request.getParameter("dataset.new" + i + ".queryable") != null);
-                ds.setUpdateInterval(Integer.parseInt(request.getParameter("dataset.new" + i
-                        + ".updateinterval")));
+                ds.setUpdateInterval(Integer
+                        .parseInt(request.getParameter("dataset.new" + i + ".updateinterval")));
                 ds.setMoreInfo(request.getParameter("dataset.new" + i + ".moreinfo"));
                 ds.setCopyrightStatement(request.getParameter("dataset.new" + i + ".copyright"));
                 /*
@@ -397,28 +512,29 @@ public class NcwmsAdminServlet extends HttpServlet {
                      */
                     changedNcwmsDynamicServiceIds.put(ds, newId);
                 }
-                String servicePath = request.getParameter("dynamicService." + ds.getAlias()
-                        + ".servicePath");
+                String servicePath = request
+                        .getParameter("dynamicService." + ds.getAlias() + ".servicePath");
                 ds.setServicePath(servicePath);
 
-                String matchRegex = request.getParameter("dynamicService." + ds.getAlias()
-                        + ".datasetIdMatch");
+                String matchRegex = request
+                        .getParameter("dynamicService." + ds.getAlias() + ".datasetIdMatch");
                 ds.setDatasetIdMatch(matchRegex);
 
-                ds.setMoreInfo(request.getParameter("dynamicService." + ds.getAlias() + ".moreinfo"));
-                ds.setCopyrightStatement(request.getParameter("dynamicService." + ds.getAlias()
-                        + ".copyright"));
+                ds.setMoreInfo(
+                        request.getParameter("dynamicService." + ds.getAlias() + ".moreinfo"));
+                ds.setCopyrightStatement(
+                        request.getParameter("dynamicService." + ds.getAlias() + ".copyright"));
 
-                boolean disabled = request.getParameter("dynamicService." + ds.getAlias()
-                        + ".disabled") != null;
+                boolean disabled = request
+                        .getParameter("dynamicService." + ds.getAlias() + ".disabled") != null;
                 ds.setDisabled(disabled);
 
-                boolean queryable = request.getParameter("dynamicService." + ds.getAlias()
-                        + ".queryable") != null;
+                boolean queryable = request
+                        .getParameter("dynamicService." + ds.getAlias() + ".queryable") != null;
                 ds.setQueryable(queryable);
 
-                String newDataReaderClass = request.getParameter("dynamicService." + ds.getAlias()
-                        + ".reader");
+                String newDataReaderClass = request
+                        .getParameter("dynamicService." + ds.getAlias() + ".reader");
                 ds.setDataReaderClass(newDataReaderClass);
             }
         }
@@ -449,20 +565,24 @@ public class NcwmsAdminServlet extends HttpServlet {
                 NcwmsDynamicService ds = new NcwmsDynamicService();
                 ds.setAlias(request.getParameter("dynamicService.new" + i + ".alias"));
                 ds.setServicePath(request.getParameter("dynamicService.new" + i + ".servicePath"));
-                ds.setDatasetIdMatch(request.getParameter("dynamicService.new" + i
-                        + ".datasetIdMatch"));
+                ds.setDatasetIdMatch(
+                        request.getParameter("dynamicService.new" + i + ".datasetIdMatch"));
                 ds.setMoreInfo(request.getParameter("dynamicService.new" + i + ".moreinfo"));
-                ds.setCopyrightStatement(request.getParameter("dynamicService.new" + i
-                        + ".copyright"));
-                ds.setDisabled(request.getParameter("dynamicService.new" + i + ".disabled") != null);
-                ds.setQueryable(request.getParameter("dynamicService.new" + i + ".queryable") != null);
+                ds.setCopyrightStatement(
+                        request.getParameter("dynamicService.new" + i + ".copyright"));
+                ds.setDisabled(
+                        request.getParameter("dynamicService.new" + i + ".disabled") != null);
+                ds.setQueryable(
+                        request.getParameter("dynamicService.new" + i + ".queryable") != null);
                 ds.setDataReaderClass(request.getParameter("dynamicService.new" + i + ".reader"));
                 catalogue.getConfig().addDynamicService(ds);
             }
             i++;
         }
 
-        /* Set the properties of the cache */
+        /* 
+         * Set the properties of the cache
+         */
         cache.setEnabled(request.getParameter("cache.enable") != null);
         String tmpMemorySize = request.getParameter("cache.inMemorySizeMB");
         if (!tmpMemorySize.isEmpty()) {
@@ -477,6 +597,27 @@ public class NcwmsAdminServlet extends HttpServlet {
          * Update the cache settings.
          */
         catalogue.setCache(cache);
+        
+        /* 
+         * Set the properties of the dynamic dataset cache
+         */
+        dynamicCache.setEnabled(request.getParameter("dynamicCache.enable") != null);
+        String nDatasets = request.getParameter("dynamicCache.nDatasets");
+        if (!nDatasets.isEmpty()) {
+            dynamicCache.setNumberOfDatasets(Integer.parseInt(nDatasets));
+        }
+        tmpLifetime = request.getParameter("dynamicCache.elementLifetimeMinutes");
+        if (!tmpLifetime.isEmpty()) {
+            dynamicCache.setElementLifetimeMinutes(Float.parseFloat(tmpLifetime));
+        }
+        if(request.getParameter("dynamicCache.empty") != null) {
+            catalogue.emptyDynamicDatasetCache();
+        }
+        
+        /*
+         * Update the dynamic cache settings.
+         */
+        catalogue.updateDynamicDatasetCache(dynamicCache);
 
         /* Save the updated config information to disk */
         try {
@@ -503,8 +644,8 @@ public class NcwmsAdminServlet extends HttpServlet {
     private void updateVariables(HttpServletRequest request, HttpServletResponse response) {
         /* We only take action if the user pressed "save" */
         if (request.getParameter("save") != null) {
-            DatasetConfig dataset = catalogue.getConfig().getDatasetInfo(
-                    request.getParameter("dataset.id"));
+            DatasetConfig dataset = catalogue.getConfig()
+                    .getDatasetInfo(request.getParameter("dataset.id"));
             Set<String> variableIds = new HashSet<String>();
             Enumeration<String> parameterNames = request.getParameterNames();
             while (parameterNames.hasMoreElements()) {
@@ -532,8 +673,8 @@ public class NcwmsAdminServlet extends HttpServlet {
                 var.setTitle(newTitle);
                 var.setColorScaleRange(Extents.newExtent(min, max));
                 var.setPaletteName(request.getParameter(variableId + ".palette"));
-                var.setNumColorBands(Integer.parseInt(request.getParameter(variableId
-                        + ".numColorBands")));
+                var.setNumColorBands(
+                        Integer.parseInt(request.getParameter(variableId + ".numColorBands")));
                 var.setScaling(request.getParameter(variableId + ".scaling"));
                 var.setDisabled(request.getParameter(variableId + ".disabled") != null);
             }
@@ -557,6 +698,127 @@ public class NcwmsAdminServlet extends HttpServlet {
              * This error isn't really important
              */
             log.error("Problem redirecting user after config update");
+        }
+    }
+
+    private void addDataset(HttpServletRequest request, HttpServletResponse response) {
+        RequestParams params = new RequestParams(request.getParameterMap());
+        String id = params.getMandatoryString("id");
+        String location = params.getMandatoryString("location");
+        String title = params.getString("title", id);
+        String dataReader = params.getString("dataReader", "");
+        String moreInfo = params.getString("moreInfo", "");
+        String copyright = params.getString("copyright", "");
+        boolean queryable = params.getBoolean("queryable", true);
+        boolean downloadable = params.getBoolean("downloadable", false);
+        // -1 means never
+        int autoRefreshMinutes = params.getInt("autoRefreshMinutes", -1);
+
+        /*
+         * Perform simple sanity checks to see whether this dataset is likely to
+         * work
+         */
+        boolean datasetOK = true;
+        String message = null;
+        if (catalogue.getDatasetInfo(id) != null) {
+            datasetOK = false;
+            message = "Dataset with ID " + id + " already exists";
+        }
+        if (CdmUtils.expandGlobExpression(location).size() < 1) {
+            datasetOK = false;
+            message = "Location: " + location + " doesn't refer to any existing files";
+        }
+        try {
+            if (!dataReader.isEmpty()) {
+                Class.forName(dataReader);
+            }
+        } catch (ClassNotFoundException e) {
+            datasetOK = false;
+            message = "Data reading class: " + dataReader + " is not available";
+        }
+
+        /*
+         * Write status as text/plain
+         */
+        response.setContentType("text/plain");
+        try (BufferedWriter w = new BufferedWriter(response.getWriter())) {
+            if (datasetOK) {
+                /*
+                 * Configure the dataset
+                 */
+                DatasetConfig ds = new DatasetConfig();
+                ds.setId(id);
+                ds.setTitle(title);
+                ds.setLocation(location);
+                ds.setDataReaderClass(dataReader);
+                ds.setQueryable(queryable);
+                ds.setDownloadable(downloadable);
+                ds.setUpdateInterval(autoRefreshMinutes);
+                ds.setMoreInfo(moreInfo);
+                ds.setCopyrightStatement(copyright);
+                /*
+                 * addDataset() contains code to ensure that the dataset loads
+                 * its metadata at the next opportunity
+                 */
+                catalogue.getConfig().addDataset(ds);
+
+                try {
+                    catalogue.getConfig().save();
+                } catch (IOException e) {
+                    log.error("Problem writing config to file", e);
+                }
+
+                w.write("Dataset " + id + " (" + location + ") is being added.\n");
+
+                w.write("Check the status at " + request.getRequestURL().toString()
+                        .replaceAll("addDataset", "datasetStatus") + "?dataset=" + id + "\n");
+            } else {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                w.write("Dataset " + id + " (" + location + ") cannot be added.\n");
+                w.write("Cause:\n" + message + "\n");
+            }
+        } catch (IOException e) {
+            /*
+             * This can occur when creating BufferedWriter
+             */
+            log.error("Problem writing response to output stream", e);
+        }
+    }
+
+    private void removeDataset(HttpServletRequest request, HttpServletResponse response) {
+        RequestParams params = new RequestParams(request.getParameterMap());
+        String id = params.getMandatoryString("id");
+
+        /*
+         * This happens synchronously
+         */
+        catalogue.removeDataset(id);
+
+        boolean saved = false;
+        try {
+            catalogue.getConfig().save();
+            saved = true;
+        } catch (IOException e) {
+            log.error("Problem writing config", e);
+        }
+
+        /*
+         * Write status as text/plain
+         */
+        response.setContentType("text/plain");
+        try (BufferedWriter w = new BufferedWriter(response.getWriter())) {
+            w.write("Dataset " + id + " has been removed.\n");
+            if (!saved) {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                w.write("There was a problem saving the config file to disk.\n");
+                w.write("This may mean the dataset will reappear on restart.\n");
+                w.write("Please check the server logs for details\n");
+            }
+        } catch (IOException e) {
+            /*
+             * This can occur when creating BufferedWriter
+             */
+            log.error("Problem writing response to output stream", e);
         }
     }
 

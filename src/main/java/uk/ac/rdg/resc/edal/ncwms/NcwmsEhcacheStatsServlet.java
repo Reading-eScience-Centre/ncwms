@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletResponse;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.statistics.StatisticsGateway;
+import uk.ac.rdg.resc.edal.cache.EdalCache;
 
 import org.json.JSONObject;
 
@@ -65,7 +66,7 @@ public class NcwmsEhcacheStatsServlet extends HttpServlet {
         /*
          * Get the CacheManager
          */
-        cacheManager = CacheManager.getInstance();
+        cacheManager = EdalCache.cacheManager;
     }
 
     @Override
