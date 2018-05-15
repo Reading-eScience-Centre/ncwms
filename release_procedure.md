@@ -20,12 +20,12 @@ Maven needs to be installed to build the software, but to release it needs some 
 <settings>
   <servers>
     <server>
-      <id>edal-snapshots</id>
+      <id>ncwms-snapshots</id>
       <username>resc</username>
       <password>the_resc_password</password>
     </server>
     <server>
-      <id>edal-java-release</id>
+      <id>ncwms-release</id>
       <username>resc</username>
       <password>the_resc_password</password>
     </server>
