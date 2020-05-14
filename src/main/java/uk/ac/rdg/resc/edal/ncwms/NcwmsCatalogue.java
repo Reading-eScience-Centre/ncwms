@@ -29,6 +29,7 @@
 package uk.ac.rdg.resc.edal.ncwms;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
@@ -91,15 +92,12 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 /*
                  * Configure cache
                  */
-                CacheConfiguration cacheConfig = new CacheConfiguration(CACHE_NAME,
-                        cacheInfo.getNumberOfDatasets())
-                                .memoryStoreEvictionPolicy(EVICTION_POLICY)
-                                .persistence(new PersistenceConfiguration()
-                                        .strategy(PERSISTENCE_STRATEGY))
-                                .transactionalMode(TRANSACTIONAL_MODE);
+                CacheConfiguration cacheConfig = new CacheConfiguration(CACHE_NAME, cacheInfo.getNumberOfDatasets())
+                        .memoryStoreEvictionPolicy(EVICTION_POLICY)
+                        .persistence(new PersistenceConfiguration().strategy(PERSISTENCE_STRATEGY))
+                        .transactionalMode(TRANSACTIONAL_MODE);
                 if (cacheInfo.getElementLifetimeMinutes() > 0) {
-                    cacheConfig.setTimeToLiveSeconds(
-                            (long) (cacheInfo.getElementLifetimeMinutes() * 60));
+                    cacheConfig.setTimeToLiveSeconds((long) (cacheInfo.getElementLifetimeMinutes() * 60));
                 } else {
                     cacheConfig.eternal(true);
                 }
@@ -112,8 +110,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     }
 
     /**
-     * @return The NcwmsConfig object used by this catalogue. Package-private
-     *         since this should not be accessed by external users
+     * @return The NcwmsConfig object used by this catalogue. Package-private since
+     *         this should not be accessed by external users
      */
     public NcwmsConfig getConfig() {
         return (NcwmsConfig) super.getConfig();
@@ -126,15 +124,12 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             /*
              * Create cache
              */
-            CacheConfiguration cacheConfig = new CacheConfiguration(CACHE_NAME,
-                    cacheInfo.getNumberOfDatasets())
-                            .memoryStoreEvictionPolicy(EVICTION_POLICY)
-                            .persistence(
-                                    new PersistenceConfiguration().strategy(PERSISTENCE_STRATEGY))
-                            .transactionalMode(TRANSACTIONAL_MODE);
+            CacheConfiguration cacheConfig = new CacheConfiguration(CACHE_NAME, cacheInfo.getNumberOfDatasets())
+                    .memoryStoreEvictionPolicy(EVICTION_POLICY)
+                    .persistence(new PersistenceConfiguration().strategy(PERSISTENCE_STRATEGY))
+                    .transactionalMode(TRANSACTIONAL_MODE);
             if (cacheInfo.getElementLifetimeMinutes() > 0) {
-                cacheConfig
-                        .setTimeToLiveSeconds((long) (cacheInfo.getElementLifetimeMinutes() * 60));
+                cacheConfig.setTimeToLiveSeconds((long) (cacheInfo.getElementLifetimeMinutes() * 60));
             } else {
                 cacheConfig.eternal(true);
             }
@@ -150,8 +145,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             } else {
                 dynamicDatasetCache.getCacheConfiguration().eternal(true);
             }
-            dynamicDatasetCache.getCacheConfiguration()
-                    .setMaxEntriesInCache(cacheInfo.getNumberOfDatasets());
+            dynamicDatasetCache.getCacheConfiguration().setMaxEntriesInCache(cacheInfo.getNumberOfDatasets());
         }
     }
 
@@ -180,8 +174,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             return dataset;
         } else {
             /*
-             * We may have a dynamic dataset. First check the dynamic dataset
-             * cache.
+             * We may have a dynamic dataset. First check the dynamic dataset cache.
              */
             Element element = dynamicDatasetCache.get(datasetId);
             if (element != null && element.getObjectValue() != null) {
@@ -189,8 +182,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             }
 
             /*
-             * Check to see if we have a dynamic service defined which this
-             * dataset ID can map to
+             * Check to see if we have a dynamic service defined which this dataset ID can
+             * map to
              */
             NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(datasetId);
             if (dynamicService == null || dynamicService.isDisabled()) {
@@ -209,8 +202,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             String datasetPath = datasetId.substring(dynamicService.getAlias().length() + 1);
 
             /*
-             * Check if we allow this path or if it is disallowed by the dynamic
-             * dataset regex
+             * Check if we allow this path or if it is disallowed by the dynamic dataset
+             * regex
              */
             if (!dynamicService.getIdMatchPattern().matcher(datasetPath).matches()) {
                 return null;
@@ -223,8 +216,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 title = title.substring(1);
 
             try {
-                DatasetFactory datasetFactory = DatasetFactory
-                        .forName(dynamicService.getDataReaderClass());
+                DatasetFactory datasetFactory = DatasetFactory.forName(dynamicService.getDataReaderClass());
                 Dataset dynamicDataset = datasetFactory.createDataset(datasetId, datasetUrl);
                 /*
                  * Store in the cache
@@ -233,8 +225,9 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                     dynamicDatasetCache.put(new Element(datasetId, dynamicDataset));
                 }
                 return dynamicDataset;
-            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException
-                    | IOException | EdalException e) {
+            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | IOException
+                    | EdalException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+                    | SecurityException e) {
                 /*
                  * TODO log error
                  */
@@ -250,11 +243,11 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             return super.getLayerMetadata(variableMetadata);
         } catch (EdalLayerNotFoundException e) {
             /*
-             * The layer is not defined in the XmlDataCatalogue. However, we may
-             * still have a dynamic dataset
+             * The layer is not defined in the XmlDataCatalogue. However, we may still have
+             * a dynamic dataset
              */
-            final String layerName = getLayerNameMapper()
-                    .getLayerName(variableMetadata.getDataset().getId(), variableMetadata.getId());
+            final String layerName = getLayerNameMapper().getLayerName(variableMetadata.getDataset().getId(),
+                    variableMetadata.getId());
 
             final NcwmsDynamicService dynamicService = getDynamicServiceFromLayerName(layerName);
             if (dynamicService == null) {
@@ -276,8 +269,8 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
 
                 @Override
                 public PlottingStyleParameters getDefaultPlottingParameters() {
-                    return new PlottingStyleParameters(null, ColourPalette.DEFAULT_PALETTE_NAME,
-                            null, null, null, false, ColourPalette.MAX_NUM_COLOURS, 1f);
+                    return new PlottingStyleParameters(null, ColourPalette.DEFAULT_PALETTE_NAME, null, null, null,
+                            false, ColourPalette.MAX_NUM_COLOURS, 1f);
                 }
 
                 @Override
@@ -321,8 +314,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 dynamicService = testDynamicService;
             }
         }
-        if (dynamicService == null
-                || !dynamicService.getIdMatchPattern().matcher(layerName).matches()) {
+        if (dynamicService == null || !dynamicService.getIdMatchPattern().matcher(layerName).matches()) {
             return null;
         }
         return dynamicService;
@@ -346,8 +338,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
         } else if (getDynamicServiceFromLayerName(datasetId) != null) {
             return "Dynamic service from " + datasetId;
         } else {
-            throw new EdalLayerNotFoundException(
-                    datasetId + " does not refer to an existing dataset");
+            throw new EdalLayerNotFoundException(datasetId + " does not refer to an existing dataset");
         }
     }
 
@@ -404,11 +395,9 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     }
 
     private VariableConfig getXmlVariable(String layerName) {
-        DatasetConfig datasetInfo = config
-                .getDatasetInfo(getLayerNameMapper().getDatasetIdFromLayerName(layerName));
+        DatasetConfig datasetInfo = config.getDatasetInfo(getLayerNameMapper().getDatasetIdFromLayerName(layerName));
         if (datasetInfo != null) {
-            return datasetInfo
-                    .getVariableById(getLayerNameMapper().getVariableIdFromLayerName(layerName));
+            return datasetInfo.getVariableById(getLayerNameMapper().getVariableIdFromLayerName(layerName));
         } else {
             return null;
         }

@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>uk.ac.rdg.resc</groupId>
     <artifactId>ncWMS</artifactId>
-    <version>2.4.3-SNAPSHOT</version>
+    <version>2.5.0-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gwt.version>2.7.0</gwt.version>
+        <gwt.version>2.8.2</gwt.version>
         <winstone.version>0.9.10</winstone.version>
-        <edal.version>1.4.3-SNAPSHOT</edal.version>
+        <edal.version>1.5.0-SNAPSHOT</edal.version>
         <resc.url>http://www.met.reading.ac.uk/resc/home/</resc.url>
     </properties>
 
@@ -32,7 +34,8 @@
             full details).</comments>
         </license>
     </licenses>
-    <!-- groupId, developers and build sections are all inherited by child modules -->
+    <!-- groupId, developers and build sections are all inherited by child 
+        modules -->
     <developers>
         <developer>
             <name>Guy Griffiths</name>
@@ -62,6 +65,18 @@
             <groupId>uk.ac.rdg.resc</groupId>
             <artifactId>edal-godiva</artifactId>
             <version>${edal.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.gwt</groupId>
+            <artifactId>gwt-dev</artifactId>
+            <version>${gwt.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.google.gwt</groupId>
@@ -104,6 +119,12 @@
             <groupId>com.google.gwt</groupId>
             <artifactId>gwt-codeserver</artifactId>
             <version>${gwt.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.gwt</groupId>
+                    <artifactId>gwt-dev</artifactId>
+                </exclusion>
+            </exclusions>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -123,21 +144,6 @@
     <build>
         <finalName>ncWMS2</finalName>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>gwt-maven-plugin</artifactId>
-                <version>${gwt.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <inplace>true</inplace>
-                </configuration>
-            </plugin>
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>
                 <version>2.2</version>
@@ -162,7 +168,8 @@
                 <configuration>
                     <cmdLineOptions>
                         <property>
-                            <!-- This gives no-password access to the admin interface, which is what we want when running as a local standalone application -->
+                            <!-- This gives no-password access to the admin 
+                                interface, which is what we want when running as a local standalone application -->
                             <name>realmClassName</name>
                             <value>uk.ac.rdg.resc.edal.ncwms.StandaloneAuthentication</value>
                         </property>
@@ -170,13 +177,14 @@
                 </configuration>
             </plugin>
             <plugin>
-                <!-- Sets the source version to 1.7 -->
+                <!-- Sets the source version to Java 11 -->
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>11</source>
+                    <target>11</target>
+                    <strict>true</strict>
                 </configuration>
-                <version>2.5.1</version>
+                <version>3.8.1</version>
             </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
@@ -204,12 +212,15 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.10.3</version>
                 <configuration>
-                    <!-- Output the apidocs to the base directory. These are ignored in .gitignore for most branches, but NOT in the gh-pages branch. This makes documentation deployment very simple -->
+                    <!-- Output the apidocs to the base directory. These 
+                        are ignored in .gitignore for most branches, but NOT in the gh-pages branch. 
+                        This makes documentation deployment very simple -->
                     <reportOutputDirectory>${project.basedir}</reportOutputDirectory>
                 </configuration>
             </plugin>
             <plugin>
-                <!-- On package, generate an image containing all of the palettes for the documentation -->
+                <!-- On package, generate an image containing all of the 
+                    palettes for the documentation -->
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.5.0</version>
@@ -236,6 +247,16 @@
                         <version>${edal.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>net.ltgt.gwt.maven</groupId>
+                <artifactId>gwt-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <moduleName>uk.ac.rdg.resc.edal.ncwms.Godiva3</moduleName>
+                    <webappDirectory>src/main/webapp</webappDirectory>
+                </configuration>
             </plugin>
         </plugins>
         <resources>
@@ -365,7 +386,10 @@
                 <version>2.10.3</version>
                 <configuration>
                     <goal>javadoc:aggregate</goal>
-                    <!-- These links really belong in the child POMs but if we put them there, they don't seem to get picked up when building the javadoc for the aggregated project. Therefore if the versions of any of the dependencies change these links will also have to be updated. -->
+                    <!-- These links really belong in the child POMs but 
+                        if we put them there, they don't seem to get picked up when building the 
+                        javadoc for the aggregated project. Therefore if the versions of any of the 
+                        dependencies change these links will also have to be updated. -->
                     <links>
                         <link>http://java.sun.com/j2se/1.6.0/docs/api/</link>
                         <link>http://joda-time.sourceforge.net/api-2.0/</link>
