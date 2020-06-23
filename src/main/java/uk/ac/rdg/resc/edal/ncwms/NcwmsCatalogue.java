@@ -176,9 +176,11 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             /*
              * We may have a dynamic dataset. First check the dynamic dataset cache.
              */
-            Element element = dynamicDatasetCache.get(datasetId);
-            if (element != null && element.getObjectValue() != null) {
-                return (Dataset) element.getObjectValue();
+            if(dynamicDatasetCache != null) {
+                Element element = dynamicDatasetCache.get(datasetId);
+                if (element != null && element.getObjectValue() != null) {
+                    return (Dataset) element.getObjectValue();
+                }
             }
 
             /*
