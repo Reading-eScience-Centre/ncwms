@@ -532,6 +532,10 @@ public class NcwmsAdminServlet extends HttpServlet {
                 boolean queryable = request
                         .getParameter("dynamicService." + ds.getAlias() + ".queryable") != null;
                 ds.setQueryable(queryable);
+                
+                boolean downloadable = request
+                        .getParameter("dynamicService." + ds.getAlias() + ".downloadable") != null;
+                ds.setDownloadable(downloadable);
 
                 String newDataReaderClass = request
                         .getParameter("dynamicService." + ds.getAlias() + ".reader");
