@@ -728,10 +728,6 @@ public class NcwmsAdminServlet extends HttpServlet {
             datasetOK = false;
             message = "Dataset with ID " + id + " already exists";
         }
-        if (CdmUtils.expandGlobExpression(location).size() < 1) {
-            datasetOK = false;
-            message = "Location: " + location + " doesn't refer to any existing files";
-        }
         try {
             if (!dataReader.isEmpty()) {
                 Class.forName(dataReader);
