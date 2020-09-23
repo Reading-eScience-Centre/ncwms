@@ -134,6 +134,10 @@ public class NcwmsDynamicService {
     public boolean isDownloadable() {
         return downloadable;
     }
+    
+    public void setDownloadable(boolean downloadable) {
+        this.downloadable = downloadable;
+    }
 
     public boolean isQueryable() {
         return queryable;

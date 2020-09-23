@@ -66,6 +66,9 @@ The `TIME` parameter should specify a range of times in the form `starttime/endt
 * image/jpg
 * image/jpeg
 * text/csv
+* text/json
+* application/prs.coverage+json
+* application/prs.coverage json
 
 ### GetVerticalProfile
 
@@ -75,6 +78,9 @@ This produces either a vertical profile graph or, if downloading is enabled, a C
 * image/jpg
 * image/jpeg
 * text/csv
+* text/json
+* application/prs.coverage+json
+* application/prs.coverage json
 
 ### GetTransect
 

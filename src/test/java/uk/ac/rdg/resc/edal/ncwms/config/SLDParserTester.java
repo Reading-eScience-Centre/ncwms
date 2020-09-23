@@ -5,6 +5,7 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 
+import uk.ac.rdg.resc.edal.catalogue.jaxb.CatalogueConfig;
 import uk.ac.rdg.resc.edal.dataset.DatasetFactory;
 import uk.ac.rdg.resc.edal.dataset.cdm.CdmGridDatasetFactory;
 import uk.ac.rdg.resc.edal.geometry.BoundingBox;
@@ -61,7 +62,7 @@ public class SLDParserTester {
 			e.printStackTrace();
 		}
 
-		NcwmsConfig.shutdown();
+		CatalogueConfig.shutdown();
 	}
 
 }

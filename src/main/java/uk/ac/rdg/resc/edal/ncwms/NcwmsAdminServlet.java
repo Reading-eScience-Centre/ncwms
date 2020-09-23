@@ -532,6 +532,10 @@ public class NcwmsAdminServlet extends HttpServlet {
                 boolean queryable = request
                         .getParameter("dynamicService." + ds.getAlias() + ".queryable") != null;
                 ds.setQueryable(queryable);
+                
+                boolean downloadable = request
+                        .getParameter("dynamicService." + ds.getAlias() + ".downloadable") != null;
+                ds.setDownloadable(downloadable);
 
                 String newDataReaderClass = request
                         .getParameter("dynamicService." + ds.getAlias() + ".reader");
@@ -723,10 +727,6 @@ public class NcwmsAdminServlet extends HttpServlet {
         if (catalogue.getDatasetInfo(id) != null) {
             datasetOK = false;
             message = "Dataset with ID " + id + " already exists";
-        }
-        if (CdmUtils.expandGlobExpression(location).size() < 1) {
-            datasetOK = false;
-            message = "Location: " + location + " doesn't refer to any existing files";
         }
         try {
             if (!dataReader.isEmpty()) {

@@ -35,7 +35,7 @@ RUN mkdir /edal && \
 COPY . /ncWMS
 RUN cd /ncWMS && \
     JAVA_HOME=/usr/lib/jvm/java-8-oracle mvn clean install && \
-    unzip target/ncWMS2.war -d $CATALINA_HOME/webapps/ncWMS/ && \
+    unzip target/ncWMS2.war -d $CATALINA_HOME/webapps/ncWMS2/ && \
     rm -rf /edal && \
     rm -rf /ncWMS/target
 

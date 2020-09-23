@@ -40,7 +40,6 @@ import javax.xml.bind.JAXBException;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.xml.sax.SAXException;
 
 import uk.ac.rdg.resc.edal.catalogue.jaxb.CacheInfo;
 import uk.ac.rdg.resc.edal.catalogue.jaxb.DatasetConfig;
@@ -122,7 +121,7 @@ public class NcwmsConfigTest {
     }
 
 //    @Test
-    public void testDeserialise() throws JAXBException, SAXException, FileNotFoundException {
+    public void testDeserialise() throws JAXBException, FileNotFoundException {
         NcwmsConfig deserialise = NcwmsConfig.deserialise(new StringReader(XML));
 //        NcwmsConfig deserialise = NcwmsConfig.deserialise(new FileReader(new File(
 //                "/home/guy/.ncWMS2/config.xml")));
