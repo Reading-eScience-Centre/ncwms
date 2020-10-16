@@ -168,7 +168,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     }
 
     @Override
-    public Dataset getDatasetFromId(String datasetId) {
+    public synchronized Dataset getDatasetFromId(String datasetId) {
         Dataset dataset = super.getDatasetFromId(datasetId);
         if (dataset != null) {
             return dataset;
@@ -176,7 +176,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
             /*
              * We may have a dynamic dataset. First check the dynamic dataset cache.
              */
-            if(dynamicDatasetCache != null) {
+            if (dynamicDatasetCache != null) {
                 Element element = dynamicDatasetCache.get(datasetId);
                 if (element != null && element.getObjectValue() != null) {
                     return (Dataset) element.getObjectValue();
@@ -233,6 +233,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
                 /*
                  * TODO log error
                  */
+                e.printStackTrace();
                 return null;
             }
         }
