@@ -312,7 +312,7 @@ public class NcwmsCatalogue extends DataCatalogue implements WmsCatalogue {
     private NcwmsDynamicService getDynamicServiceFromLayerName(String layerName) {
         NcwmsDynamicService dynamicService = null;
         for (NcwmsDynamicService testDynamicService : ((NcwmsConfig) config).getDynamicServices()) {
-            if (layerName.startsWith(testDynamicService.getAlias())) {
+            if (testDynamicService.getAlias()!=null && layerName.startsWith(testDynamicService.getAlias())) {
                 dynamicService = testDynamicService;
             }
         }
