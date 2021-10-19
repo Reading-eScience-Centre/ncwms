@@ -216,6 +216,7 @@
                         are ignored in .gitignore for most branches, but NOT in the gh-pages branch. 
                         This makes documentation deployment very simple -->
                     <reportOutputDirectory>${project.basedir}</reportOutputDirectory>
+                    <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
                 </configuration>
             </plugin>
             <plugin>
