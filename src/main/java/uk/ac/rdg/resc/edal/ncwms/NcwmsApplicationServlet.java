@@ -42,7 +42,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
 
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.ConfigurationSource;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.properties.PropertiesConfigurationBuilder;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
@@ -98,10 +103,10 @@ public class NcwmsApplicationServlet extends HttpServlet {
         DatasetFactory.setDefaultDatasetFactoryClass(CdmGridDatasetFactory.class);
 
         String homeDir = System.getProperty("user.home").replace("\\", "\\\\");
-        log.debug("User home directory is: "+homeDir);
+        log.debug("User home directory is: " + homeDir);
 
         ServletContext context = servletConfig.getServletContext();
-        
+
         String configDir = context.getInitParameter(CONTEXT_CONFIG_DIR);
         /*
          * By default this is set to $HOME\.ncWMS2
@@ -123,8 +128,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
             configDir = homeDir + File.separator + ".ncWMS2";
         }
 
-        log.debug("Config directory is: "+configDir);
-        
+        log.debug("Config directory is: " + configDir);
+
         /*
          * If the config location doesn't exist, create it.
          */
@@ -135,12 +140,10 @@ public class NcwmsApplicationServlet extends HttpServlet {
                 configDir = System.getProperty("java.io.tmpdir") + File.separator + ".ncWMS2";
                 configDirFile = new File(configDir);
                 if (!configDirFile.mkdirs()) {
-                    log.error("Cannot create config dir in home directory or at "
-                            + configDir
+                    log.error("Cannot create config dir in home directory or at " + configDir
                             + ".  Please specify the config directory in web.xml or a custom context and restart the webapp.");
                 } else {
-                    log.warn("Config directory created at "
-                            + configDir
+                    log.warn("Config directory created at " + configDir
                             + ".  This is only a temporary file!  To ensure persistence of settings, please specify the config directory in web.xml or a custom context and restart the webapp.");
                 }
             }
@@ -152,8 +155,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
          */
         context.setAttribute(CONTEXT_CONFIG_DIR, configDir);
 
-        log.debug("Config directory: "+configDir);
-        
+        log.debug("Config directory: " + configDir);
+
         /*
          * Set some working directories to the config directory
          */
@@ -244,9 +247,14 @@ public class NcwmsApplicationServlet extends HttpServlet {
         InputStream log4jInputStream = getClass().getResourceAsStream("/log4j.properties");
         try {
             logProps.load(log4jInputStream);
-            logProps.put("log4j.appender.file.File", logDirFile.getPath() + File.separator
-                    + "ncwms.log");
-            PropertyConfigurator.configure(logProps);
+            logProps.put("log4j.appender.file.File",
+                    logDirFile.getPath() + File.separator + "ncwms.log");
+            LoggerContext logContext = (LoggerContext) LogManager.getContext(false);
+            Configuration logConfig = new PropertiesConfigurationBuilder()
+                    .setConfigurationSource(ConfigurationSource.NULL_SOURCE)
+                    .setRootProperties(logProps).setLoggerContext(logContext).build();
+            logContext.setConfiguration(logConfig);
+            Configurator.initialize(logConfig);
         } catch (IOException e) {
             log.error("Problem setting logging properties", e);
             /*
@@ -271,8 +279,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
             try {
                 config = new NcwmsConfig(configFile);
             } catch (Exception e1) {
-                throw new ServletException(
-                        "Old config is invalid, and a new one cannot be created", e1);
+                throw new ServletException("Old config is invalid, and a new one cannot be created",
+                        e1);
             }
         } catch (FileNotFoundException e) {
             /*
@@ -286,8 +294,8 @@ public class NcwmsApplicationServlet extends HttpServlet {
             try {
                 config = new NcwmsConfig(configFile);
             } catch (Exception e1) {
-                throw new ServletException(
-                        "Old config is missing, and a new one cannot be created", e1);
+                throw new ServletException("Old config is missing, and a new one cannot be created",
+                        e1);
             }
         } catch (IOException e) {
             log.error("Problem writing new config file", e);
