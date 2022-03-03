@@ -1,3 +1,8 @@
+2.5.2
+=====
+Updated to EDAL 1.5.2
+Fixed log4j configuration
+
 2.5.1
 =====
 Updated to EDAL 1.5.1
