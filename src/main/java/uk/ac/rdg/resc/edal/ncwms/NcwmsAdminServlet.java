@@ -45,7 +45,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
@@ -68,7 +68,6 @@ import uk.ac.rdg.resc.edal.ncwms.config.NcwmsDynamicService;
 import uk.ac.rdg.resc.edal.ncwms.config.NcwmsServerInfo;
 import uk.ac.rdg.resc.edal.util.Extents;
 import uk.ac.rdg.resc.edal.util.TimeUtils;
-import uk.ac.rdg.resc.edal.util.cdm.CdmUtils;
 import uk.ac.rdg.resc.edal.wms.RequestParams;
 
 /**
